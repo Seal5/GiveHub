@@ -1,0 +1,21 @@
+appId: nz.co.givehub.app
+---
+- launchApp:
+    clearState: true
+- tapOn: "I want to volunteer"
+- tapOn: "Your full name"
+- inputText: "Mia Thompson"
+- tapOn: "you@example.com"
+- inputText: "volunteer@example.com"
+- tapOn: "At least 8 characters"
+- inputText: "prototype123"
+- tapOn: "Create account"
+- assertVisible: "Where will you make a difference?"
+- tapOn: "Search activities, causes or hosts"
+- inputText: "beach"
+- tapOn: "Open Oriental Bay Beach Clean"
+- tapOn: "Apply to help"
+- tapOn: "Personal note"
+- inputText: "I care about the coast and can help for the full morning."
+- tapOn: "Send application"
+- assertVisible: "Application received"

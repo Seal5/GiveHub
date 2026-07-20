@@ -1,0 +1,20 @@
+node_modules/
+.expo/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+*.pyc
+*.egg-info/
+*.db
+.DS_Store
+
+# Expo prebuild output is generated from app.json for local native builds.
+apps/mobile/android/
+apps/mobile/ios/

@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "GiveHub",
+    "slug": "givehub",
+    "scheme": "givehub",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "nz.co.givehub.app"
+    },
+    "android": {
+      "package": "nz.co.givehub.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1710"
+      }
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
+

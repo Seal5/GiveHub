@@ -1,0 +1,12 @@
+{
+  "name": "givehub",
+  "private": true,
+  "packageManager": "pnpm@10.13.1",
+  "scripts": {
+    "mobile": "pnpm --filter @givehub/mobile",
+    "typecheck": "pnpm --filter @givehub/mobile typecheck",
+    "test:mobile": "pnpm --filter @givehub/mobile test",
+    "generate:api": "pnpm --filter @givehub/mobile generate:api"
+  }
+}
+
