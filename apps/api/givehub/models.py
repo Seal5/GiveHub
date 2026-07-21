@@ -81,7 +81,10 @@ class Profile(TimestampMixin, Base):
     display_name: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     suburb_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("suburbs.id"))
-    search_radius_km: Mapped[int] = mapped_column(Integer, default=15)
+    search_location_label: Mapped[str | None] = mapped_column(String(240))
+    search_latitude: Mapped[float | None] = mapped_column(Float)
+    search_longitude: Mapped[float | None] = mapped_column(Float)
+    search_radius_km: Mapped[int] = mapped_column(Integer, default=25)
     theme: Mapped[str] = mapped_column(String(16), default="system")
 
     suburb: Mapped[Suburb | None] = relationship()
@@ -129,12 +132,21 @@ class Opportunity(TimestampMixin, Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     organisation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organisations.id"), index=True)
-    suburb_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("suburbs.id"), index=True)
+    suburb_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("suburbs.id"), index=True)
     title: Mapped[str] = mapped_column(String(180), index=True)
     description: Mapped[str] = mapped_column(Text)
     impact_statement: Mapped[str] = mapped_column(String(240))
     tasks: Mapped[str] = mapped_column(Text)
     meeting_point: Mapped[str] = mapped_column(String(240))
+    location_label: Mapped[str] = mapped_column(String(240))
+    address_line: Mapped[str] = mapped_column(String(240))
+    locality: Mapped[str] = mapped_column(String(120), default="")
+    city: Mapped[str] = mapped_column(String(120), default="Wellington")
+    postcode: Mapped[str | None] = mapped_column(String(20))
+    country_code: Mapped[str] = mapped_column(String(2), default="NZ")
+    latitude: Mapped[float] = mapped_column(Float, index=True)
+    longitude: Mapped[float] = mapped_column(Float, index=True)
+    location_visibility: Mapped[str] = mapped_column(String(24), default="public")
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     recurrence: Mapped[Recurrence] = mapped_column(Enum(Recurrence, native_enum=False))
@@ -150,7 +162,7 @@ class Opportunity(TimestampMixin, Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
     organisation: Mapped[Organisation] = relationship(back_populates="opportunities")
-    suburb: Mapped[Suburb] = relationship()
+    suburb: Mapped[Suburb | None] = relationship()
     causes: Mapped[list[Cause]] = relationship(
         secondary=opportunity_causes, back_populates="opportunities"
     )

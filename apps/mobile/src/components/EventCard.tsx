@@ -16,10 +16,10 @@ export function EventCard({ item, compact = false }: { item: Opportunity; compac
       <View className="p-4">
         <View className="mb-2 flex-row items-center justify-between">
           <Text className="font-mono text-xs uppercase tracking-wider text-moss dark:text-fern">{item.causes[0]?.name ?? "Community"}</Text>
-          <Text className="font-sans text-sm text-ink/60 dark:text-paper/60">{item.distance_km?.toFixed(1)} km</Text>
+          <Text className="font-sans text-sm text-ink/60 dark:text-paper/60">{item.distance_km === null ? "Distance unavailable" : `${item.distance_km.toFixed(1)} km`}</Text>
         </View>
         <Text className="font-display text-xl leading-7 text-ink dark:text-paper">{item.title}</Text>
-        <Text className="mt-2 font-sans text-sm text-ink/65 dark:text-paper/65">{formatEventDate(item.starts_at)} · {item.suburb.name}</Text>
+        <Text className="mt-2 font-sans text-sm text-ink/65 dark:text-paper/65">{formatEventDate(item.starts_at)} · {item.location_label}</Text>
         <View className="mt-3 flex-row items-center justify-between">
           <Text className="font-medium text-sm text-moss dark:text-fern">Explore this event</Text>
           <Ionicons name="arrow-forward" size={18} color="#2D945D" />

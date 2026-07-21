@@ -9,17 +9,18 @@ import { EventCard } from "@/components/EventCard";
 
 export default function VolunteerHome() {
   const { profile, token } = useAuth();
-  const query = useQuery({ queryKey: ["opportunities", "home"], queryFn: () => api.opportunities({}, token) });
+  const query = useQuery({ queryKey: ["opportunities", "home", profile?.search_latitude, profile?.search_longitude, profile?.search_radius_km], queryFn: () => api.opportunities({}, token) });
+  const locationLabel = profile?.search_location_label ?? "Choose a search location";
   if (query.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
   return (
     <Screen>
       <View className="mb-6 mt-2 flex-row items-center justify-between">
-        <View><Eyebrow>Near {profile?.suburb?.name ?? "Te Aro"}, Wellington</Eyebrow><Text className="font-sans text-sm text-ink/60 dark:text-paper/60">Kia ora, {profile?.display_name.split(" ")[0]}</Text></View>
+        <View className="flex-1 pr-3"><Eyebrow>Within {profile?.search_radius_km ?? 25} km of {locationLabel}</Eyebrow><Text className="font-sans text-sm text-ink/60 dark:text-paper/60">Kia ora, {profile?.display_name.split(" ")[0]}</Text></View>
         <Pressable accessibilityRole="button" accessibilityLabel="Open preferences" onPress={() => router.push("/(volunteer)/settings")} className="h-12 w-12 items-center justify-center rounded-full border border-ink/10 dark:border-paper/10"><Ionicons name="options-outline" size={22} color="#2D945D" /></Pressable>
       </View>
       <Display>Where will you make a difference?</Display>
       <Pressable accessibilityRole="search" onPress={() => router.push("/(volunteer)/search")} className="my-6 min-h-16 flex-row items-center rounded-2xl border border-ink/10 bg-white px-4 dark:border-paper/10 dark:bg-white/5">
-        <Ionicons name="search" size={20} color="#2D945D" /><Text className="ml-3 flex-1 font-sans text-base text-ink/55 dark:text-paper/55">Search activities, causes or hosts</Text><Text className="font-mono text-[10px] uppercase text-moss">{profile?.suburb?.name ?? "Te Aro"}</Text>
+        <Ionicons name="search" size={20} color="#2D945D" /><Text className="ml-3 flex-1 font-sans text-base text-ink/55 dark:text-paper/55">Search activities, causes or hosts</Text><Text numberOfLines={1} className="max-w-24 font-mono text-[10px] uppercase text-moss">{locationLabel}</Text>
       </Pressable>
       <Card className="mb-8 border-0 bg-fern/45">
         <Eyebrow>Your weekly pulse</Eyebrow><Body>{query.data?.length ?? 0} activities match your saved causes, free time, and travel radius.</Body>
