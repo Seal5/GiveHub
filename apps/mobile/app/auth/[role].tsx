@@ -12,7 +12,7 @@ import type { Role } from "@/lib/types";
 const schema = z.object({
   name: z.string(),
   organisationName: z.string(),
-  email: z.email("Enter a valid email"),
+  email: z.string().email("Enter a valid email"),
   password: z.string().min(8, "Use at least 8 characters"),
 });
 type FormData = z.infer<typeof schema>;

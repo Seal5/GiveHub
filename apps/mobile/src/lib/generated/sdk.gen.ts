@@ -19,43 +19,30 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
- * List Suburbs
+ * Health
  */
-export const listSuburbsV1ReferenceSuburbsGet = <ThrowOnError extends boolean = false>(options?: Options<ListSuburbsV1ReferenceSuburbsGetData, ThrowOnError>): RequestResult<ListSuburbsV1ReferenceSuburbsGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListSuburbsV1ReferenceSuburbsGetResponses, unknown, ThrowOnError>({ url: '/v1/reference/suburbs', ...options });
+export const healthHealthGet = <ThrowOnError extends boolean = false>(options?: Options<HealthHealthGetData, ThrowOnError>): RequestResult<HealthHealthGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<HealthHealthGetResponses, unknown, ThrowOnError>({ url: '/health', ...options });
 
 /**
- * List Causes
+ * Ready
  */
-export const listCausesV1ReferenceCausesGet = <ThrowOnError extends boolean = false>(options?: Options<ListCausesV1ReferenceCausesGetData, ThrowOnError>): RequestResult<ListCausesV1ReferenceCausesGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListCausesV1ReferenceCausesGetResponses, unknown, ThrowOnError>({ url: '/v1/reference/causes', ...options });
+export const readyReadyGet = <ThrowOnError extends boolean = false>(options?: Options<ReadyReadyGetData, ThrowOnError>): RequestResult<ReadyReadyGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ReadyReadyGetResponses, unknown, ThrowOnError>({ url: '/ready', ...options });
 
 /**
- * Create Profile
+ * My Applications
  */
-export const createProfileV1ProfilesPost = <ThrowOnError extends boolean = false>(options: Options<CreateProfileV1ProfilesPostData, ThrowOnError>): RequestResult<CreateProfileV1ProfilesPostResponses, CreateProfileV1ProfilesPostErrors, ThrowOnError> => (options.client ?? client).post<CreateProfileV1ProfilesPostResponses, CreateProfileV1ProfilesPostErrors, ThrowOnError>({
+export const myApplicationsV1ApplicationsMeGet = <ThrowOnError extends boolean = false>(options?: Options<MyApplicationsV1ApplicationsMeGetData, ThrowOnError>): RequestResult<MyApplicationsV1ApplicationsMeGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<MyApplicationsV1ApplicationsMeGetResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/profiles',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Get Me
- */
-export const getMeV1ProfilesMeGet = <ThrowOnError extends boolean = false>(options?: Options<GetMeV1ProfilesMeGetData, ThrowOnError>): RequestResult<GetMeV1ProfilesMeGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetMeV1ProfilesMeGetResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/profiles/me',
+    url: '/v1/applications/me',
     ...options
 });
 
 /**
- * Update Preferences
+ * Withdraw Application
  */
-export const updatePreferencesV1ProfilesMePreferencesPut = <ThrowOnError extends boolean = false>(options: Options<UpdatePreferencesV1ProfilesMePreferencesPutData, ThrowOnError>): RequestResult<UpdatePreferencesV1ProfilesMePreferencesPutResponses, UpdatePreferencesV1ProfilesMePreferencesPutErrors, ThrowOnError> => (options.client ?? client).put<UpdatePreferencesV1ProfilesMePreferencesPutResponses, UpdatePreferencesV1ProfilesMePreferencesPutErrors, ThrowOnError>({
+export const withdrawApplicationV1ApplicationsApplicationIdWithdrawPost = <ThrowOnError extends boolean = false>(options: Options<WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostData, ThrowOnError>): RequestResult<WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors, ThrowOnError> => (options.client ?? client).post<WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/profiles/me/preferences',
+    url: '/v1/applications/{application_id}/withdraw',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -82,6 +69,19 @@ export const getOpportunityV1OpportunitiesOpportunityIdGet = <ThrowOnError exten
 });
 
 /**
+ * Apply
+ */
+export const applyV1OpportunitiesOpportunityIdApplicationsPost = <ThrowOnError extends boolean = false>(options: Options<ApplyV1OpportunitiesOpportunityIdApplicationsPostData, ThrowOnError>): RequestResult<ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses, ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors, ThrowOnError> => (options.client ?? client).post<ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses, ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/opportunities/{opportunity_id}/applications',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Unsave Opportunity
  */
 export const unsaveOpportunityV1OpportunitiesOpportunityIdSavedDelete = <ThrowOnError extends boolean = false>(options: Options<UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteData, ThrowOnError>): RequestResult<UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteResponses, UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteErrors, ThrowOnError> => (options.client ?? client).delete<UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteResponses, UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteErrors, ThrowOnError>({
@@ -100,33 +100,11 @@ export const saveOpportunityV1OpportunitiesOpportunityIdSavedPut = <ThrowOnError
 });
 
 /**
- * Apply
+ * Transition Application
  */
-export const applyV1OpportunitiesOpportunityIdApplicationsPost = <ThrowOnError extends boolean = false>(options: Options<ApplyV1OpportunitiesOpportunityIdApplicationsPostData, ThrowOnError>): RequestResult<ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses, ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors, ThrowOnError> => (options.client ?? client).post<ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses, ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors, ThrowOnError>({
+export const transitionApplicationV1OrganiserApplicationsApplicationIdPatch = <ThrowOnError extends boolean = false>(options: Options<TransitionApplicationV1OrganiserApplicationsApplicationIdPatchData, ThrowOnError>): RequestResult<TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors, ThrowOnError> => (options.client ?? client).patch<TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/opportunities/{opportunity_id}/applications',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * My Applications
- */
-export const myApplicationsV1ApplicationsMeGet = <ThrowOnError extends boolean = false>(options?: Options<MyApplicationsV1ApplicationsMeGetData, ThrowOnError>): RequestResult<MyApplicationsV1ApplicationsMeGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<MyApplicationsV1ApplicationsMeGetResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/applications/me',
-    ...options
-});
-
-/**
- * Withdraw Application
- */
-export const withdrawApplicationV1ApplicationsApplicationIdWithdrawPost = <ThrowOnError extends boolean = false>(options: Options<WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostData, ThrowOnError>): RequestResult<WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors, ThrowOnError> => (options.client ?? client).post<WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/applications/{application_id}/withdraw',
+    url: '/v1/organiser/applications/{application_id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -170,6 +148,28 @@ export const updateOpportunityV1OrganiserOpportunitiesOpportunityIdPatch = <Thro
 });
 
 /**
+ * Create Image Upload
+ */
+export const createImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPost = <ThrowOnError extends boolean = false>(options: Options<CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostData, ThrowOnError>): RequestResult<CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors, ThrowOnError> => (options.client ?? client).post<CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/organiser/opportunities/{opportunity_id}/image-upload',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Application Pipeline
+ */
+export const applicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGet = <ThrowOnError extends boolean = false>(options: Options<ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetData, ThrowOnError>): RequestResult<ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses, ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors, ThrowOnError> => (options.client ?? client).get<ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses, ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/organiser/opportunities/{opportunity_id}/pipeline',
+    ...options
+});
+
+/**
  * Publish Opportunity
  */
 export const publishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPost = <ThrowOnError extends boolean = false>(options: Options<PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostData, ThrowOnError>): RequestResult<PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses, PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors, ThrowOnError> => (options.client ?? client).post<PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses, PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors, ThrowOnError>({
@@ -188,20 +188,33 @@ export const unpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishP
 });
 
 /**
- * Application Pipeline
+ * Create Profile
  */
-export const applicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGet = <ThrowOnError extends boolean = false>(options: Options<ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetData, ThrowOnError>): RequestResult<ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses, ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors, ThrowOnError> => (options.client ?? client).get<ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses, ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors, ThrowOnError>({
+export const createProfileV1ProfilesPost = <ThrowOnError extends boolean = false>(options: Options<CreateProfileV1ProfilesPostData, ThrowOnError>): RequestResult<CreateProfileV1ProfilesPostResponses, CreateProfileV1ProfilesPostErrors, ThrowOnError> => (options.client ?? client).post<CreateProfileV1ProfilesPostResponses, CreateProfileV1ProfilesPostErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organiser/opportunities/{opportunity_id}/pipeline',
+    url: '/v1/profiles',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get Me
+ */
+export const getMeV1ProfilesMeGet = <ThrowOnError extends boolean = false>(options?: Options<GetMeV1ProfilesMeGetData, ThrowOnError>): RequestResult<GetMeV1ProfilesMeGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetMeV1ProfilesMeGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/profiles/me',
     ...options
 });
 
 /**
- * Transition Application
+ * Update Preferences
  */
-export const transitionApplicationV1OrganiserApplicationsApplicationIdPatch = <ThrowOnError extends boolean = false>(options: Options<TransitionApplicationV1OrganiserApplicationsApplicationIdPatchData, ThrowOnError>): RequestResult<TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors, ThrowOnError> => (options.client ?? client).patch<TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors, ThrowOnError>({
+export const updatePreferencesV1ProfilesMePreferencesPut = <ThrowOnError extends boolean = false>(options: Options<UpdatePreferencesV1ProfilesMePreferencesPutData, ThrowOnError>): RequestResult<UpdatePreferencesV1ProfilesMePreferencesPutResponses, UpdatePreferencesV1ProfilesMePreferencesPutErrors, ThrowOnError> => (options.client ?? client).put<UpdatePreferencesV1ProfilesMePreferencesPutResponses, UpdatePreferencesV1ProfilesMePreferencesPutErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organiser/applications/{application_id}',
+    url: '/v1/profiles/me/preferences',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -210,24 +223,11 @@ export const transitionApplicationV1OrganiserApplicationsApplicationIdPatch = <T
 });
 
 /**
- * Create Image Upload
+ * List Causes
  */
-export const createImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPost = <ThrowOnError extends boolean = false>(options: Options<CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostData, ThrowOnError>): RequestResult<CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors, ThrowOnError> => (options.client ?? client).post<CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/organiser/opportunities/{opportunity_id}/image-upload',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+export const listCausesV1ReferenceCausesGet = <ThrowOnError extends boolean = false>(options?: Options<ListCausesV1ReferenceCausesGetData, ThrowOnError>): RequestResult<ListCausesV1ReferenceCausesGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListCausesV1ReferenceCausesGetResponses, unknown, ThrowOnError>({ url: '/v1/reference/causes', ...options });
 
 /**
- * Health
+ * List Suburbs
  */
-export const healthHealthGet = <ThrowOnError extends boolean = false>(options?: Options<HealthHealthGetData, ThrowOnError>): RequestResult<HealthHealthGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<HealthHealthGetResponses, unknown, ThrowOnError>({ url: '/health', ...options });
-
-/**
- * Ready
- */
-export const readyReadyGet = <ThrowOnError extends boolean = false>(options?: Options<ReadyReadyGetData, ThrowOnError>): RequestResult<ReadyReadyGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ReadyReadyGetResponses, unknown, ThrowOnError>({ url: '/ready', ...options });
+export const listSuburbsV1ReferenceSuburbsGet = <ThrowOnError extends boolean = false>(options?: Options<ListSuburbsV1ReferenceSuburbsGetData, ThrowOnError>): RequestResult<ListSuburbsV1ReferenceSuburbsGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListSuburbsV1ReferenceSuburbsGetResponses, unknown, ThrowOnError>({ url: '/v1/reference/suburbs', ...options });
