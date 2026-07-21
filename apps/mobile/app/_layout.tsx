@@ -4,7 +4,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useFonts as useDMSans, DMSans_400Regular, DMSans_600SemiBold } from "@expo-google-fonts/dm-sans";
+import { useFonts as useDMSans, DMSans_400Regular, DMSans_600SemiBold, DMSans_700Bold } from "@expo-google-fonts/dm-sans";
 import { useFonts as useDisplay, LibreBaskerville_700Bold } from "@expo-google-fonts/libre-baskerville";
 import { useFonts as useMono, DMMono_500Medium } from "@expo-google-fonts/dm-mono";
 import { AuthProvider, useAuth } from "@/providers/AuthProvider";
@@ -34,8 +34,13 @@ function ThemeSync() {
   return null;
 }
 
+function ThemedStatusBar() {
+  const { colorScheme } = useNativeWindColourScheme();
+  return <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />;
+}
+
 export default function RootLayout() {
-  const [dm] = useDMSans({ DMSans_400Regular, DMSans_600SemiBold });
+  const [dm] = useDMSans({ DMSans_400Regular, DMSans_600SemiBold, DMSans_700Bold });
   const [display] = useDisplay({ LibreBaskerville_700Bold });
   const [mono] = useMono({ DMMono_500Medium });
   if (!dm || !display || !mono) return <LoadingState />;
@@ -45,7 +50,7 @@ export default function RootLayout() {
         <AuthProvider>
           <NavigationGuard />
           <ThemeSync />
-          <StatusBar style="auto" />
+          <ThemedStatusBar />
           <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
         </AuthProvider>
       </QueryClientProvider>

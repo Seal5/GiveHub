@@ -14,7 +14,7 @@
     "android": {
       "package": "nz.co.givehub.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0B1710"
+        "backgroundColor": "#102219"
       }
     },
     "plugins": [

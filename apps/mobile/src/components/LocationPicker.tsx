@@ -1,7 +1,6 @@
 import { useDeferredValue, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Location from "expo-location";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { LocationPoint } from "@/lib/types";
@@ -41,6 +40,7 @@ export function LocationPicker({ value, onChange, token, title = "Search locatio
   const useCurrentLocation = async () => {
     setLocating(true); setLocationError(null);
     try {
+      const Location = await import("expo-location");
       const permission = await Location.requestForegroundPermissionsAsync();
       if (!permission.granted) throw new Error("Location permission was declined. Enter a place instead.");
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -66,16 +66,16 @@ export function LocationPicker({ value, onChange, token, title = "Search locatio
   };
 
   return <Card className="mb-5">
-    <Text className="mb-3 font-medium text-ink dark:text-paper">{title}</Text>
-    <View className="min-h-14 flex-row items-center rounded-2xl border border-ink/10 bg-paper px-4 dark:border-paper/10 dark:bg-night">
-      <Ionicons name="location-outline" size={20} color="#2D945D" />
-      <TextInput accessibilityLabel={title} value={query} onChangeText={(next) => { setQuery(next); setLocationError(null); }} placeholder="Address, town, postcode or landmark" placeholderTextColor="#829087" className="ml-3 flex-1 font-sans text-base text-ink dark:text-paper" />
+    <Text className="mb-3 font-strong text-sm text-foreground dark:text-dark-foreground">{title}</Text>
+    <View className="min-h-14 flex-row items-center rounded-card border border-border bg-background px-4 dark:border-dark-border dark:bg-dark-background">
+      <Ionicons name="location-outline" size={20} color="#2A8D58" />
+      <TextInput accessibilityLabel={title} value={query} onChangeText={(next) => { setQuery(next); setLocationError(null); }} placeholder="Address, town, postcode or landmark" placeholderTextColor="#657166" className="ml-3 flex-1 font-sans text-sm text-foreground dark:text-dark-foreground" />
     </View>
-    {showSuggestions ? suggestions.data?.map((item) => <Pressable key={item.place_id} accessibilityRole="button" onPress={() => selectSuggestion(item.place_id)} className="min-h-12 justify-center border-b border-ink/10 py-2 dark:border-paper/10"><Text className="font-sans text-sm text-ink dark:text-paper">{item.label}</Text></Pressable>) : null}
-    {showSuggestions && suggestions.error ? <Text className="mt-2 font-sans text-sm text-clay">{suggestions.error.message}</Text> : null}
+    {showSuggestions ? suggestions.data?.map((item) => <Pressable key={item.place_id} accessibilityRole="button" onPress={() => selectSuggestion(item.place_id)} className="min-h-12 justify-center border-b border-border py-2 dark:border-dark-border"><Text className="font-sans text-sm text-foreground dark:text-dark-foreground">{item.label}</Text></Pressable>) : null}
+    {showSuggestions && suggestions.error ? <Text className="mt-2 font-sans text-sm text-destructive dark:text-dark-destructive">{suggestions.error.message}</Text> : null}
     {value ? <Body className="mt-3">Using {value.label}</Body> : null}
-    {locationError ? <Text className="mt-2 font-sans text-sm text-clay">{locationError}</Text> : null}
+    {locationError ? <Text className="mt-2 font-sans text-sm text-destructive dark:text-dark-destructive">{locationError}</Text> : null}
     <Button label="Use my current location" variant="secondary" loading={locating} className="mt-4" onPress={useCurrentLocation} />
-    <Text className="mt-2 font-sans text-xs text-ink/50 dark:text-paper/50">Used only while the app is open. GiveHub does not track background location.</Text>
+    <Text className="mt-2 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">Used only while the app is open. GiveHub does not track background location.</Text>
   </Card>;
 }

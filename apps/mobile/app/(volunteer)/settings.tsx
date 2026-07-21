@@ -26,14 +26,14 @@ export default function SettingsScreen() {
     },
     onSuccess: async () => { await refreshProfile(); await client.invalidateQueries(); router.back(); },
   });
-  return <Screen>
-    <Pressable accessibilityLabel="Close preferences" onPress={() => router.back()} className="mb-6 h-11 w-11 items-center justify-center rounded-full border border-ink/10 dark:border-paper/10"><Ionicons name="close" size={23} color="#2D945D" /></Pressable>
-    <Eyebrow>Volunteer preferences</Eyebrow><Display>Find something worth showing up for.</Display>
+  return <Screen className="px-5 pt-3">
+    <Pressable accessibilityLabel="Close preferences" onPress={() => router.back()} className="mb-6 h-10 w-10 items-center justify-center rounded-full bg-card dark:bg-dark-card"><Ionicons name="close" size={21} color="#2A8D58" /></Pressable>
+    <Eyebrow>Volunteer preferences</Eyebrow><Display className="text-[30px] leading-8">Find something worth showing up for.</Display>
     <Body className="mb-7 mt-3">Choose where to search and how far you are willing to travel. Your live location is never tracked in the background.</Body>
     <LocationPicker value={location} onChange={(next) => { setLocation(next); setValidationError(null); }} token={token} />
-    <Card className="mb-5"><Text className="mb-3 font-medium text-ink dark:text-paper">Travel radius</Text><View className="flex-row flex-wrap">{[5, 10, 25, 50, 100].map((value) => <Chip key={value} label={`${value} km`} selected={radius === value} onPress={() => setRadius(value)} />)}</View></Card>
-    <Card className="mb-7"><Text className="mb-3 font-medium text-ink dark:text-paper">Appearance</Text><View className="flex-row">{(["system", "light", "dark"] as ThemePreference[]).map((value) => <Chip key={value} label={value} selected={theme === value} onPress={() => setTheme(value)} />)}</View></Card>
-    {validationError || save.error ? <Text className="mb-3 font-sans text-clay">{validationError ?? save.error?.message}</Text> : null}
+    <Card className="mb-5"><Text className="mb-3 font-strong text-sm text-foreground dark:text-dark-foreground">Travel radius</Text><View className="flex-row flex-wrap gap-y-2">{[5, 10, 25, 50, 100].map((value) => <Chip key={value} label={`${value} km`} selected={radius === value} onPress={() => setRadius(value)} />)}</View></Card>
+    <Card className="mb-7"><Text className="mb-3 font-strong text-sm text-foreground dark:text-dark-foreground">Appearance</Text><View className="flex-row">{(["system", "light", "dark"] as ThemePreference[]).map((value) => <Chip key={value} label={value} selected={theme === value} onPress={() => setTheme(value)} />)}</View></Card>
+    {validationError || save.error ? <Text className="mb-3 font-sans text-destructive dark:text-dark-destructive">{validationError ?? save.error?.message}</Text> : null}
     <Button label="Save preferences" loading={save.isPending} onPress={() => { if (!location) { setValidationError("Choose a location or use your current location."); return; } save.mutate(); }} />
     <Button label="Sign out" variant="secondary" className="mt-3" onPress={async () => { await signOut(); router.replace("/"); }} />
   </Screen>;

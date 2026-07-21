@@ -6,6 +6,6 @@ import { EventCard } from "@/components/EventCard";
 
 export default function SavedScreen() {
   const { token } = useAuth(); const query = useQuery({ queryKey: ["opportunities", "saved"], queryFn: () => api.opportunities({ saved: true }, token) });
-  return <Screen><Eyebrow>Saved opportunities</Eyebrow><Display>Keep the good ones close.</Display>{query.isLoading ? <LoadingState /> : query.data?.length ? query.data.map((item) => <EventCard key={item.id} item={item} compact />) : <EmptyState title="Nothing saved yet" body="Tap the bookmark on any opportunity to keep it here." />}</Screen>;
+  return <Screen><Eyebrow>Saved opportunities</Eyebrow><Display className="mb-7 text-[30px] leading-8">Keep the good ones close.</Display>{query.isLoading ? <LoadingState /> : query.data?.length ? query.data.map((item) => <EventCard key={item.id} item={item} compact />) : <EmptyState title="Nothing saved yet" body="Tap the bookmark on any opportunity to keep it here." />}</Screen>;
 }
 
