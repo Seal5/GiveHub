@@ -11,11 +11,23 @@ GiveHub is a Wellington-focused volunteer discovery and coordination beta. It pa
 
 ## Local setup
 
-1. Copy `.env.example` to `.env` and add Supabase values when available. Add a server-side `GOOGLE_PLACES_API_KEY` to enable connected address autocomplete. With no `EXPO_PUBLIC_API_URL`, the mobile app intentionally runs against its in-memory demo adapter and uses bundled location suggestions.
+1. Copy `.env.example` to `.env` for the API and `apps/mobile/.env.example` to `apps/mobile/.env` for Expo. Add the same Supabase project values to both files. Add `GOOGLE_PLACES_API_KEY` only to the root API `.env`.
 2. Enable pnpm with `corepack enable`, then run `pnpm install`.
 3. Install [uv](https://docs.astral.sh/uv/) and run `uv sync --group dev` from `apps/api`.
 4. Start PostgreSQL and the API with `docker compose up db api`, or run `uv run fastapi dev givehub/main.py` from `apps/api`.
 5. Run `pnpm --filter @givehub/mobile start` and open an Expo development build.
+
+Demo mode is explicit. Set `EXPO_PUBLIC_DEMO_MODE=true` in `apps/mobile/.env` only when you intentionally want in-memory fixtures. In normal connected development it must be `false`; missing API or Supabase values then produce a configuration error instead of silently switching to demo data.
+
+### Physical Android device
+
+1. Connect the phone by USB, enable Developer options and USB debugging, then confirm it appears under `adb devices`.
+2. Set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to the computer's LAN address, for example `http://192.168.1.100:8000`. A phone cannot reach the computer through `localhost`.
+3. Start the connected API with `docker compose up db api`. The API container already listens on `0.0.0.0:8000`; allow port 8000 through Windows Firewall on private networks.
+4. Install the development client once with `npx expo run:android --device` from `apps/mobile`.
+5. For later sessions, run `npx expo start --dev-client --lan` from `apps/mobile` and open GiveHub on the phone.
+
+On iPhone, Windows cannot create a local iOS build. Use the EAS `development` or `preview` profile and install the resulting internal build on the device.
 
 Expo SDK 57 requires Node.js 20.19.4 or newer. The checked workspace used an older Node 20 patch for static checks, so upgrade Node before starting Metro or producing EAS builds.
 

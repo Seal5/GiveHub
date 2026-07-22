@@ -20,9 +20,12 @@ function NavigationGuard() {
   useEffect(() => {
     if (loading) return;
     const group = segments[0];
-    if (!profile && (group === "(volunteer)" || group === "(organiser)")) router.replace("/");
-    if (profile?.role === "volunteer" && group !== "(volunteer)") router.replace("/(volunteer)");
-    if (profile?.role === "organiser" && group !== "(organiser)") router.replace("/(organiser)");
+    if (!profile) {
+      if (group === "(volunteer)" || group === "(organiser)") router.replace("/");
+      return;
+    }
+    if (profile.role === "volunteer" && group !== "(volunteer)") router.replace("/(volunteer)");
+    if (profile.role === "organiser" && group !== "(organiser)") router.replace("/(organiser)");
   }, [loading, profile, router, segments]);
   return null;
 }

@@ -2,7 +2,15 @@ import { applications, causes, demoLocations, opportunities, profileFor } from "
 import type { Application, ApplicationStatus, LocationPoint, Opportunity, Profile, Role, ThemePreference } from "./types";
 
 const apiUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "");
-export const demoMode = !apiUrl;
+const demoSetting = process.env.EXPO_PUBLIC_DEMO_MODE?.trim().toLowerCase();
+
+export const demoMode = demoSetting === "true";
+export const apiConfigured = Boolean(apiUrl);
+export const apiConfigurationError = !demoMode && !apiConfigured
+  ? "Connected mode is enabled, but EXPO_PUBLIC_API_URL is missing. Create apps/mobile/.env, then restart Expo with --clear."
+  : demoSetting && demoSetting !== "true" && demoSetting !== "false"
+    ? "EXPO_PUBLIC_DEMO_MODE must be either true or false."
+    : null;
 let demoApplications = [...applications];
 let demoOpportunities = [...opportunities];
 const demoProfiles: Record<Role, Profile> = { volunteer: profileFor("volunteer"), organiser: profileFor("organiser") };
@@ -17,7 +25,8 @@ const distanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
 };
 
 async function request<T>(path: string, options: Options = {}): Promise<T> {
-  if (!apiUrl) throw new Error("API is not configured");
+  if (apiConfigurationError) throw new Error(apiConfigurationError);
+  if (!apiUrl) throw new Error("GiveHub API is not configured.");
   const response = await fetch(`${apiUrl}${path}`, {
     ...options,
     headers: {
