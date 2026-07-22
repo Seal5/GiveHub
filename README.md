@@ -22,10 +22,12 @@ Demo mode is explicit. Set `EXPO_PUBLIC_DEMO_MODE=true` in `apps/mobile/.env` on
 ### Physical Android device
 
 1. Connect the phone by USB, enable Developer options and USB debugging, then confirm it appears under `adb devices`.
-2. Set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to the computer's LAN address, for example `http://192.168.1.100:8000`. A phone cannot reach the computer through `localhost`.
-3. Start the connected API with `docker compose up db api`. The API container already listens on `0.0.0.0:8000`; allow port 8000 through Windows Firewall on private networks.
+2. Set `EXPO_PUBLIC_API_URL=http://127.0.0.1:8000` in `apps/mobile/.env` and start the connected API with `docker compose up db api`.
+3. Forward the development ports over USB with `adb reverse tcp:8000 tcp:8000` and `adb reverse tcp:8081 tcp:8081`.
 4. Install the development client once with `npx expo run:android --device` from `apps/mobile`.
-5. For later sessions, run `npx expo start --dev-client --lan` from `apps/mobile` and open GiveHub on the phone.
+5. For later sessions, repeat the two `adb reverse` commands, run `npx expo start --dev-client --localhost`, and open GiveHub on the phone.
+
+For wireless development instead, set `EXPO_PUBLIC_API_URL` to the computer's LAN address (for example `http://192.168.1.100:8000`), start Expo with `--lan`, keep both devices on the same network, and allow ports 8000 and 8081 through Windows Firewall.
 
 On iPhone, Windows cannot create a local iOS build. Use the EAS `development` or `preview` profile and install the resulting internal build on the device.
 
