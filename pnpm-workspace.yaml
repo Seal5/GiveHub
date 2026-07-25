@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Keep native Android build paths short enough for CMake/Ninja on Windows.
+# Expo supports isolated pnpm installs, but recommends hoisting when a native
+# dependency cannot build correctly with the isolated layout.
+nodeLinker: hoisted
+

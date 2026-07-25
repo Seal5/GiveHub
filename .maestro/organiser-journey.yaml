@@ -1,0 +1,18 @@
+appId: nz.co.givehub.app
+---
+- launchApp:
+    clearState: true
+- tapOn: "I organise volunteer work"
+- tapOn: "e.g. Kaitiaki Coastal Network"
+- inputText: "Kaitiaki Coastal Network"
+- tapOn: "you@example.com"
+- inputText: "organiser@example.com"
+- tapOn: "At least 8 characters"
+- inputText: "prototype123"
+- tapOn: "Create account"
+- assertVisible: "Good work needs good coordination."
+- tapOn: "Pipeline"
+- assertVisible: "Review one person at a time."
+- tapOn: "Mia Thompson"
+- tapOn: "Accept volunteer"
+- assertVisible: "Application pipeline"
