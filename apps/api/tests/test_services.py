@@ -8,11 +8,16 @@ from givehub.seed import DEMO_ORGANISER_ID, DEMO_VOLUNTEER_ID
 from givehub.services import change_application_status, haversine_km
 
 
-def test_haversine_between_wellington_suburbs(db: Session) -> None:
+def test_haversine_between_wellington_locations(db: Session) -> None:
     volunteer = db.get(Profile, DEMO_VOLUNTEER_ID)
-    assert volunteer and volunteer.suburb
-    karori = db.query(Opportunity).filter(Opportunity.title.ilike("%Karori%")).one().suburb
-    distance = haversine_km(volunteer.suburb, karori)
+    assert volunteer and volunteer.search_latitude and volunteer.search_longitude
+    karori = db.query(Opportunity).filter(Opportunity.title.ilike("%Karori%")).one()
+    distance = haversine_km(
+        volunteer.search_latitude,
+        volunteer.search_longitude,
+        karori.latitude,
+        karori.longitude,
+    )
     assert 3 < distance < 6
 
 

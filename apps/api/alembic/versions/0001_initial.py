@@ -15,6 +15,12 @@ def upgrade() -> None:
     if bind.dialect.name == "postgresql":
         op.execute("CREATE EXTENSION IF NOT EXISTS postgis")
     Base.metadata.create_all(bind=bind)
+    if bind.dialect.name == "postgresql":
+        op.execute(
+            "CREATE INDEX IF NOT EXISTS ix_opportunities_location_geography "
+            "ON opportunities USING GIST "
+            "((ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography))"
+        )
 
 
 def downgrade() -> None:

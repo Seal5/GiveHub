@@ -8,14 +8,26 @@ export type ApplicationStatus =
   | "declined"
   | "withdrawn";
 
-export type Suburb = { id: string; name: string; city: string };
 export type Cause = { id: string; slug: string; name: string };
+export type LocationPoint = {
+  place_id?: string;
+  label: string;
+  address_line: string;
+  locality: string;
+  city: string;
+  postcode: string | null;
+  country_code: string;
+  latitude: number;
+  longitude: number;
+};
 export type Profile = {
   id: string;
   role: Role;
   display_name: string;
   email: string;
-  suburb: Suburb | null;
+  search_location_label: string | null;
+  search_latitude: number | null;
+  search_longitude: number | null;
   search_radius_km: number;
   theme: ThemePreference;
   organisation_name: string | null;
@@ -40,7 +52,15 @@ export type Opportunity = {
   status: "draft" | "published" | "unpublished";
   version: number;
   organisation_name: string;
-  suburb: Suburb;
+  location_label: string;
+  address_line: string;
+  locality: string;
+  city: string;
+  postcode: string | null;
+  country_code: string;
+  latitude: number;
+  longitude: number;
+  location_visibility: "public" | "approximate" | "confirmed_only";
   causes: Cause[];
   distance_km: number | null;
   is_saved: boolean;

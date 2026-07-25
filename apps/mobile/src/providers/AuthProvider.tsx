@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
-import { api, demoMode } from "@/lib/api";
+import { api, apiConfigurationError, demoMode } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import type { Profile, Role } from "@/lib/types";
 
@@ -26,26 +26,39 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setLoading(false);
       return;
     }
-    supabase.auth.getSession().then(async ({ data }) => {
+    let active = true;
+    void supabase.auth.getSession().then(async ({ data }) => {
+      if (!active) return;
       const nextToken = data.session?.access_token ?? null;
       setToken(nextToken);
       if (nextToken) {
         try { setProfile(await api.profile("volunteer", nextToken)); } catch { setProfile(null); }
+      } else {
+        setProfile(null);
       }
-      setLoading(false);
+    }).catch(() => {
+      if (active) { setProfile(null); setToken(null); }
+    }).finally(() => {
+      if (active) setLoading(false);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => setToken(session?.access_token ?? null));
-    return () => data.subscription.unsubscribe();
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      setToken(session?.access_token ?? null);
+      if (event === "SIGNED_OUT" || !session) setProfile(null);
+    });
+    return () => { active = false; data.subscription.unsubscribe(); };
   }, []);
 
   const value = useMemo<AuthValue>(() => ({
     profile, token, loading,
     async signIn(role, email, password) {
-      if (demoMode || !supabase) {
+      if (demoMode) {
         setToken(`dev:${profileForId(role)}`);
         setProfile(await api.profile(role));
         return;
       }
+      if (apiConfigurationError) throw new Error(apiConfigurationError);
+      if (!supabase) throw new Error(missingSupabaseMessage);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       setToken(data.session.access_token);
@@ -54,11 +67,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setProfile(next);
     },
     async signUp(input) {
-      if (demoMode || !supabase) {
+      if (demoMode) {
         setToken(`dev:${profileForId(input.role)}`);
         setProfile(await api.createProfile({ role: input.role, display_name: input.name, email: input.email, organisation_name: input.organisationName }));
         return;
       }
+      if (apiConfigurationError) throw new Error(apiConfigurationError);
+      if (!supabase) throw new Error(missingSupabaseMessage);
       const { data, error } = await supabase.auth.signUp({ email: input.email, password: input.password });
       if (error) throw error;
       if (!data.session) throw new Error("Check your email to verify your account, then sign in.");
@@ -66,8 +81,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setProfile(await api.createProfile({ role: input.role, display_name: input.name, email: input.email, organisation_name: input.organisationName }, data.session.access_token));
     },
     async signOut() {
-      if (supabase) await supabase.auth.signOut();
-      setProfile(null); setToken(null);
+      // Clear local state before any network work so navigation responds immediately.
+      setProfile(null);
+      setToken(null);
+      if (!demoMode && supabase) {
+        const { error } = await supabase.auth.signOut({ scope: "local" });
+        if (error) console.warn("Supabase local sign-out failed", error.message);
+      }
     },
     async refreshProfile() {
       if (profile) setProfile(await api.profile(profile.role, token));
@@ -78,6 +98,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 }
 
 const profileForId = (role: Role) => role === "volunteer" ? "00000000-0000-4000-8000-000000000020" : "00000000-0000-4000-8000-000000000010";
+const missingSupabaseMessage = "Connected mode is enabled, but Supabase Auth is missing. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY to apps/mobile/.env, then restart Expo with --clear.";
 
 export function useAuth() {
   const context = useContext(AuthContext);

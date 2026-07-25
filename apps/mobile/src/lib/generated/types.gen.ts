@@ -122,6 +122,62 @@ export type HttpValidationError = {
 };
 
 /**
+ * LocationResult
+ */
+export type LocationResult = {
+    /**
+     * Address Line
+     */
+    address_line: string;
+    /**
+     * City
+     */
+    city?: string;
+    /**
+     * Country Code
+     */
+    country_code?: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Latitude
+     */
+    latitude: number;
+    /**
+     * Locality
+     */
+    locality?: string;
+    /**
+     * Longitude
+     */
+    longitude: number;
+    /**
+     * Place Id
+     */
+    place_id: string;
+    /**
+     * Postcode
+     */
+    postcode?: string | null;
+};
+
+/**
+ * LocationSuggestion
+ */
+export type LocationSuggestion = {
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Place Id
+     */
+    place_id: string;
+};
+
+/**
  * OpportunityCreate
  */
 export type OpportunityCreate = {
@@ -130,6 +186,10 @@ export type OpportunityCreate = {
      */
     accessibility?: string;
     /**
+     * Address Line
+     */
+    address_line: string;
+    /**
      * Capacity
      */
     capacity?: number;
@@ -137,6 +197,14 @@ export type OpportunityCreate = {
      * Cause Ids
      */
     cause_ids: Array<string>;
+    /**
+     * City
+     */
+    city?: string;
+    /**
+     * Country Code
+     */
+    country_code?: string;
     /**
      * Description
      */
@@ -158,6 +226,26 @@ export type OpportunityCreate = {
      */
     impact_statement: string;
     /**
+     * Latitude
+     */
+    latitude: number;
+    /**
+     * Locality
+     */
+    locality?: string;
+    /**
+     * Location Label
+     */
+    location_label: string;
+    /**
+     * Location Visibility
+     */
+    location_visibility?: string;
+    /**
+     * Longitude
+     */
+    longitude: number;
+    /**
      * Meeting Point
      */
     meeting_point: string;
@@ -165,6 +253,10 @@ export type OpportunityCreate = {
      * Minimum Age
      */
     minimum_age?: number;
+    /**
+     * Postcode
+     */
+    postcode?: string | null;
     recurrence?: Recurrence;
     /**
      * Safety Notes
@@ -174,10 +266,6 @@ export type OpportunityCreate = {
      * Starts At
      */
     starts_at: string;
-    /**
-     * Suburb Id
-     */
-    suburb_id: string;
     /**
      * Tasks
      */
@@ -197,6 +285,10 @@ export type OpportunityOut = {
      */
     accessibility: string;
     /**
+     * Address Line
+     */
+    address_line: string;
+    /**
      * Capacity
      */
     capacity: number;
@@ -205,9 +297,17 @@ export type OpportunityOut = {
      */
     causes: Array<CauseOut>;
     /**
+     * City
+     */
+    city: string;
+    /**
      * Confirmed Count
      */
     confirmed_count?: number;
+    /**
+     * Country Code
+     */
+    country_code: string;
     /**
      * Description
      */
@@ -241,6 +341,26 @@ export type OpportunityOut = {
      */
     is_saved?: boolean;
     /**
+     * Latitude
+     */
+    latitude: number;
+    /**
+     * Locality
+     */
+    locality: string;
+    /**
+     * Location Label
+     */
+    location_label: string;
+    /**
+     * Location Visibility
+     */
+    location_visibility: string;
+    /**
+     * Longitude
+     */
+    longitude: number;
+    /**
      * Meeting Point
      */
     meeting_point: string;
@@ -252,6 +372,10 @@ export type OpportunityOut = {
      * Organisation Name
      */
     organisation_name: string;
+    /**
+     * Postcode
+     */
+    postcode: string | null;
     recurrence: Recurrence;
     /**
      * Safety Notes
@@ -262,7 +386,6 @@ export type OpportunityOut = {
      */
     starts_at: string;
     status: OpportunityStatus;
-    suburb: SuburbOut;
     /**
      * Tasks
      */
@@ -291,6 +414,10 @@ export type OpportunityUpdate = {
      */
     accessibility?: string | null;
     /**
+     * Address Line
+     */
+    address_line?: string | null;
+    /**
      * Capacity
      */
     capacity?: number | null;
@@ -298,6 +425,14 @@ export type OpportunityUpdate = {
      * Cause Ids
      */
     cause_ids?: Array<string> | null;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Country Code
+     */
+    country_code?: string | null;
     /**
      * Description
      */
@@ -319,6 +454,26 @@ export type OpportunityUpdate = {
      */
     impact_statement?: string | null;
     /**
+     * Latitude
+     */
+    latitude?: number | null;
+    /**
+     * Locality
+     */
+    locality?: string | null;
+    /**
+     * Location Label
+     */
+    location_label?: string | null;
+    /**
+     * Location Visibility
+     */
+    location_visibility?: string | null;
+    /**
+     * Longitude
+     */
+    longitude?: number | null;
+    /**
      * Meeting Point
      */
     meeting_point?: string | null;
@@ -326,6 +481,10 @@ export type OpportunityUpdate = {
      * Minimum Age
      */
     minimum_age?: number | null;
+    /**
+     * Postcode
+     */
+    postcode?: string | null;
     recurrence?: Recurrence | null;
     /**
      * Safety Notes
@@ -335,10 +494,6 @@ export type OpportunityUpdate = {
      * Starts At
      */
     starts_at?: string | null;
-    /**
-     * Suburb Id
-     */
-    suburb_id?: string | null;
     /**
      * Tasks
      */
@@ -410,10 +565,21 @@ export type ProfileOut = {
     organisation_name?: string | null;
     role: Role;
     /**
+     * Search Latitude
+     */
+    search_latitude: number | null;
+    /**
+     * Search Location Label
+     */
+    search_location_label: string | null;
+    /**
+     * Search Longitude
+     */
+    search_longitude: number | null;
+    /**
      * Search Radius Km
      */
     search_radius_km: number;
-    suburb: SuburbOut | null;
     /**
      * Theme
      */
@@ -425,13 +591,21 @@ export type ProfileOut = {
  */
 export type ProfileUpdate = {
     /**
+     * Search Latitude
+     */
+    search_latitude?: number | null;
+    /**
+     * Search Location Label
+     */
+    search_location_label?: string | null;
+    /**
+     * Search Longitude
+     */
+    search_longitude?: number | null;
+    /**
      * Search Radius Km
      */
     search_radius_km?: number;
-    /**
-     * Suburb Id
-     */
-    suburb_id?: string | null;
     /**
      * Theme
      */
@@ -630,6 +804,68 @@ export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses 
 
 export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponse = WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses[keyof WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses];
 
+export type AutocompleteLocationV1LocationsAutocompleteGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Q
+         */
+        q: string;
+    };
+    url: '/v1/locations/autocomplete';
+};
+
+export type AutocompleteLocationV1LocationsAutocompleteGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AutocompleteLocationV1LocationsAutocompleteGetError = AutocompleteLocationV1LocationsAutocompleteGetErrors[keyof AutocompleteLocationV1LocationsAutocompleteGetErrors];
+
+export type AutocompleteLocationV1LocationsAutocompleteGetResponses = {
+    /**
+     * Response Autocomplete Location V1 Locations Autocomplete Get
+     *
+     * Successful Response
+     */
+    200: Array<LocationSuggestion>;
+};
+
+export type AutocompleteLocationV1LocationsAutocompleteGetResponse = AutocompleteLocationV1LocationsAutocompleteGetResponses[keyof AutocompleteLocationV1LocationsAutocompleteGetResponses];
+
+export type ResolveLocationV1LocationsPlacesPlaceIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Place Id
+         */
+        place_id: string;
+    };
+    query?: never;
+    url: '/v1/locations/places/{place_id}';
+};
+
+export type ResolveLocationV1LocationsPlacesPlaceIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResolveLocationV1LocationsPlacesPlaceIdGetError = ResolveLocationV1LocationsPlacesPlaceIdGetErrors[keyof ResolveLocationV1LocationsPlacesPlaceIdGetErrors];
+
+export type ResolveLocationV1LocationsPlacesPlaceIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: LocationResult;
+};
+
+export type ResolveLocationV1LocationsPlacesPlaceIdGetResponse = ResolveLocationV1LocationsPlacesPlaceIdGetResponses[keyof ResolveLocationV1LocationsPlacesPlaceIdGetResponses];
+
 export type ListOpportunitiesV1OpportunitiesGetData = {
     body?: never;
     path?: never;
@@ -647,9 +883,13 @@ export type ListOpportunitiesV1OpportunitiesGetData = {
          */
         recurrence?: Recurrence | null;
         /**
-         * Suburb Id
+         * Lat
          */
-        suburb_id?: string | null;
+        lat?: number | null;
+        /**
+         * Lng
+         */
+        lng?: number | null;
         /**
          * Radius Km
          */

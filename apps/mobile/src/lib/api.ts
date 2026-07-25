@@ -1,16 +1,32 @@
-import { applications, causes, opportunities, profileFor, suburbs } from "./fixtures";
-import type { Application, ApplicationStatus, Opportunity, Profile, Role, ThemePreference } from "./types";
+import { applications, causes, demoLocations, opportunities, profileFor } from "./fixtures";
+import type { Application, ApplicationStatus, LocationPoint, Opportunity, Profile, Role, ThemePreference } from "./types";
 
 const apiUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "");
-export const demoMode = !apiUrl;
+const demoSetting = process.env.EXPO_PUBLIC_DEMO_MODE?.trim().toLowerCase();
+
+export const demoMode = demoSetting === "true";
+export const apiConfigured = Boolean(apiUrl);
+export const apiConfigurationError = !demoMode && !apiConfigured
+  ? "Connected mode is enabled, but EXPO_PUBLIC_API_URL is missing. Create apps/mobile/.env, then restart Expo with --clear."
+  : demoSetting && demoSetting !== "true" && demoSetting !== "false"
+    ? "EXPO_PUBLIC_DEMO_MODE must be either true or false."
+    : null;
 let demoApplications = [...applications];
 let demoOpportunities = [...opportunities];
 const demoProfiles: Record<Role, Profile> = { volunteer: profileFor("volunteer"), organiser: profileFor("organiser") };
 
 type Options = RequestInit & { token?: string | null };
 
+const distanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+  const radians = (value: number) => value * Math.PI / 180;
+  const dLat = radians(lat2 - lat1); const dLng = radians(lng2 - lng1);
+  const value = Math.sin(dLat / 2) ** 2 + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 6371.0088 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+};
+
 async function request<T>(path: string, options: Options = {}): Promise<T> {
-  if (!apiUrl) throw new Error("API is not configured");
+  if (apiConfigurationError) throw new Error(apiConfigurationError);
+  if (!apiUrl) throw new Error("GiveHub API is not configured.");
   const response = await fetch(`${apiUrl}${path}`, {
     ...options,
     headers: {
@@ -37,20 +53,35 @@ export const api = {
     demoMode
       ? (demoProfiles[input.role] = { ...profileFor(input.role), display_name: input.display_name, email: input.email, organisation_name: input.organisation_name ?? null })
       : request("/v1/profiles", { method: "POST", body: JSON.stringify(input), token }),
-  suburbs: async () => (demoMode ? suburbs : request<typeof suburbs>("/v1/reference/suburbs")),
   causes: async () => (demoMode ? causes : request<typeof causes>("/v1/reference/causes")),
+  locationSuggestions: async (q: string, token?: string | null): Promise<{ place_id: string; label: string }[]> =>
+    demoMode
+      ? demoLocations.filter((item) => item.label.toLowerCase().includes(q.toLowerCase())).map(({ place_id, label }) => ({ place_id: place_id!, label }))
+      : request(`/v1/locations/autocomplete?q=${encodeURIComponent(q)}`, { token }),
+  resolveLocation: async (placeId: string, token?: string | null): Promise<LocationPoint> => {
+    if (demoMode) {
+      const found = demoLocations.find((item) => item.place_id === placeId);
+      if (!found) throw new Error("Location not found");
+      return found;
+    }
+    return request(`/v1/locations/places/${encodeURIComponent(placeId)}`, { token });
+  },
   opportunities: async (
-    filters: { q?: string; cause?: string; recurrence?: string; saved?: boolean } = {},
+    filters: { q?: string; cause?: string; recurrence?: string; saved?: boolean; lat?: number; lng?: number; radius_km?: number } = {},
     token?: string | null,
   ): Promise<Opportunity[]> => {
     if (demoMode) {
       const query = filters.q?.toLowerCase();
-      return demoOpportunities.filter((item) =>
-        (!query || [item.title, item.organisation_name, item.description, item.tasks, item.suburb.name].join(" ").toLowerCase().includes(query)) &&
+      const profile = demoProfiles.volunteer;
+      const lat = filters.lat ?? profile.search_latitude; const lng = filters.lng ?? profile.search_longitude;
+      const radius = filters.radius_km ?? profile.search_radius_km;
+      return demoOpportunities.map((item) => ({ ...item, distance_km: lat !== null && lng !== null ? distanceKm(lat, lng, item.latitude, item.longitude) : null })).filter((item) =>
+        (!query || [item.title, item.organisation_name, item.description, item.tasks, item.location_label].join(" ").toLowerCase().includes(query)) &&
         (!filters.cause || item.causes.some((cause) => cause.slug === filters.cause)) &&
         (!filters.recurrence || item.recurrence === filters.recurrence) &&
-        (!filters.saved || item.is_saved),
-      );
+        (!filters.saved || item.is_saved) &&
+        (item.distance_km === null || item.distance_km <= radius)
+      ).sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0));
     }
     const query = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => value !== undefined && value !== "" && query.set(key, String(value)));
@@ -97,7 +128,8 @@ export const api = {
     if (demoMode) {
       const created: Opportunity = {
         ...opportunities[0]!, ...input, id: `opportunity-${Date.now()}`, status: "draft", version: 1,
-        organisation_name: "Kaitiaki Coastal Network", suburb: suburbs[0]!, causes: [causes[3]!],
+        organisation_name: "Kaitiaki Coastal Network", causes: [causes[3]!],
+        location_label: String(input.location_label ?? "Wellington Central, Wellington"), address_line: String(input.address_line ?? "Wellington Central"), locality: String(input.locality ?? "Wellington Central"), city: String(input.city ?? "Wellington"), postcode: (input.postcode as string | null) ?? null, country_code: "NZ", latitude: Number(input.latitude ?? -41.2866), longitude: Number(input.longitude ?? 174.7756), location_visibility: "public",
         confirmed_count: 0, distance_km: 0, is_saved: false,
       } as Opportunity;
       demoOpportunities = [created, ...demoOpportunities];
@@ -142,6 +174,6 @@ export const api = {
     }
     return request(`/v1/organiser/applications/${id}`, { method: "PATCH", body: JSON.stringify({ status, version }), token });
   },
-  updatePreferences: async (input: { suburb_id: string; search_radius_km: number; theme: ThemePreference }, token?: string | null): Promise<Profile> =>
-    demoMode ? (demoProfiles.volunteer = { ...demoProfiles.volunteer, suburb: suburbs.find((item) => item.id === input.suburb_id) ?? suburbs[0]!, search_radius_km: input.search_radius_km, theme: input.theme }) : request("/v1/profiles/me/preferences", { method: "PUT", body: JSON.stringify(input), token }),
+  updatePreferences: async (input: { search_location_label: string | null; search_latitude: number | null; search_longitude: number | null; search_radius_km: number; theme: ThemePreference }, token?: string | null): Promise<Profile> =>
+    demoMode ? (demoProfiles.volunteer = { ...demoProfiles.volunteer, ...input }) : request("/v1/profiles/me/preferences", { method: "PUT", body: JSON.stringify(input), token }),
 };

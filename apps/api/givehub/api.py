@@ -1,11 +1,12 @@
 import uuid
 from datetime import datetime
 from pathlib import PurePosixPath
+from typing import Any
 from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -32,6 +33,8 @@ from givehub.schemas import (
     ApplicationOut,
     ApplicationTransition,
     CauseOut,
+    LocationResult,
+    LocationSuggestion,
     OpportunityCreate,
     OpportunityOut,
     OpportunityUpdate,
@@ -64,7 +67,9 @@ def profile_out(profile: Profile) -> ProfileOut:
         role=profile.role,
         display_name=profile.display_name,
         email=profile.email,
-        suburb=SuburbOut.model_validate(profile.suburb) if profile.suburb else None,
+        search_location_label=profile.search_location_label,
+        search_latitude=profile.search_latitude,
+        search_longitude=profile.search_longitude,
         search_radius_km=profile.search_radius_km,
         theme=profile.theme,
         organisation_name=profile.organisation.name if profile.organisation else None,
@@ -79,6 +84,92 @@ def list_suburbs(db: Session = Depends(get_db)) -> list[Suburb]:
 @router.get("/reference/causes", response_model=list[CauseOut])
 def list_causes(db: Session = Depends(get_db)) -> list[Cause]:
     return list(db.scalars(select(Cause).order_by(Cause.name)).all())
+
+
+@router.get("/locations/autocomplete", response_model=list[LocationSuggestion])
+def autocomplete_location(
+    q: str = Query(min_length=3, max_length=120),
+    _identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+) -> list[LocationSuggestion]:
+    if not settings.google_places_api_key:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Location search is not configured")
+    try:
+        response = httpx.post(
+            "https://places.googleapis.com/v1/places:autocomplete",
+            headers={
+                "X-Goog-Api-Key": settings.google_places_api_key,
+                "X-Goog-FieldMask": "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
+            },
+            json={"input": q, "includedRegionCodes": ["nz"]},
+            timeout=8,
+        )
+        response.raise_for_status()
+        suggestions = response.json().get("suggestions", [])
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Location search is unavailable") from exc
+    return [
+        LocationSuggestion(
+            place_id=prediction["placeId"],
+            label=prediction["text"]["text"],
+        )
+        for suggestion in suggestions[:6]
+        if (prediction := suggestion.get("placePrediction"))
+        and prediction.get("placeId")
+        and prediction.get("text", {}).get("text")
+    ]
+
+
+def address_component(payload: dict[str, Any], *component_types: str) -> str:
+    for component in payload.get("addressComponents", []):
+        if any(component_type in component.get("types", []) for component_type in component_types):
+            return str(component.get("longText", ""))
+    return ""
+
+
+@router.get("/locations/places/{place_id}", response_model=LocationResult)
+def resolve_location(
+    place_id: str,
+    _identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+) -> LocationResult:
+    if not settings.google_places_api_key:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Location search is not configured")
+    try:
+        response = httpx.get(
+            f"https://places.googleapis.com/v1/places/{quote(place_id, safe='')}",
+            headers={
+                "X-Goog-Api-Key": settings.google_places_api_key,
+                "X-Goog-FieldMask": "id,formattedAddress,location,addressComponents",
+            },
+            timeout=8,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        coordinates = payload["location"]
+    except (httpx.HTTPError, KeyError, ValueError) as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Location details are unavailable") from exc
+    street = " ".join(
+        part
+        for part in (
+            address_component(payload, "street_number"),
+            address_component(payload, "route"),
+        )
+        if part
+    )
+    locality = address_component(payload, "sublocality_level_1", "locality")
+    city = address_component(payload, "locality", "postal_town", "administrative_area_level_2")
+    return LocationResult(
+        place_id=str(payload.get("id", place_id)),
+        label=str(payload.get("formattedAddress", street or locality or city)),
+        address_line=street or str(payload.get("formattedAddress", "")),
+        locality=locality,
+        city=city,
+        postcode=address_component(payload, "postal_code") or None,
+        country_code=(address_component(payload, "country") and "NZ") or "NZ",
+        latitude=float(coordinates["latitude"]),
+        longitude=float(coordinates["longitude"]),
+    )
 
 
 @router.post("/profiles", response_model=ProfileOut, status_code=status.HTTP_201_CREATED)
@@ -129,9 +220,9 @@ def update_preferences(
     db: Session = Depends(get_db),
 ) -> ProfileOut:
     profile = require_profile(db, identity.user_id)
-    if payload.suburb_id and not db.get(Suburb, payload.suburb_id):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Unknown suburb")
-    profile.suburb_id = payload.suburb_id
+    profile.search_location_label = payload.search_location_label
+    profile.search_latitude = payload.search_latitude
+    profile.search_longitude = payload.search_longitude
     profile.search_radius_km = payload.search_radius_km
     profile.theme = payload.theme
     db.commit()
@@ -144,7 +235,8 @@ def list_opportunities(
     q: str | None = Query(default=None, max_length=100),
     cause: str | None = None,
     recurrence: Recurrence | None = None,
-    suburb_id: uuid.UUID | None = None,
+    lat: float | None = Query(default=None, ge=-90, le=90),
+    lng: float | None = Query(default=None, ge=-180, le=180),
     radius_km: int | None = Query(default=None, ge=1, le=100),
     starts_after: datetime | None = None,
     saved: bool = False,
@@ -152,6 +244,18 @@ def list_opportunities(
     db: Session = Depends(get_db),
 ) -> list[OpportunityOut]:
     viewer = require_profile(db, identity.user_id)
+    if (lat is None) != (lng is None):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Latitude and longitude are required together")
+    origin = (
+        (lat, lng)
+        if lat is not None and lng is not None
+        else (
+            (viewer.search_latitude, viewer.search_longitude)
+            if viewer.search_latitude is not None and viewer.search_longitude is not None
+            else None
+        )
+    )
+    effective_radius = radius_km or viewer.search_radius_km
     statement = opportunity_query().where(Opportunity.status == OpportunityStatus.published)
     if q:
         term = f"%{q.strip()}%"
@@ -160,6 +264,9 @@ def list_opportunities(
                 Opportunity.title.ilike(term),
                 Opportunity.description.ilike(term),
                 Opportunity.tasks.ilike(term),
+                Opportunity.location_label.ilike(term),
+                Opportunity.locality.ilike(term),
+                Opportunity.city.ilike(term),
                 Organisation.name.ilike(term),
             )
         )
@@ -167,17 +274,22 @@ def list_opportunities(
         statement = statement.join(Opportunity.causes).where(Cause.slug == cause)
     if recurrence:
         statement = statement.where(Opportunity.recurrence == recurrence)
-    if suburb_id:
-        statement = statement.where(Opportunity.suburb_id == suburb_id)
     if starts_after:
         statement = statement.where(Opportunity.starts_at >= starts_after)
     saved_ids = saved_opportunity_ids(db, viewer.id)
     if saved:
         statement = statement.where(Opportunity.id.in_(saved_ids))
+    if origin and db.bind and db.bind.dialect.name == "postgresql":
+        statement = statement.where(
+            text(
+                "ST_DWithin("
+                "ST_SetSRID(ST_MakePoint(opportunities.longitude, opportunities.latitude), 4326)::geography, "
+                "ST_SetSRID(ST_MakePoint(:origin_lng, :origin_lat), 4326)::geography, :radius_m)"
+            )
+        ).params(origin_lat=origin[0], origin_lng=origin[1], radius_m=effective_radius * 1000)
     items = list(db.scalars(statement.order_by(Opportunity.starts_at)).unique().all())
-    outputs = [to_opportunity_out(db, item, viewer, saved_ids) for item in items]
-    effective_radius = radius_km or viewer.search_radius_km
-    if viewer.suburb and not suburb_id:
+    outputs = [to_opportunity_out(db, item, origin, saved_ids) for item in items]
+    if origin:
         outputs = [item for item in outputs if (item.distance_km or 0) <= effective_radius]
         outputs.sort(key=lambda item: (item.distance_km or 0, item.starts_at))
     return outputs
@@ -196,7 +308,12 @@ def get_opportunity(
         and (not viewer.organisation or item.organisation_id != viewer.organisation.id)
     ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
-    return to_opportunity_out(db, item, viewer, saved_opportunity_ids(db, viewer.id))
+    origin = (
+        (viewer.search_latitude, viewer.search_longitude)
+        if viewer.search_latitude is not None and viewer.search_longitude is not None
+        else None
+    )
+    return to_opportunity_out(db, item, origin, saved_opportunity_ids(db, viewer.id))
 
 
 @router.put("/opportunities/{opportunity_id}/saved", status_code=status.HTTP_204_NO_CONTENT)
@@ -328,7 +445,7 @@ def organiser_opportunities(
         .where(Opportunity.organisation_id == organiser.organisation.id)
         .order_by(Opportunity.starts_at)
     ).unique().all()
-    return [to_opportunity_out(db, item, organiser) for item in items]
+    return [to_opportunity_out(db, item) for item in items]
 
 
 @router.post(
@@ -341,8 +458,6 @@ def create_opportunity(
 ) -> OpportunityOut:
     organiser = require_profile(db, identity.user_id, Role.organiser)
     assert organiser.organisation
-    if not db.get(Suburb, payload.suburb_id):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Unknown suburb")
     causes = require_causes(db, payload.cause_ids)
     item = Opportunity(
         organisation_id=organiser.organisation.id,
@@ -353,7 +468,7 @@ def create_opportunity(
     db.commit()
     loaded = db.scalar(opportunity_query().where(Opportunity.id == item.id))
     assert loaded
-    return to_opportunity_out(db, loaded, organiser)
+    return to_opportunity_out(db, loaded)
 
 
 @router.patch("/organiser/opportunities/{opportunity_id}", response_model=OpportunityOut)
@@ -376,7 +491,7 @@ def update_opportunity(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "End time must follow start time")
     item.version += 1
     db.commit()
-    return to_opportunity_out(db, item, organiser)
+    return to_opportunity_out(db, item)
 
 
 @router.post("/organiser/opportunities/{opportunity_id}/publish", response_model=OpportunityOut)
@@ -393,7 +508,7 @@ def publish_opportunity(
     item.status = OpportunityStatus.published
     item.version += 1
     db.commit()
-    return to_opportunity_out(db, item, organiser)
+    return to_opportunity_out(db, item)
 
 
 @router.post("/organiser/opportunities/{opportunity_id}/unpublish", response_model=OpportunityOut)
@@ -407,7 +522,7 @@ def unpublish_opportunity(
     item.status = OpportunityStatus.unpublished
     item.version += 1
     db.commit()
-    return to_opportunity_out(db, item, organiser)
+    return to_opportunity_out(db, item)
 
 
 @router.get("/organiser/opportunities/{opportunity_id}/pipeline", response_model=PipelineOut)

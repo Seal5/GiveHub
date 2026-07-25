@@ -16,14 +16,12 @@ from givehub.models import (
     Profile,
     Role,
     SavedOpportunity,
-    Suburb,
 )
 from givehub.schemas import (
     ApplicationOut,
     CauseOut,
     OpportunityOut,
     StatusHistoryOut,
-    SuburbOut,
 )
 
 NEXT_STEPS = {
@@ -69,11 +67,16 @@ def require_profile(db: Session, user_id: uuid.UUID, role: Role | None = None) -
     return profile
 
 
-def haversine_km(origin: Suburb, destination: Suburb) -> float:
+def haversine_km(
+    origin_latitude: float,
+    origin_longitude: float,
+    destination_latitude: float,
+    destination_longitude: float,
+) -> float:
     radius = 6371.0088
     lat1, lon1, lat2, lon2 = map(
         math.radians,
-        (origin.latitude, origin.longitude, destination.latitude, destination.longitude),
+        (origin_latitude, origin_longitude, destination_latitude, destination_longitude),
     )
     delta_lat = lat2 - lat1
     delta_lon = lon2 - lon1
@@ -87,7 +90,6 @@ def haversine_km(origin: Suburb, destination: Suburb) -> float:
 def opportunity_query() -> Select[tuple[Opportunity]]:
     return select(Opportunity).options(
         selectinload(Opportunity.organisation),
-        selectinload(Opportunity.suburb),
         selectinload(Opportunity.causes),
     )
 
@@ -107,12 +109,14 @@ def confirmed_count(db: Session, opportunity_id: uuid.UUID) -> int:
 def to_opportunity_out(
     db: Session,
     item: Opportunity,
-    viewer: Profile | None = None,
+    origin: tuple[float, float] | None = None,
     saved_ids: set[uuid.UUID] | None = None,
 ) -> OpportunityOut:
     distance = None
-    if viewer and viewer.suburb:
-        distance = round(haversine_km(viewer.suburb, item.suburb), 1)
+    if origin:
+        distance = round(
+            haversine_km(origin[0], origin[1], item.latitude, item.longitude), 1
+        )
     return OpportunityOut(
         id=item.id,
         title=item.title,
@@ -133,7 +137,15 @@ def to_opportunity_out(
         status=item.status,
         version=item.version,
         organisation_name=item.organisation.name,
-        suburb=SuburbOut.model_validate(item.suburb),
+        location_label=item.location_label,
+        address_line=item.address_line,
+        locality=item.locality,
+        city=item.city,
+        postcode=item.postcode,
+        country_code=item.country_code,
+        latitude=item.latitude,
+        longitude=item.longitude,
+        location_visibility=item.location_visibility,
         causes=[CauseOut.model_validate(cause) for cause in item.causes],
         distance_km=distance,
         is_saved=item.id in (saved_ids or set()),

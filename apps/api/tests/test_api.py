@@ -13,10 +13,49 @@ def test_opportunities_are_distance_ordered(client: TestClient) -> None:
     response = client.get("/v1/opportunities")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 3
+    assert len(data) == 5
     distances = [item["distance_km"] for item in data]
     assert distances == sorted(distances)
     assert data[0]["organisation_name"] == "Kaitiaki Coastal Network"
+
+
+def test_opportunities_support_coordinate_radius_filtering(client: TestClient) -> None:
+    response = client.get(
+        "/v1/opportunities?lat=-41.2866&lng=174.7756&radius_km=5"
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 3
+    assert all(item["distance_km"] <= 5 for item in data)
+    assert data == sorted(data, key=lambda item: item["distance_km"])
+
+    wider = client.get(
+        "/v1/opportunities?lat=-41.2866&lng=174.7756&radius_km=100"
+    )
+    assert wider.status_code == 200
+    assert len(wider.json()) == 5
+    assert client.get("/v1/opportunities?lat=-41.2866").status_code == 422
+
+
+def test_volunteer_can_save_search_location(client: TestClient) -> None:
+    response = client.put(
+        "/v1/profiles/me/preferences",
+        json={
+            "search_location_label": "Lower Hutt",
+            "search_latitude": -41.2092,
+            "search_longitude": 174.9081,
+            "search_radius_km": 10,
+            "theme": "system",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["search_location_label"] == "Lower Hutt"
+    assert response.json()["search_radius_km"] == 10
+
+
+def test_location_search_requires_provider_configuration(client: TestClient) -> None:
+    response = client.get("/v1/locations/autocomplete?q=Wellington")
+    assert response.status_code == 503
 
 
 def test_volunteer_can_save_and_apply(client: TestClient) -> None:

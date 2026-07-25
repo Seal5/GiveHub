@@ -1,10 +1,8 @@
-import { ImageBackground, Pressable, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const hero = "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=1600&q=90";
+import { StatusBar } from "expo-status-bar";
 
 function RoleChoice({ organiser = false }: { organiser?: boolean }) {
   const role = organiser ? "organiser" : "volunteer";
@@ -13,35 +11,61 @@ function RoleChoice({ organiser = false }: { organiser?: boolean }) {
       accessibilityRole="button"
       accessibilityLabel={organiser ? "I organise volunteer work" : "I want to volunteer"}
       onPress={() => router.push(`/auth/${role}`)}
-      className="mb-3 min-h-20 flex-row items-center rounded-card bg-paper px-5 active:opacity-90"
+      className={`mb-3 min-h-[72px] flex-row items-center rounded-card px-5 active:opacity-80 ${
+        organiser ? "border border-white/20 bg-white/10" : "bg-primary"
+      }`}
     >
-      <View className="flex-1">
-        <Text className="font-display text-xl text-ink">{organiser ? "I organise volunteer work" : "I want to volunteer"}</Text>
-        <Text className="mt-1 font-sans text-sm text-ink/60">{organiser ? "Post events and coordinate your people" : "Discover causes worth your time"}</Text>
+      <View className="flex-1 pr-4">
+        <Text className="font-strong text-sm text-white">
+          {organiser ? "I organise volunteer work" : "I want to volunteer"}
+        </Text>
+        <Text className={`mt-1 font-sans text-xs ${organiser ? "text-white/65" : "text-white/80"}`}>
+          {organiser ? "Post events and coordinate your people" : "Discover causes worth your time"}
+        </Text>
       </View>
-      <Ionicons name="arrow-forward" size={22} color="#2D945D" />
+      <Ionicons name="arrow-forward" size={20} color="#F8FFF8" />
     </Pressable>
   );
 }
 
 export default function WelcomeScreen() {
   return (
-    <ImageBackground source={{ uri: hero }} className="flex-1" resizeMode="cover">
-      <LinearGradient colors={["rgba(6,20,12,.28)", "rgba(6,20,12,.97)"]} className="absolute inset-0" />
-      <SafeAreaView className="flex-1 justify-between px-5 pb-8 pt-4">
-        <View className="flex-row items-center gap-3">
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-moss"><Ionicons name="leaf" size={20} color="white" /></View>
-          <View><Text className="font-display text-2xl text-paper">GiveHub</Text><Text className="font-mono text-[10px] uppercase tracking-[2px] text-fern">Make local change tangible</Text></View>
+    <SafeAreaView className="flex-1 overflow-hidden bg-[#102219] px-6 pb-8 pt-5">
+      <StatusBar style="light" />
+      <View pointerEvents="none" className="absolute -right-20 top-28 h-72 w-72 rounded-full border border-primary/25" />
+      <View pointerEvents="none" className="absolute -right-5 top-44 h-48 w-48 rounded-full border border-primary/15" />
+      <View pointerEvents="none" className="absolute -bottom-48 -left-24 h-96 w-96 rounded-full bg-primary/10" />
+
+      <View className="flex-row items-center gap-3">
+        <View className="h-8 w-8 items-center justify-center rounded-xl bg-primary">
+          <Ionicons name="leaf" size={17} color="#F8FFF8" />
         </View>
-        <View>
-          <Text className="font-display text-[48px] leading-[52px] text-paper">A better way{`\n`}to show up.</Text>
-          <Text className="mb-8 mt-4 max-w-sm font-sans text-lg leading-7 text-paper/75">Find good work nearby, or bring your volunteer community together with one clear home for every event.</Text>
+        <Text className="font-display text-xl text-white">GiveHub</Text>
+      </View>
+
+      <View className="mt-auto">
+        <View className="self-start rounded-full bg-primary/15 px-3 py-2">
+          <Text className="font-strong text-[10px] uppercase tracking-[1.2px] text-primary">Make local change tangible</Text>
+        </View>
+        <Text className="mt-5 font-display text-[45px] leading-[45px] tracking-[-2.2px] text-white">
+          A better way{`\n`}to show up.
+        </Text>
+        <Text className="mt-5 max-w-[310px] font-sans text-sm leading-6 text-white/70">
+          Find good work nearby, or bring your volunteer community together with one clear home for every event.
+        </Text>
+
+        <View className="mt-8">
           <RoleChoice />
           <RoleChoice organiser />
-          <Text className="mt-4 text-center font-sans text-sm text-paper/60">Already have an account? Choose your role above, then sign in.</Text>
         </View>
-      </SafeAreaView>
-    </ImageBackground>
+
+        <View className="mt-3 flex-row items-center justify-center border-t border-white/10 pt-5">
+          <Text className="font-sans text-xs text-white/55">Already have an account?</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/auth/[role]", params: { role: "volunteer", mode: "signin" } })} className="min-h-11 justify-center px-2">
+            <Text className="font-strong text-xs text-primary">Sign in</Text>
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
-

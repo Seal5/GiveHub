@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FlatList, Pressable, TextInput, View } from "react-native";
+import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -12,8 +12,8 @@ export default function SearchScreen() {
   const [search, setSearch] = useState("");
   const [cause, setCause] = useState("");
   const [recurrence, setRecurrence] = useState("");
-  const { token } = useAuth();
-  const query = useQuery({ queryKey: ["opportunities", search, cause, recurrence], queryFn: () => api.opportunities({ q: search, cause, recurrence }, token) });
+  const { profile, token } = useAuth();
+  const query = useQuery({ queryKey: ["opportunities", search, cause, recurrence, profile?.search_latitude, profile?.search_longitude, profile?.search_radius_km], queryFn: () => api.opportunities({ q: search, cause, recurrence }, token) });
   return (
     <View className="flex-1 bg-paper pt-14 dark:bg-night">
       <View className="px-5">
@@ -23,6 +23,7 @@ export default function SearchScreen() {
         </View>
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={["", "cleanup", "planting", "monitoring", "community"]} keyExtractor={(item) => item || "all"} renderItem={({ item }) => <Chip label={item ? item[0]!.toUpperCase() + item.slice(1) : "All causes"} selected={cause === item} onPress={() => setCause(item)} />} className="mb-3" />
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={["", "one_off", "weekly", "monthly"]} keyExtractor={(item) => item || "any"} renderItem={({ item }) => <Chip label={item ? item.replace("_", " ") : "Any frequency"} selected={recurrence === item} onPress={() => setRecurrence(item)} />} />
+        <Pressable accessibilityRole="button" onPress={() => router.push("/(volunteer)/settings")} className="mt-3 min-h-11 flex-row items-center"><Ionicons name="location-outline" size={18} color="#2D945D" /><Text className="ml-2 font-sans text-sm text-moss">Within {profile?.search_radius_km ?? 25} km of {profile?.search_location_label ?? "your chosen location"}</Text></Pressable>
       </View>
       {query.isLoading ? <LoadingState /> : <FlatList className="mt-5 px-5" contentContainerClassName="pb-20" data={query.data} keyExtractor={(item) => item.id} renderItem={({ item }) => <EventCard item={item} compact />} ListEmptyComponent={<EmptyState title="No close matches" body="Try a broader phrase or remove a filter." />} />}
     </View>
