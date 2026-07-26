@@ -10,6 +10,7 @@ export default function VolunteerLayout() {
     <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: dark ? "#8BD19F" : "#2A8D58", tabBarInactiveTintColor: dark ? "#9BAC9F" : "#657166", tabBarStyle: { backgroundColor: dark ? "#101A14" : "#F6F6F0", borderTopColor: dark ? "#2B372F" : "#E8E8E2", height: 76, paddingBottom: 10, paddingTop: 8 }, tabBarLabelStyle: { fontFamily: "DMSans_700Bold", fontSize: 10 } }}>
       <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: icon("home-outline") }} />
       <Tabs.Screen name="discover" options={{ title: "Discover", tabBarIcon: icon("compass-outline") }} />
+      <Tabs.Screen name="social" options={{ title: "Social", tabBarIcon: icon("people-outline") }} />
       <Tabs.Screen name="activities" options={{ title: "Activities", tabBarIcon: icon("calendar-outline") }} />
       <Tabs.Screen name="saved" options={{ title: "Saved", tabBarIcon: icon("bookmark-outline") }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
