@@ -18,8 +18,8 @@ function Metric({ value, label }: { value: string; label: string }) {
 export default function OrganiserOverview() {
   const { profile, token } = useAuth();
   const events = useQuery({ queryKey: ["organiser", "events"], queryFn: () => api.organiserOpportunities(token) });
-  if (events.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
-  const filled = events.data?.reduce((sum, item) => sum + item.confirmed_count, 0) ?? 0;
+  const analytics = useQuery({ queryKey: ["organiser", "analytics"], queryFn: () => api.organiserAnalytics(token) });
+  if (events.isLoading || analytics.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
   const organisation = profile?.organisation_name ?? "Your organisation";
 
   return (
@@ -36,10 +36,10 @@ export default function OrganiserOverview() {
       <Body className="mt-2">See what needs attention before volunteers are left waiting.</Body>
 
       <View className="mt-6 flex-row flex-wrap justify-between">
-        <Metric value={String(filled)} label="Places filled" />
-        <Metric value="3" label="Need a review" />
-        <Metric value={String(events.data?.length ?? 0)} label="Upcoming events" />
-        <Metric value="94%" label="Show-up rate" />
+        <Metric value={String(analytics.data?.views ?? 0)} label="Opportunity views" />
+        <Metric value={String(analytics.data?.application_starts ?? 0)} label="Application starts" />
+        <Metric value={String(analytics.data?.applications_submitted ?? 0)} label="Applications" />
+        <Metric value={`${analytics.data?.view_to_application_rate ?? 0}%`} label="View-to-application" />
       </View>
 
       <View className="mt-5 flex-row items-center justify-between">
@@ -51,8 +51,8 @@ export default function OrganiserOverview() {
           <View className="flex-row items-center gap-3">
             <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary dark:bg-dark-secondary"><Ionicons name="people-outline" size={20} color="#2A8D58" /></View>
             <View className="flex-1">
-              <Text className="font-strong text-sm text-foreground dark:text-dark-foreground">3 new volunteer applications</Text>
-              <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{events.data?.[0]?.title ?? "Your latest opportunity"} · review today</Text>
+              <Text className="font-strong text-sm text-foreground dark:text-dark-foreground">{analytics.data?.applications_submitted ?? 0} volunteer applications</Text>
+              <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{events.data?.[0]?.title ?? "Your latest opportunity"} · filter or export the applicant list</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#2A8D58" />
           </View>

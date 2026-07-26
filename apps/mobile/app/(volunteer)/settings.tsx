@@ -35,6 +35,6 @@ export default function SettingsScreen() {
     <Card className="mb-7"><Text className="mb-3 font-strong text-sm text-foreground dark:text-dark-foreground">Appearance</Text><View className="flex-row">{(["system", "light", "dark"] as ThemePreference[]).map((value) => <Chip key={value} label={value} selected={theme === value} onPress={() => setTheme(value)} />)}</View></Card>
     {validationError || save.error ? <Text className="mb-3 font-sans text-destructive dark:text-dark-destructive">{validationError ?? save.error?.message}</Text> : null}
     <Button label="Save preferences" loading={save.isPending} onPress={() => { if (!location) { setValidationError("Choose a location or use your current location."); return; } save.mutate(); }} />
-    <Button label="Sign out" variant="secondary" className="mt-3" onPress={async () => { await signOut(); router.replace("/"); }} />
+    <Button label="Sign out" variant="secondary" className="mt-3" onPress={async () => { await signOut(); router.replace("/welcome"); }} />
   </Screen>;
 }

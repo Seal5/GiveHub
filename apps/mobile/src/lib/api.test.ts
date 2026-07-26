@@ -36,4 +36,17 @@ describe("mobile runtime mode", () => {
     expect(runtime.apiConfigured).toBe(true);
     expect(runtime.apiConfigurationError).toBeNull();
   });
+
+  it("supports persistent local API data without Supabase Auth", async () => {
+    vi.stubEnv("EXPO_PUBLIC_DEMO_MODE", "false");
+    vi.stubEnv("EXPO_PUBLIC_LOCAL_AUTH", "true");
+    vi.stubEnv("EXPO_PUBLIC_API_URL", "http://127.0.0.1:8000");
+
+    const runtime = await import("./api");
+
+    expect(runtime.demoMode).toBe(false);
+    expect(runtime.localAuthMode).toBe(true);
+    expect(runtime.apiConfigured).toBe(true);
+    expect(runtime.apiConfigurationError).toBeNull();
+  });
 });

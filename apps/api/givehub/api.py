@@ -1,3 +1,6 @@
+import csv
+import io
+import re
 import uuid
 from datetime import datetime
 from pathlib import PurePosixPath
@@ -5,20 +8,23 @@ from typing import Any
 from urllib.parse import quote
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_, select, text
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from givehub.auth import Identity, current_identity
 from givehub.config import Settings, get_settings
 from givehub.database import get_db
+from givehub.email import send_email
 from givehub.models import (
     Application,
     ApplicationStatus,
     ApplicationStatusHistory,
     Cause,
     Opportunity,
+    OpportunityEvent,
+    OpportunityEventType,
     OpportunityStatus,
     Organisation,
     Profile,
@@ -29,6 +35,7 @@ from givehub.models import (
     VerificationStatus,
 )
 from givehub.schemas import (
+    AnalyticsOut,
     ApplicationCreate,
     ApplicationOut,
     ApplicationTransition,
@@ -36,6 +43,7 @@ from givehub.schemas import (
     LocationResult,
     LocationSuggestion,
     OpportunityCreate,
+    OpportunityEventCreate,
     OpportunityOut,
     OpportunityUpdate,
     PipelineOut,
@@ -59,6 +67,69 @@ from givehub.services import (
 )
 
 router = APIRouter(prefix="/v1")
+
+
+def analytics_out(
+    db: Session, *, organisation_id: uuid.UUID, opportunity_id: uuid.UUID | None = None
+) -> AnalyticsOut:
+    statement = (
+        select(OpportunityEvent.event_type, func.count(OpportunityEvent.id))
+        .join(Opportunity)
+        .where(Opportunity.organisation_id == organisation_id)
+        .group_by(OpportunityEvent.event_type)
+    )
+    if opportunity_id:
+        statement = statement.where(OpportunityEvent.opportunity_id == opportunity_id)
+    counts: dict[OpportunityEventType, int] = {}
+    for event_type, count in db.execute(statement):
+        counts[event_type] = count
+    views = counts.get(OpportunityEventType.viewed, 0)
+    submitted = counts.get(OpportunityEventType.application_submitted, 0)
+    return AnalyticsOut(
+        views=views,
+        application_starts=counts.get(OpportunityEventType.application_started, 0),
+        applications_submitted=submitted,
+        shares=counts.get(OpportunityEventType.shared, 0),
+        view_to_application_rate=round((submitted / views * 100) if views else 0, 1),
+    )
+
+
+def filtered_applications(
+    db: Session,
+    *,
+    opportunity_id: uuid.UUID,
+    stage: ApplicationStatus | None = None,
+    q: str | None = None,
+    availability: str | None = None,
+) -> list[Application]:
+    statement = (
+        select(Application)
+        .options(*application_options())
+        .join(Application.volunteer)
+        .where(Application.opportunity_id == opportunity_id)
+        .order_by(Application.created_at)
+    )
+    if stage:
+        statement = statement.where(Application.status == stage)
+    if q:
+        term = f"%{q.strip()}%"
+        statement = statement.where(
+            or_(
+                Profile.display_name.ilike(term),
+                Profile.email.ilike(term),
+                Application.experience.ilike(term),
+                Application.note.ilike(term),
+                Application.availability.ilike(term),
+            )
+        )
+    if availability:
+        statement = statement.where(Application.availability.ilike(f"%{availability.strip()}%"))
+    return list(db.scalars(statement).all())
+
+
+def spreadsheet_safe(value: str) -> str:
+    """Prevent applicant-provided text from becoming a spreadsheet formula."""
+    return f"'{value}" if value.startswith(("=", "+", "-", "@")) else value
 
 
 def profile_out(profile: Profile) -> ProfileOut:
@@ -93,7 +164,9 @@ def autocomplete_location(
     settings: Settings = Depends(get_settings),
 ) -> list[LocationSuggestion]:
     if not settings.google_places_api_key:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Location search is not configured")
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "Location search is not configured"
+        )
     try:
         response = httpx.post(
             "https://places.googleapis.com/v1/places:autocomplete",
@@ -134,7 +207,9 @@ def resolve_location(
     settings: Settings = Depends(get_settings),
 ) -> LocationResult:
     if not settings.google_places_api_key:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Location search is not configured")
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "Location search is not configured"
+        )
     try:
         response = httpx.get(
             f"https://places.googleapis.com/v1/places/{quote(place_id, safe='')}",
@@ -148,7 +223,9 @@ def resolve_location(
         payload = response.json()
         coordinates = payload["location"]
     except (httpx.HTTPError, KeyError, ValueError) as exc:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Location details are unavailable") from exc
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, "Location details are unavailable"
+        ) from exc
     street = " ".join(
         part
         for part in (
@@ -245,7 +322,9 @@ def list_opportunities(
 ) -> list[OpportunityOut]:
     viewer = require_profile(db, identity.user_id)
     if (lat is None) != (lng is None):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Latitude and longitude are required together")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Latitude and longitude are required together"
+        )
     origin = (
         (lat, lng)
         if lat is not None and lng is not None
@@ -316,6 +395,35 @@ def get_opportunity(
     return to_opportunity_out(db, item, origin, saved_opportunity_ids(db, viewer.id))
 
 
+@router.post(
+    "/opportunities/{opportunity_id}/events",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def record_opportunity_event(
+    opportunity_id: uuid.UUID,
+    payload: OpportunityEventCreate,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> None:
+    profile = require_profile(db, identity.user_id, Role.volunteer)
+    item = db.get(Opportunity, opportunity_id)
+    if not item or item.status != OpportunityStatus.published:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
+    if payload.event_type == OpportunityEventType.application_submitted:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Application submissions are recorded by GiveHub",
+        )
+    db.add(
+        OpportunityEvent(
+            opportunity_id=opportunity_id,
+            profile_id=profile.id,
+            event_type=payload.event_type,
+        )
+    )
+    db.commit()
+
+
 @router.put("/opportunities/{opportunity_id}/saved", status_code=status.HTTP_204_NO_CONTENT)
 def save_opportunity(
     opportunity_id: uuid.UUID,
@@ -363,7 +471,9 @@ def unsave_opportunity(
 def apply(
     opportunity_id: uuid.UUID,
     payload: ApplicationCreate,
+    background_tasks: BackgroundTasks,
     identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
 ) -> ApplicationOut:
     volunteer = require_profile(db, identity.user_id, Role.volunteer)
@@ -387,6 +497,13 @@ def apply(
             changed_by=volunteer.id,
         )
     )
+    db.add(
+        OpportunityEvent(
+            opportunity_id=opportunity_id,
+            profile_id=volunteer.id,
+            event_type=OpportunityEventType.application_submitted,
+        )
+    )
     try:
         db.commit()
     except IntegrityError as exc:
@@ -396,6 +513,16 @@ def apply(
         select(Application).options(*application_options()).where(Application.id == application.id)
     )
     assert loaded
+    background_tasks.add_task(
+        send_email,
+        settings,
+        recipient=loaded.opportunity.organisation.owner.email,
+        subject=f"New GiveHub application: {loaded.opportunity.title}",
+        text=(
+            f"{loaded.volunteer.display_name} applied for {loaded.opportunity.title}.\n\n"
+            "Open GiveHub to review the application or export the applicant list."
+        ),
+    )
     return to_application_out(loaded)
 
 
@@ -440,12 +567,26 @@ def organiser_opportunities(
 ) -> list[OpportunityOut]:
     organiser = require_profile(db, identity.user_id, Role.organiser)
     assert organiser.organisation
-    items = db.scalars(
-        opportunity_query()
-        .where(Opportunity.organisation_id == organiser.organisation.id)
-        .order_by(Opportunity.starts_at)
-    ).unique().all()
+    items = (
+        db.scalars(
+            opportunity_query()
+            .where(Opportunity.organisation_id == organiser.organisation.id)
+            .order_by(Opportunity.starts_at)
+        )
+        .unique()
+        .all()
+    )
     return [to_opportunity_out(db, item) for item in items]
+
+
+@router.get("/organiser/analytics", response_model=AnalyticsOut)
+def organiser_analytics(
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> AnalyticsOut:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    assert organiser.organisation
+    return analytics_out(db, organisation_id=organiser.organisation.id)
 
 
 @router.post(
@@ -529,31 +670,101 @@ def unpublish_opportunity(
 def application_pipeline(
     opportunity_id: uuid.UUID,
     stage: ApplicationStatus | None = None,
+    q: str | None = Query(default=None, max_length=120),
+    availability: str | None = Query(default=None, max_length=120),
     identity: Identity = Depends(current_identity),
     db: Session = Depends(get_db),
 ) -> PipelineOut:
     organiser = require_profile(db, identity.user_id, Role.organiser)
     require_owned_opportunity(db, opportunity_id, organiser.id)
-    statement = (
-        select(Application)
-        .options(*application_options())
-        .where(Application.opportunity_id == opportunity_id)
-        .order_by(Application.created_at)
-    )
-    items = list(db.scalars(statement).all())
+    all_items = filtered_applications(db, opportunity_id=opportunity_id)
     counts = {status: 0 for status in ApplicationStatus}
-    for item in items:
+    for item in all_items:
         counts[item.status] += 1
-    if stage:
-        items = [item for item in items if item.status == stage]
+    items = filtered_applications(
+        db,
+        opportunity_id=opportunity_id,
+        stage=stage,
+        q=q,
+        availability=availability,
+    )
     return PipelineOut(counts=counts, applications=[to_application_out(item) for item in items])
+
+
+@router.get("/organiser/opportunities/{opportunity_id}/analytics", response_model=AnalyticsOut)
+def opportunity_analytics(
+    opportunity_id: uuid.UUID,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> AnalyticsOut:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    item = require_owned_opportunity(db, opportunity_id, organiser.id)
+    return analytics_out(
+        db,
+        organisation_id=item.organisation_id,
+        opportunity_id=opportunity_id,
+    )
+
+
+@router.get("/organiser/opportunities/{opportunity_id}/applications.csv")
+def export_applications(
+    opportunity_id: uuid.UUID,
+    stage: ApplicationStatus | None = None,
+    q: str | None = Query(default=None, max_length=120),
+    availability: str | None = Query(default=None, max_length=120),
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> Response:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    item = require_owned_opportunity(db, opportunity_id, organiser.id)
+    applications = filtered_applications(
+        db,
+        opportunity_id=opportunity_id,
+        stage=stage,
+        q=q,
+        availability=availability,
+    )
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "Name",
+            "Email",
+            "Status",
+            "Availability",
+            "Experience",
+            "Application note",
+            "Applied at",
+        ]
+    )
+    for application in applications:
+        writer.writerow(
+            [
+                application.volunteer.display_name,
+                application.volunteer.email,
+                application.status.value,
+                spreadsheet_safe(application.availability),
+                spreadsheet_safe(application.experience),
+                spreadsheet_safe(application.note),
+                application.created_at.isoformat(),
+            ]
+        )
+    slug = re.sub(r"[^a-z0-9]+", "-", item.title.lower()).strip("-") or "opportunity"
+    filename = f"{slug}-applicants.csv"
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"content-disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.patch("/organiser/applications/{application_id}", response_model=ApplicationOut)
 def transition_application(
     application_id: uuid.UUID,
     payload: ApplicationTransition,
+    background_tasks: BackgroundTasks,
     identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
 ) -> ApplicationOut:
     organiser = require_profile(db, identity.user_id, Role.organiser)
@@ -567,12 +778,22 @@ def transition_application(
     change_application_status(db, item, payload.status, organiser.id, payload.version)
     db.commit()
     db.refresh(item)
+    background_tasks.add_task(
+        send_email,
+        settings,
+        recipient=item.volunteer.email,
+        subject=f"Your GiveHub application is {payload.status.value.replace('_', ' ')}",
+        text=(
+            f"Hi {item.volunteer.display_name},\n\n"
+            f"Your application for {item.opportunity.title} is now "
+            f"{payload.status.value.replace('_', ' ')}.\n\n"
+            f"{to_application_out(item).next_step}"
+        ),
+    )
     return to_application_out(item)
 
 
-@router.post(
-    "/organiser/opportunities/{opportunity_id}/image-upload", response_model=UploadOut
-)
+@router.post("/organiser/opportunities/{opportunity_id}/image-upload", response_model=UploadOut)
 def create_image_upload(
     opportunity_id: uuid.UUID,
     payload: UploadRequest,
@@ -587,7 +808,9 @@ def create_image_upload(
     extension = PurePosixPath(payload.filename).suffix.lower()
     expected = {"image/jpeg": {".jpg", ".jpeg"}, "image/png": {".png"}, "image/webp": {".webp"}}
     if extension not in expected[payload.content_type]:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "File extension does not match type")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "File extension does not match type"
+        )
     path = f"{organiser.id}/{opportunity_id}/{uuid.uuid4()}{extension}"
     object_path = quote(f"{settings.supabase_storage_bucket}/{path}", safe="/")
     headers = {
@@ -605,6 +828,8 @@ def create_image_upload(
         response.raise_for_status()
         signed = response.json()
     except (httpx.HTTPError, ValueError) as exc:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Storage could not create an upload") from exc
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, "Storage could not create an upload"
+        ) from exc
     public = f"{settings.supabase_url}/storage/v1/object/public/{object_path}"
     return UploadOut(path=path, token=signed["token"], public_url=public)

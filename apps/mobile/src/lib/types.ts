@@ -7,6 +7,14 @@ export type ApplicationStatus =
   | "waitlisted"
   | "declined"
   | "withdrawn";
+export type OpportunityEventType = "viewed" | "application_started" | "shared";
+export type Analytics = {
+  views: number;
+  application_starts: number;
+  applications_submitted: number;
+  shares: number;
+  view_to_application_rate: number;
+};
 
 export type Cause = { id: string; slug: string; name: string };
 export type LocationPoint = {
@@ -80,4 +88,3 @@ export type Application = {
   next_step: string;
   history: { from_status: ApplicationStatus | null; to_status: ApplicationStatus; created_at: string }[];
 };
-

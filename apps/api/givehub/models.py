@@ -58,10 +58,19 @@ class ApplicationStatus(str, enum.Enum):
     withdrawn = "withdrawn"
 
 
+class OpportunityEventType(str, enum.Enum):
+    viewed = "viewed"
+    application_started = "application_started"
+    application_submitted = "application_submitted"
+    shared = "shared"
+
+
 opportunity_causes = Table(
     "opportunity_causes",
     Base.metadata,
-    Column("opportunity_id", Uuid, ForeignKey("opportunities.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "opportunity_id", Uuid, ForeignKey("opportunities.id", ondelete="CASCADE"), primary_key=True
+    ),
     Column("cause_id", Uuid, ForeignKey("causes.id", ondelete="CASCADE"), primary_key=True),
 )
 
@@ -152,7 +161,9 @@ class Opportunity(TimestampMixin, Base):
     recurrence: Mapped[Recurrence] = mapped_column(Enum(Recurrence, native_enum=False))
     effort: Mapped[str] = mapped_column(String(32), default="moderate")
     minimum_age: Mapped[int] = mapped_column(Integer, default=16)
-    accessibility: Mapped[str] = mapped_column(Text, default="Contact the host to discuss access needs.")
+    accessibility: Mapped[str] = mapped_column(
+        Text, default="Contact the host to discuss access needs."
+    )
     safety_notes: Mapped[str] = mapped_column(Text, default="Closed shoes and water recommended.")
     capacity: Mapped[int] = mapped_column(Integer, default=20)
     image_url: Mapped[str | None] = mapped_column(String(1000))
@@ -167,6 +178,9 @@ class Opportunity(TimestampMixin, Base):
         secondary=opportunity_causes, back_populates="opportunities"
     )
     applications: Mapped[list[Application]] = relationship(back_populates="opportunity")
+    events: Mapped[list[OpportunityEvent]] = relationship(
+        back_populates="opportunity", cascade="all, delete-orphan"
+    )
 
 
 class SavedOpportunity(TimestampMixin, Base):
@@ -198,7 +212,9 @@ class Application(TimestampMixin, Base):
     opportunity: Mapped[Opportunity] = relationship(back_populates="applications")
     volunteer: Mapped[Profile] = relationship()
     history: Mapped[list[ApplicationStatusHistory]] = relationship(
-        back_populates="application", cascade="all, delete-orphan", order_by="ApplicationStatusHistory.created_at"
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="ApplicationStatusHistory.created_at",
     )
 
 
@@ -217,3 +233,24 @@ class ApplicationStatusHistory(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
     application: Mapped[Application] = relationship(back_populates="history")
+
+
+class OpportunityEvent(Base):
+    __tablename__ = "opportunity_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("opportunities.id", ondelete="CASCADE"), index=True
+    )
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("profiles.id", ondelete="CASCADE"), index=True
+    )
+    event_type: Mapped[OpportunityEventType] = mapped_column(
+        Enum(OpportunityEventType, native_enum=False), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now_utc, index=True
+    )
+
+    opportunity: Mapped[Opportunity] = relationship(back_populates="events")
+    profile: Mapped[Profile] = relationship()
