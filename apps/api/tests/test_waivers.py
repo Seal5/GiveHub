@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
+from givehub.models import WaiverDocument
 from givehub.seed import DEMO_ORGANISER_ID, DEMO_VOLUNTEER_ID
 
 
@@ -197,3 +199,60 @@ def test_no_guardian_email_for_adult_volunteers(
         },
     )
     assert sorted(sent) == ["organiser@example.com", "volunteer@example.com"]
+
+
+def test_existing_acceptances_keep_the_wording_they_were_signed_against(
+    client: TestClient, identity_override, signed_waiver
+) -> None:
+    """The core audit property: rewriting a waiver must not retroactively change
+    what an earlier volunteer is recorded as having agreed to."""
+    item = first_opportunity(client)
+    applied = client.post(
+        f"/v1/opportunities/{item['id']}/applications",
+        json={
+            "note": "I would like to help with the coastal cleanup.",
+            "waiver": signed_waiver(item["id"]),
+        },
+    )
+    assert applied.status_code == 201
+    assert applied.json()["waiver"]["waiver_title"] == "GiveHub volunteer agreement"
+    assert applied.json()["waiver"]["waiver_version"] == 1
+
+    identity_override(DEMO_ORGANISER_ID)
+    body = "Our own coastal terms covering tides, boats, and shellfish safety. " * 2
+    client.put("/v1/organiser/waiver", json={"title": "Coastal waiver", "body": body})
+    client.put("/v1/organiser/waiver", json={"title": "Coastal waiver", "body": body + "Winter."})
+
+    # New applicants see the rewritten agreement...
+    identity_override(DEMO_VOLUNTEER_ID)
+    current = client.get(f"/v1/opportunities/{item['id']}/waiver").json()
+    assert current["title"] == "Coastal waiver"
+    assert current["version"] == 2
+
+    # ...while the earlier acceptance is unchanged.
+    identity_override(DEMO_ORGANISER_ID)
+    recorded = client.get(f"/v1/organiser/opportunities/{item['id']}/pipeline").json()
+    waiver = recorded["applications"][0]["waiver"]
+    assert waiver["waiver_title"] == "GiveHub volunteer agreement"
+    assert waiver["waiver_version"] == 1
+
+
+def test_organisations_cannot_edit_the_platform_default(
+    client: TestClient, identity_override, db
+) -> None:
+    """Publishing scopes the new document to the organisation, leaving the shared
+    default intact for every other host."""
+    identity_override(DEMO_ORGANISER_ID)
+    body = "Our own coastal terms covering tides, boats, and shellfish safety. " * 2
+    published = client.put(
+        "/v1/organiser/waiver", json={"title": "Coastal waiver", "body": body}
+    )
+    assert published.status_code == 200
+    assert client.get("/v1/organiser/waiver").json()["title"] == "Coastal waiver"
+
+    platform = list(
+        db.scalars(select(WaiverDocument).where(WaiverDocument.organisation_id.is_(None))).all()
+    )
+    assert len(platform) == 1
+    assert platform[0].title == "GiveHub volunteer agreement"
+    assert platform[0].is_active is True
