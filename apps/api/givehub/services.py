@@ -16,12 +16,15 @@ from givehub.models import (
     Profile,
     Role,
     SavedOpportunity,
+    WaiverAcceptance,
+    WaiverDocument,
 )
 from givehub.schemas import (
     ApplicationOut,
     CauseOut,
     OpportunityOut,
     StatusHistoryOut,
+    WaiverAcceptanceOut,
 )
 
 NEXT_STEPS = {
@@ -132,6 +135,7 @@ def to_opportunity_out(
         accessibility=item.accessibility,
         safety_notes=item.safety_notes,
         capacity=item.capacity,
+        requires_waiver=item.requires_waiver,
         confirmed_count=confirmed_count(db, item.id),
         image_url=item.image_url,
         status=item.status,
@@ -160,6 +164,41 @@ def saved_opportunity_ids(db: Session, profile_id: uuid.UUID) -> set[uuid.UUID]:
     )
 
 
+def active_waiver(db: Session, organisation_id: uuid.UUID | None) -> WaiverDocument | None:
+    """Returns the organisation's own active waiver, falling back to the platform default."""
+    own = db.scalar(
+        select(WaiverDocument)
+        .where(
+            WaiverDocument.organisation_id == organisation_id,
+            WaiverDocument.is_active.is_(True),
+        )
+        .order_by(WaiverDocument.version.desc())
+    )
+    if own:
+        return own
+    return db.scalar(
+        select(WaiverDocument)
+        .where(WaiverDocument.organisation_id.is_(None), WaiverDocument.is_active.is_(True))
+        .order_by(WaiverDocument.version.desc())
+    )
+
+
+def to_waiver_acceptance_out(item: Application) -> WaiverAcceptanceOut | None:
+    acceptance = item.waiver_acceptance
+    if acceptance is None:
+        return None
+    return WaiverAcceptanceOut(
+        signed_name=acceptance.signed_name,
+        is_minor=acceptance.is_minor,
+        guardian_name=acceptance.guardian_name,
+        guardian_email=acceptance.guardian_email,
+        guardian_relationship=acceptance.guardian_relationship,
+        accepted_at=acceptance.accepted_at,
+        waiver_version=acceptance.waiver_document.version,
+        waiver_title=acceptance.waiver_document.title,
+    )
+
+
 def to_application_out(item: Application) -> ApplicationOut:
     return ApplicationOut(
         id=item.id,
@@ -175,14 +214,19 @@ def to_application_out(item: Application) -> ApplicationOut:
         version=item.version,
         next_step=NEXT_STEPS[item.status],
         history=[StatusHistoryOut.model_validate(entry) for entry in item.history],
+        waiver=to_waiver_acceptance_out(item),
     )
 
 
-def application_options() -> tuple[Any, Any, Any]:
+def application_options() -> tuple[Any, ...]:
     return (
         selectinload(Application.opportunity),
         selectinload(Application.volunteer),
         selectinload(Application.history),
+        selectinload(Application.waiver_acceptance).selectinload(
+            WaiverAcceptance.waiver_document
+        ),
+        selectinload(Application.attendance),
     )
 
 

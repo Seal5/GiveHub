@@ -31,14 +31,6 @@ module.exports = {
         "dark-muted-foreground": "#9BAC9F",
         "dark-accent": "#E3A37E",
         "dark-destructive": "#FF5E6A",
-        // Compatibility aliases while the remaining screens migrate to semantic tokens.
-        ink: "#17221A",
-        paper: "#F6F6F0",
-        moss: "#2A8D58",
-        fern: "#E4F0E4",
-        clay: "#BB704B",
-        night: "#101A14",
-        mist: "#ECEDE6",
       },
       fontFamily: {
         display: ["LibreBaskerville_700Bold"],

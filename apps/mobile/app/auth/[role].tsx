@@ -5,7 +5,7 @@ import { z } from "zod";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Display, Field, Screen, Body, Eyebrow } from "@/components/ui";
+import { Button, Display, Field, IconButton, Screen, Body, Eyebrow, useThemeColours } from "@/components/ui";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Role } from "@/lib/types";
 
@@ -26,6 +26,7 @@ export default function AuthScreen() {
   const [signIn, setSignIn] = useState(mode === "signin");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { signIn: login, signUp } = useAuth();
+  const colours = useThemeColours();
   const {
     control,
     handleSubmit,
@@ -69,19 +70,12 @@ export default function AuthScreen() {
         className={`w-full self-center ${signIn ? "flex-1 justify-center" : ""}`}
         style={{ maxWidth: 400 }}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={() => router.back()}
-          className="h-10 w-10 items-center justify-center rounded-full bg-card dark:bg-dark-card"
-        >
-          <Ionicons name="arrow-back" size={20} color="#2A8D58" />
-        </Pressable>
+        <IconButton icon="arrow-back" label="Back" onPress={() => router.back()} />
         <View className="mt-6 h-12 w-12 items-center justify-center rounded-card bg-secondary dark:bg-dark-secondary">
           <Ionicons
             name={organiser ? "shield-checkmark-outline" : "heart-outline"}
             size={23}
-            color="#2A8D58"
+            color={colours.primary}
           />
         </View>
         <View className="mt-6">

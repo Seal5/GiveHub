@@ -14,14 +14,56 @@ from givehub.models import (
     Role,
     Suburb,
     VerificationStatus,
+    WaiverDocument,
 )
 
 DEMO_ORGANISER_ID = uuid.UUID("00000000-0000-4000-8000-000000000010")
 DEMO_VOLUNTEER_ID = uuid.UUID("00000000-0000-4000-8000-000000000020")
 
+DEFAULT_WAIVER_TITLE = "GiveHub volunteer agreement"
+DEFAULT_WAIVER_BODY = """\
+By signing below you agree to take part in this volunteer activity on the \
+following terms.
+
+1. Voluntary participation. You are taking part of your own free will and are \
+not an employee of the host organisation or of GiveHub. No payment is offered \
+for your time.
+
+2. Health and fitness. You confirm you are reasonably fit to carry out the \
+tasks described in the listing, and you will tell the host about any medical \
+condition, allergy, or access need that may affect your safety on the day.
+
+3. Instructions and safety. You agree to follow the host's briefing, wear any \
+protective equipment provided, and stop any task you believe is unsafe. \
+Outdoor volunteering can involve uneven ground, weather exposure, tools, and \
+manual handling.
+
+4. Assumption of risk. You understand that volunteering carries a risk of \
+injury, illness, or damage to personal property, and you accept those \
+ordinary risks. Nothing in this agreement removes any right you have under \
+the Accident Compensation Act 2001, the Consumer Guarantees Act 1993, or any \
+other New Zealand law that cannot be excluded by agreement.
+
+5. Liability. To the extent the law allows, you release the host organisation \
+and GiveHub from claims arising from your participation, except where the \
+loss is caused by their negligence or wilful misconduct.
+
+6. Under 18s. If you are under 18, a parent or guardian must provide their \
+name and email to give consent on your behalf.
+
+7. Photographs. Hosts may take photographs at the activity for their own \
+reporting. Tell the host on the day if you would rather not appear in them.
+
+8. Personal information. The details in your application are shared with the \
+host organisation so they can plan and run the activity, and are handled \
+under the Privacy Act 2020.
+
+This agreement is governed by New Zealand law."""
+
 
 def seed_reference_data(db: Session) -> None:
     if db.scalar(select(Suburb.id).limit(1)):
+        seed_default_waiver(db)
         return
     suburbs = {
         name: Suburb(name=name, city="Wellington", latitude=lat, longitude=lon)
@@ -190,4 +232,24 @@ def seed_reference_data(db: Session) -> None:
             causes=[causes[cause]],
         )
         db.add(event)
+    db.commit()
+    seed_default_waiver(db)
+
+
+def seed_default_waiver(db: Session) -> None:
+    """Ensures the platform-wide waiver exists so waiver-required listings can be signed."""
+    existing = db.scalar(
+        select(WaiverDocument.id).where(WaiverDocument.organisation_id.is_(None)).limit(1)
+    )
+    if existing:
+        return
+    db.add(
+        WaiverDocument(
+            organisation_id=None,
+            title=DEFAULT_WAIVER_TITLE,
+            body=DEFAULT_WAIVER_BODY,
+            version=1,
+            is_active=True,
+        )
+    )
     db.commit()

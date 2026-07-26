@@ -13,11 +13,15 @@ import {
   Button,
   Card,
   Display,
+  ErrorState,
   Eyebrow,
   Field,
   LoadingState,
   Screen,
+  useThemeColours,
 } from "@/components/ui";
+import { WaiverStep } from "@/components/WaiverStep";
+import { emptyWaiverDraft, toWaiverPayload, validateWaiver, type WaiverDraft } from "@/lib/waiver";
 
 const availabilityOptions = [
   {
@@ -64,6 +68,7 @@ function AvailabilitySelect({
   error?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const colours = useThemeColours();
   const selected = availabilityOptions.find((option) => option.value === value);
   return (
     <View className="mb-5">
@@ -87,11 +92,7 @@ function AvailabilitySelect({
             </Text>
           ) : null}
         </View>
-        <Ionicons
-          name={open ? "chevron-up" : "chevron-down"}
-          size={18}
-          color="#657166"
-        />
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={colours.mutedForeground} />
       </Pressable>
       {open ? (
         <View className="mt-2 overflow-hidden rounded-card border border-border bg-card dark:border-dark-border dark:bg-dark-card">
@@ -118,16 +119,14 @@ function AvailabilitySelect({
                     {option.detail}
                   </Text>
                 </View>
-                {active ? (
-                  <Ionicons name="checkmark-circle" size={19} color="#2A8D58" />
-                ) : null}
+                {active ? <Ionicons name="checkmark-circle" size={19} color={colours.primary} /> : null}
               </Pressable>
             );
           })}
         </View>
       ) : null}
       {error ? (
-        <Text className="mt-1 font-sans text-sm text-destructive dark:text-dark-destructive">
+        <Text accessibilityRole="alert" className="mt-1 font-sans text-sm text-destructive dark:text-dark-destructive">
           {error}
         </Text>
       ) : null}
@@ -137,14 +136,24 @@ function AvailabilitySelect({
 
 export default function ApplyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { token } = useAuth();
+  const { profile, token } = useAuth();
   const client = useQueryClient();
   const [complete, setComplete] = useState(false);
+  const [waiverDraft, setWaiverDraft] = useState<WaiverDraft>(() => emptyWaiverDraft());
+  const [waiverError, setWaiverError] = useState<string | null>(null);
   const startRecorded = useRef(false);
+  const nameSeeded = useRef(false);
+
   const event = useQuery({
     queryKey: ["opportunity", id],
     queryFn: () => api.opportunity(id, token),
   });
+  const waiver = useQuery({
+    queryKey: ["waiver", id],
+    queryFn: () => api.opportunityWaiver(id, token),
+    enabled: Boolean(id),
+  });
+
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -154,62 +163,93 @@ export default function ApplyScreen() {
     },
   });
   const mutation = useMutation({
-    mutationFn: (values: Values) => api.apply(id, values, token),
+    mutationFn: (values: Values) =>
+      api.apply(
+        id,
+        { ...values, ...(waiver.data ? { waiver: toWaiverPayload(waiver.data, waiverDraft) } : {}) },
+        token,
+      ),
     onSuccess: () => {
       setComplete(true);
       client.invalidateQueries({ queryKey: ["applications"] });
     },
   });
+
   useEffect(() => {
     if (!id || startRecorded.current) return;
     startRecorded.current = true;
     void api.trackOpportunityEvent(id, "application_started", token);
   }, [id, token]);
-  if (event.isLoading)
+
+  // Pre-fill the signature with the profile name, but only once so edits survive.
+  useEffect(() => {
+    if (nameSeeded.current || !profile?.display_name) return;
+    nameSeeded.current = true;
+    setWaiverDraft((draft) => ({ ...draft, signedName: profile.display_name }));
+  }, [profile?.display_name]);
+
+  if (event.isLoading || waiver.isLoading) {
     return (
       <Screen scroll={false}>
         <LoadingState />
       </Screen>
     );
-  if (complete)
+  }
+  if (event.isError) {
+    return (
+      <Screen>
+        <ErrorState error={event.error} onRetry={() => event.refetch()} />
+      </Screen>
+    );
+  }
+  if (waiver.isError) {
+    return (
+      <Screen>
+        <ErrorState title="The waiver couldn’t load" error={waiver.error} onRetry={() => waiver.refetch()} />
+      </Screen>
+    );
+  }
+
+  if (complete) {
     return (
       <Screen>
         <Eyebrow>Application received</Eyebrow>
         <Display>You’ve shown up already.</Display>
         <Body className="mb-8 mt-4">
-          The host will review your note. Every decision and next step will
-          appear in My activities.
+          The host will review your note. Every decision and next step will appear in My activities.
         </Body>
-        <Card className="mb-6 border-0 bg-fern/40">
-          <Text className="font-display text-xl text-ink">
-            {event.data?.title}
-          </Text>
+        <Card className="mb-6 border-0 bg-secondary dark:bg-dark-secondary">
+          <Text className="font-display text-xl text-foreground dark:text-dark-foreground">{event.data?.title}</Text>
           <Body className="mt-2">
-            We’ll keep the status language clear: received, under review,
-            confirmed, waitlisted, or declined.
+            We’ll keep the status language clear: received, under review, confirmed, waitlisted, or declined.
           </Body>
+          {waiver.data ? (
+            <Body className="mt-2">Your signed agreement (version {waiver.data.version}) is on file with the host.</Body>
+          ) : null}
         </Card>
-        <Button
-          label="View my activities"
-          onPress={() => router.replace("/(volunteer)/activities")}
-        />
+        <Button label="View my activities" onPress={() => router.replace("/(volunteer)/activities")} />
       </Screen>
     );
+  }
+
+  const submit = form.handleSubmit((values) => {
+    if (waiver.data) {
+      const problem = validateWaiver(waiverDraft);
+      if (problem) {
+        setWaiverError(problem);
+        return;
+      }
+    }
+    setWaiverError(null);
+    mutation.mutate(values);
+  });
+
   return (
-    <Screen className="px-6 pb-12 pt-5">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        onPress={() => router.back()}
-        className="mb-6 h-10 w-10 items-center justify-center rounded-full border border-border bg-card dark:border-dark-border dark:bg-dark-card"
-      >
-        <Ionicons name="arrow-back" size={20} color="#2A8D58" />
-      </Pressable>
+    <Screen>
       <Eyebrow>Apply thoughtfully</Eyebrow>
       <Display>Tell the host how you can help.</Display>
-      <Body className="mb-8 mt-3">
-        Your profile email and the answers below will be shared with{" "}
-        {event.data?.organisation_name}.
+      <Body className="mb-7 mt-3">
+        Your profile email and the answers below will be shared with {event.data?.organisation_name}.
       </Body>
       <Controller
         control={form.control}
@@ -235,7 +275,7 @@ export default function ApplyScreen() {
             label="Relevant experience (optional)"
             multiline
             numberOfLines={3}
-            placeholder="Skills, training, or similar volunteering"
+            textAlignVertical="top"
             value={field.value}
             onChangeText={field.onChange}
           />
@@ -252,16 +292,22 @@ export default function ApplyScreen() {
           />
         )}
       />
-      {mutation.error ? (
-        <Text className="mb-3 font-sans text-clay">
-          {mutation.error.message}
+      {waiver.data ? (
+        <WaiverStep
+          waiver={waiver.data}
+          draft={waiverDraft}
+          onChange={(next) => {
+            setWaiverDraft(next);
+            setWaiverError(null);
+          }}
+        />
+      ) : null}
+      {waiverError || mutation.error ? (
+        <Text accessibilityRole="alert" className="mb-3 font-sans text-sm text-destructive dark:text-dark-destructive">
+          {waiverError ?? mutation.error?.message}
         </Text>
       ) : null}
-      <Button
-        label="Send application"
-        loading={mutation.isPending}
-        onPress={form.handleSubmit((values) => mutation.mutate(values))}
-      />
+      <Button label="Send application" loading={mutation.isPending} onPress={submit} />
     </Screen>
   );
 }

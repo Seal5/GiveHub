@@ -1,6 +1,6 @@
-import { Image, ScrollView, Text, View, useColorScheme } from "react-native";
+import { Image, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Body, Display, Screen } from "@/components/ui";
+import { Body, Display, Screen, useThemeColours } from "@/components/ui";
 import { opportunityImage } from "@/lib/localAssets";
 
 type Friend = {
@@ -107,9 +107,9 @@ function FriendCard({ friend }: { friend: Friend }) {
 }
 
 function ActivityCard({ activity }: { activity: Activity }) {
-  const dark = useColorScheme() === "dark";
-  const muted = dark ? "#9BAC9F" : "#657166";
-  const primary = dark ? "#8BD19F" : "#2A8D58";
+  const colours = useThemeColours();
+  const muted = colours.mutedForeground;
+  const primary = colours.primary;
   const isComplete = activity.status === "Completed";
 
   return (

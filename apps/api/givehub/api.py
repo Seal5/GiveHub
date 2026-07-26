@@ -2,25 +2,37 @@ import csv
 import io
 import re
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import PurePosixPath
 from typing import Any
 from urllib.parse import quote
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from givehub.auth import Identity, current_identity
 from givehub.config import Settings, get_settings
 from givehub.database import get_db
 from givehub.email import send_email
+from givehub.formatting import as_utc as _as_utc
 from givehub.models import (
     Application,
     ApplicationStatus,
     ApplicationStatusHistory,
+    Attendance,
+    AttendanceStatus,
     Cause,
     Opportunity,
     OpportunityEvent,
@@ -33,13 +45,28 @@ from givehub.models import (
     SavedOpportunity,
     Suburb,
     VerificationStatus,
+    WaiverAcceptance,
+    WaiverDocument,
+)
+from givehub.notifications import (
+    Message,
+    application_received_for_organiser,
+    application_received_for_volunteer,
+    application_status_changed,
+    guardian_consent_copy,
 )
 from givehub.schemas import (
     AnalyticsOut,
     ApplicationCreate,
     ApplicationOut,
     ApplicationTransition,
+    AttendanceRowOut,
+    AttendanceSheetOut,
+    AttendanceUpdate,
     CauseOut,
+    ImpactCauseOut,
+    ImpactEventOut,
+    ImpactOut,
     LocationResult,
     LocationSuggestion,
     OpportunityCreate,
@@ -53,8 +80,11 @@ from givehub.schemas import (
     SuburbOut,
     UploadOut,
     UploadRequest,
+    WaiverOut,
+    WaiverUpdate,
 )
 from givehub.services import (
+    active_waiver,
     application_options,
     change_application_status,
     opportunity_query,
@@ -67,6 +97,26 @@ from givehub.services import (
 )
 
 router = APIRouter(prefix="/v1")
+
+
+def queue_message(
+    background_tasks: BackgroundTasks,
+    settings: Settings,
+    *,
+    recipient: str,
+    message: Message,
+) -> None:
+    """Sends after the response so a slow provider never delays the volunteer."""
+    background_tasks.add_task(
+        send_email,
+        settings,
+        recipient=recipient,
+        subject=message.subject,
+        text=message.text,
+        html=message.html,
+        attachments=message.attachments,
+        reply_to=message.reply_to,
+    )
 
 
 def analytics_out(
@@ -463,6 +513,28 @@ def unsave_opportunity(
         db.commit()
 
 
+@router.get("/opportunities/{opportunity_id}/waiver", response_model=WaiverOut | None)
+def get_opportunity_waiver(
+    opportunity_id: uuid.UUID,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> WaiverDocument | None:
+    """Returns the waiver a volunteer must sign, or null when none is required."""
+    require_profile(db, identity.user_id)
+    item = db.scalar(opportunity_query().where(Opportunity.id == opportunity_id))
+    if not item or item.status != OpportunityStatus.published:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
+    if not item.requires_waiver:
+        return None
+    waiver = active_waiver(db, item.organisation_id)
+    if waiver is None:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "This opportunity requires a waiver, but none is published yet",
+        )
+    return waiver
+
+
 @router.post(
     "/opportunities/{opportunity_id}/applications",
     response_model=ApplicationOut,
@@ -472,6 +544,7 @@ def apply(
     opportunity_id: uuid.UUID,
     payload: ApplicationCreate,
     background_tasks: BackgroundTasks,
+    request: Request,
     identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
@@ -480,6 +553,21 @@ def apply(
     item = db.get(Opportunity, opportunity_id)
     if not item or item.status != OpportunityStatus.published:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
+    waiver: WaiverDocument | None = None
+    if item.requires_waiver:
+        if payload.waiver is None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                "This opportunity requires a signed waiver",
+            )
+        waiver = db.get(WaiverDocument, payload.waiver.waiver_document_id)
+        expected = active_waiver(db, item.organisation_id)
+        # Reject a stale copy so the wording signed is always the wording shown.
+        if waiver is None or expected is None or waiver.id != expected.id:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "The waiver was updated; reopen the application to review it",
+            )
     application = Application(
         id=uuid.uuid4(),
         opportunity_id=opportunity_id,
@@ -489,6 +577,19 @@ def apply(
         availability=payload.availability,
     )
     db.add(application)
+    if waiver is not None and payload.waiver is not None:
+        db.add(
+            WaiverAcceptance(
+                application_id=application.id,
+                waiver_document_id=waiver.id,
+                signed_name=payload.waiver.signed_name.strip(),
+                is_minor=payload.waiver.is_minor,
+                guardian_name=payload.waiver.guardian_name,
+                guardian_email=str(payload.waiver.guardian_email) if payload.waiver.guardian_email else None,
+                guardian_relationship=payload.waiver.guardian_relationship,
+                signed_ip=request.client.host if request.client else None,
+            )
+        )
     db.add(
         ApplicationStatusHistory(
             application_id=application.id,
@@ -513,16 +614,28 @@ def apply(
         select(Application).options(*application_options()).where(Application.id == application.id)
     )
     assert loaded
-    background_tasks.add_task(
-        send_email,
+    queue_message(
+        background_tasks,
         settings,
         recipient=loaded.opportunity.organisation.owner.email,
-        subject=f"New GiveHub application: {loaded.opportunity.title}",
-        text=(
-            f"{loaded.volunteer.display_name} applied for {loaded.opportunity.title}.\n\n"
-            "Open GiveHub to review the application or export the applicant list."
-        ),
+        message=application_received_for_organiser(loaded),
     )
+    queue_message(
+        background_tasks,
+        settings,
+        recipient=loaded.volunteer.email,
+        message=application_received_for_volunteer(loaded),
+    )
+    acceptance = loaded.waiver_acceptance
+    if acceptance and acceptance.is_minor and acceptance.guardian_email:
+        queue_message(
+            background_tasks,
+            settings,
+            recipient=acceptance.guardian_email,
+            message=guardian_consent_copy(
+                loaded, acceptance.waiver_document.title, acceptance.waiver_document.version
+            ),
+        )
     return to_application_out(loaded)
 
 
@@ -587,6 +700,52 @@ def organiser_analytics(
     organiser = require_profile(db, identity.user_id, Role.organiser)
     assert organiser.organisation
     return analytics_out(db, organisation_id=organiser.organisation.id)
+
+
+@router.get("/organiser/waiver", response_model=WaiverOut)
+def get_organiser_waiver(
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> WaiverDocument:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    assert organiser.organisation
+    waiver = active_waiver(db, organiser.organisation.id)
+    if waiver is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No waiver is published")
+    return waiver
+
+
+@router.put("/organiser/waiver", response_model=WaiverOut)
+def update_organiser_waiver(
+    payload: WaiverUpdate,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> WaiverDocument:
+    """Publishes a new waiver version. Existing acceptances keep pointing at the
+    wording they were signed against, so past agreements stay auditable."""
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    assert organiser.organisation
+    current = db.scalar(
+        select(WaiverDocument)
+        .where(
+            WaiverDocument.organisation_id == organiser.organisation.id,
+            WaiverDocument.is_active.is_(True),
+        )
+        .order_by(WaiverDocument.version.desc())
+    )
+    if current:
+        current.is_active = False
+    published = WaiverDocument(
+        organisation_id=organiser.organisation.id,
+        title=payload.title,
+        body=payload.body,
+        version=(current.version + 1) if current else 1,
+        is_active=True,
+    )
+    db.add(published)
+    db.commit()
+    db.refresh(published)
+    return published
 
 
 @router.post(
@@ -706,6 +865,171 @@ def opportunity_analytics(
     )
 
 
+def event_hours(item: Opportunity) -> float:
+    """Event length in hours, used as the default when marking someone attended."""
+    return round(max((item.ends_at - item.starts_at).total_seconds() / 3600, 0), 2)
+
+
+@router.get(
+    "/organiser/opportunities/{opportunity_id}/attendance", response_model=AttendanceSheetOut
+)
+def attendance_sheet(
+    opportunity_id: uuid.UUID,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> AttendanceSheetOut:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    item = require_owned_opportunity(db, opportunity_id, organiser.id)
+    confirmed = db.scalars(
+        select(Application)
+        .options(*application_options())
+        .join(Application.volunteer)
+        .where(
+            Application.opportunity_id == opportunity_id,
+            Application.status == ApplicationStatus.confirmed,
+        )
+        .order_by(Profile.display_name)
+    ).all()
+    rows = [
+        AttendanceRowOut(
+            application_id=application.id,
+            volunteer_name=application.volunteer.display_name,
+            volunteer_email=application.volunteer.email,
+            status=application.attendance.status if application.attendance else AttendanceStatus.expected,
+            hours=application.attendance.hours if application.attendance else 0.0,
+            notes=application.attendance.notes if application.attendance else "",
+        )
+        for application in confirmed
+    ]
+    return AttendanceSheetOut(
+        opportunity_id=item.id,
+        opportunity_title=item.title,
+        default_hours=event_hours(item),
+        expected=sum(1 for row in rows if row.status == AttendanceStatus.expected),
+        attended=sum(1 for row in rows if row.status == AttendanceStatus.attended),
+        no_show=sum(1 for row in rows if row.status == AttendanceStatus.no_show),
+        total_hours=round(sum(row.hours for row in rows), 2),
+        rows=rows,
+    )
+
+
+@router.put("/organiser/applications/{application_id}/attendance", response_model=AttendanceRowOut)
+def record_attendance(
+    application_id: uuid.UUID,
+    payload: AttendanceUpdate,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> AttendanceRowOut:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    application = db.scalar(
+        select(Application).options(*application_options()).where(Application.id == application_id)
+    )
+    if not application or application.opportunity.organisation.owner_id != organiser.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Application not found")
+    if application.status != ApplicationStatus.confirmed:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Only confirmed volunteers can be marked off"
+        )
+    hours = payload.hours
+    if hours is None:
+        hours = event_hours(application.opportunity) if payload.status == AttendanceStatus.attended else 0.0
+    if payload.status != AttendanceStatus.attended:
+        # Hours only mean something for someone who actually turned up.
+        hours = 0.0
+    record = application.attendance
+    if record is None:
+        record = Attendance(application_id=application.id)
+        db.add(record)
+    record.status = payload.status
+    record.hours = hours
+    record.notes = payload.notes
+    record.recorded_by = organiser.id
+    record.recorded_at = datetime.now(UTC)
+    db.commit()
+    return AttendanceRowOut(
+        application_id=application.id,
+        volunteer_name=application.volunteer.display_name,
+        volunteer_email=application.volunteer.email,
+        status=record.status,
+        hours=record.hours,
+        notes=record.notes,
+    )
+
+
+@router.get("/volunteers/me/impact", response_model=ImpactOut)
+def my_impact(
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> ImpactOut:
+    volunteer = require_profile(db, identity.user_id, Role.volunteer)
+    attended = list(
+        db.scalars(
+            select(Application)
+            .options(
+                *application_options(),
+                selectinload(Application.opportunity).selectinload(Opportunity.causes),
+            )
+            .join(Application.attendance)
+            .join(Application.opportunity)
+            .where(
+                Application.volunteer_id == volunteer.id,
+                Attendance.status == AttendanceStatus.attended,
+            )
+            .order_by(Opportunity.starts_at.desc())
+        ).all()
+    )
+    now = datetime.now(UTC)
+    upcoming = (
+        db.scalar(
+            select(func.count(Application.id))
+            .join(Application.opportunity)
+            .where(
+                Application.volunteer_id == volunteer.id,
+                Application.status == ApplicationStatus.confirmed,
+                Opportunity.starts_at >= now,
+            )
+        )
+        or 0
+    )
+    cause_events: dict[str, tuple[str, int]] = {}
+    for application in attended:
+        for cause in application.opportunity.causes:
+            name, count = cause_events.get(cause.slug, (cause.name, 0))
+            cause_events[cause.slug] = (name, count + 1)
+    total_hours = round(sum(a.attendance.hours for a in attended if a.attendance), 2)
+    hours_this_year = round(
+        sum(
+            a.attendance.hours
+            for a in attended
+            if a.attendance and _as_utc(a.opportunity.starts_at).year == now.year
+        ),
+        2,
+    )
+    return ImpactOut(
+        total_hours=total_hours,
+        events_attended=len(attended),
+        organisations_supported=len({a.opportunity.organisation_id for a in attended}),
+        upcoming_confirmed=int(upcoming),
+        hours_this_year=hours_this_year,
+        causes=[
+            ImpactCauseOut(slug=slug, name=name, events=count)
+            for slug, (name, count) in sorted(
+                cause_events.items(), key=lambda entry: entry[1][1], reverse=True
+            )
+        ],
+        recent=[
+            ImpactEventOut(
+                opportunity_id=a.opportunity_id,
+                title=a.opportunity.title,
+                organisation_name=a.opportunity.organisation.name,
+                starts_at=a.opportunity.starts_at,
+                hours=a.attendance.hours if a.attendance else 0.0,
+            )
+            for a in attended[:10]
+        ],
+    )
+
+
 @router.get("/organiser/opportunities/{opportunity_id}/applications.csv")
 def export_applications(
     opportunity_id: uuid.UUID,
@@ -735,9 +1059,16 @@ def export_applications(
             "Experience",
             "Application note",
             "Applied at",
+            "Waiver signed at",
+            "Waiver version",
+            "Waiver signed by",
+            "Under 18",
+            "Guardian name",
+            "Guardian email",
         ]
     )
     for application in applications:
+        waiver = application.waiver_acceptance
         writer.writerow(
             [
                 application.volunteer.display_name,
@@ -747,6 +1078,12 @@ def export_applications(
                 spreadsheet_safe(application.experience),
                 spreadsheet_safe(application.note),
                 application.created_at.isoformat(),
+                waiver.accepted_at.isoformat() if waiver else "",
+                waiver.waiver_document.version if waiver else "",
+                spreadsheet_safe(waiver.signed_name) if waiver else "",
+                ("yes" if waiver.is_minor else "no") if waiver else "",
+                spreadsheet_safe(waiver.guardian_name or "") if waiver else "",
+                waiver.guardian_email or "" if waiver else "",
             ]
         )
     slug = re.sub(r"[^a-z0-9]+", "-", item.title.lower()).strip("-") or "opportunity"
@@ -778,17 +1115,11 @@ def transition_application(
     change_application_status(db, item, payload.status, organiser.id, payload.version)
     db.commit()
     db.refresh(item)
-    background_tasks.add_task(
-        send_email,
+    queue_message(
+        background_tasks,
         settings,
         recipient=item.volunteer.email,
-        subject=f"Your GiveHub application is {payload.status.value.replace('_', ' ')}",
-        text=(
-            f"Hi {item.volunteer.display_name},\n\n"
-            f"Your application for {item.opportunity.title} is now "
-            f"{payload.status.value.replace('_', ' ')}.\n\n"
-            f"{to_application_out(item).next_step}"
-        ),
+        message=application_status_changed(item),
     )
     return to_application_out(item)
 

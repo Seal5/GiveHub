@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { LocationPoint } from "@/lib/types";
-import { Body, Button, Card } from "@/components/ui";
+import { Body, Button, Card, useThemeColours } from "@/components/ui";
 
 type Props = {
   value: LocationPoint | null;
@@ -17,6 +17,7 @@ export function LocationPicker({ value, onChange, token, title = "Search locatio
   const [query, setQuery] = useState(value?.label ?? "");
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
+  const colours = useThemeColours();
   const deferredQuery = useDeferredValue(query.trim());
   const suggestions = useQuery({
     queryKey: ["location-suggestions", deferredQuery],
@@ -68,8 +69,8 @@ export function LocationPicker({ value, onChange, token, title = "Search locatio
   return <Card className="mb-5">
     <Text className="mb-3 font-strong text-sm text-foreground dark:text-dark-foreground">{title}</Text>
     <View className="min-h-14 flex-row items-center rounded-card border border-border bg-background px-4 dark:border-dark-border dark:bg-dark-background">
-      <Ionicons name="location-outline" size={20} color="#2A8D58" />
-      <TextInput accessibilityLabel={title} value={query} onChangeText={(next) => { setQuery(next); setLocationError(null); }} placeholder="Address, town, postcode or landmark" placeholderTextColor="#657166" className="ml-3 flex-1 font-sans text-sm text-foreground dark:text-dark-foreground" />
+      <Ionicons name="location-outline" size={20} color={colours.primary} />
+      <TextInput accessibilityLabel={title} value={query} onChangeText={(next) => { setQuery(next); setLocationError(null); }} placeholder="Address, town, postcode or landmark" placeholderTextColor={colours.mutedForeground} className="ml-3 flex-1 font-sans text-sm text-foreground dark:text-dark-foreground" />
     </View>
     {showSuggestions ? suggestions.data?.map((item) => <Pressable key={item.place_id} accessibilityRole="button" onPress={() => selectSuggestion(item.place_id)} className="min-h-12 justify-center border-b border-border py-2 dark:border-dark-border"><Text className="font-sans text-sm text-foreground dark:text-dark-foreground">{item.label}</Text></Pressable>) : null}
     {showSuggestions && suggestions.error ? <Text className="mt-2 font-sans text-sm text-destructive dark:text-dark-destructive">{suggestions.error.message}</Text> : null}
