@@ -1,5 +1,6 @@
 import "../global.css";
 import { useEffect } from "react";
+import { Platform, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -50,6 +51,17 @@ function ThemedStatusBar() {
   return <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />;
 }
 
+function AppFrame() {
+  return (
+    <View
+      className="flex-1 overflow-hidden bg-background dark:bg-dark-background"
+      style={Platform.OS === "web" ? { width: "100%", maxWidth: 480, alignSelf: "center" } : undefined}
+    >
+      <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
+    </View>
+  );
+}
+
 export default function RootLayout() {
   const [dm] = useDMSans({ DMSans_400Regular, DMSans_600SemiBold, DMSans_700Bold });
   const [display] = useDisplay({ LibreBaskerville_700Bold });
@@ -62,7 +74,7 @@ export default function RootLayout() {
           <NavigationGuard />
           <ThemeSync />
           <ThemedStatusBar />
-          <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
+          <AppFrame />
         </AuthProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

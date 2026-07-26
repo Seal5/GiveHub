@@ -7,6 +7,7 @@ export default function VolunteerLayout() {
     <Tabs screenOptions={screenOptions}>
       <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: tabIcon("home-outline") }} />
       <Tabs.Screen name="discover" options={{ title: "Discover", tabBarIcon: tabIcon("compass-outline") }} />
+      <Tabs.Screen name="social" options={{ title: "Social", tabBarIcon: tabIcon("people-outline") }} />
       <Tabs.Screen name="activities" options={{ title: "Activities", tabBarIcon: tabIcon("calendar-outline") }} />
       <Tabs.Screen name="impact" options={{ title: "Impact", tabBarIcon: tabIcon("ribbon-outline") }} />
       <Tabs.Screen name="saved" options={{ title: "Saved", tabBarIcon: tabIcon("bookmark-outline") }} />
