@@ -5,6 +5,7 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Enum,
@@ -56,6 +57,13 @@ class ApplicationStatus(str, enum.Enum):
     waitlisted = "waitlisted"
     declined = "declined"
     withdrawn = "withdrawn"
+
+
+class AttendanceStatus(str, enum.Enum):
+    expected = "expected"
+    attended = "attended"
+    no_show = "no_show"
+    excused = "excused"
 
 
 class OpportunityEventType(str, enum.Enum):
@@ -166,6 +174,7 @@ class Opportunity(TimestampMixin, Base):
     )
     safety_notes: Mapped[str] = mapped_column(Text, default="Closed shoes and water recommended.")
     capacity: Mapped[int] = mapped_column(Integer, default=20)
+    requires_waiver: Mapped[bool] = mapped_column(Boolean, default=True)
     image_url: Mapped[str | None] = mapped_column(String(1000))
     status: Mapped[OpportunityStatus] = mapped_column(
         Enum(OpportunityStatus, native_enum=False), default=OpportunityStatus.draft, index=True
@@ -216,6 +225,12 @@ class Application(TimestampMixin, Base):
         cascade="all, delete-orphan",
         order_by="ApplicationStatusHistory.created_at",
     )
+    waiver_acceptance: Mapped[WaiverAcceptance | None] = relationship(
+        back_populates="application", cascade="all, delete-orphan", uselist=False
+    )
+    attendance: Mapped[Attendance | None] = relationship(
+        back_populates="application", cascade="all, delete-orphan", uselist=False
+    )
 
 
 class ApplicationStatusHistory(Base):
@@ -233,6 +248,73 @@ class ApplicationStatusHistory(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
     application: Mapped[Application] = relationship(back_populates="history")
+
+
+class Attendance(TimestampMixin, Base):
+    """Whether a confirmed volunteer actually turned up, and for how long.
+
+    Hours are recorded per attendance rather than derived from the event window so
+    an organiser can log the time someone genuinely gave.
+    """
+
+    __tablename__ = "attendance_records"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    status: Mapped[AttendanceStatus] = mapped_column(
+        Enum(AttendanceStatus, native_enum=False), default=AttendanceStatus.expected, index=True
+    )
+    hours: Mapped[float] = mapped_column(Float, default=0.0)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    recorded_by: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    recorded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    application: Mapped[Application] = relationship(back_populates="attendance")
+
+
+class WaiverDocument(TimestampMixin, Base):
+    """A versioned, immutable waiver. Editing publishes a new row rather than
+    mutating this one, so an acceptance always points at the exact wording signed."""
+
+    __tablename__ = "waiver_documents"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    # NULL marks the GiveHub-wide default used by organisations without their own.
+    organisation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("organisations.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(180))
+    body: Mapped[str] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+    organisation: Mapped[Organisation | None] = relationship()
+
+
+class WaiverAcceptance(Base):
+    """Evidence that a volunteer agreed to a specific waiver version."""
+
+    __tablename__ = "waiver_acceptances"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    waiver_document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("waiver_documents.id"), index=True
+    )
+    signed_name: Mapped[str] = mapped_column(String(120))
+    is_minor: Mapped[bool] = mapped_column(Boolean, default=False)
+    guardian_name: Mapped[str | None] = mapped_column(String(120))
+    guardian_email: Mapped[str | None] = mapped_column(String(320))
+    guardian_relationship: Mapped[str | None] = mapped_column(String(80))
+    signed_ip: Mapped[str | None] = mapped_column(String(45))
+    accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+    application: Mapped[Application] = relationship(back_populates="waiver_acceptance")
+    waiver_document: Mapped[WaiverDocument] = relationship()
 
 
 class OpportunityEvent(Base):

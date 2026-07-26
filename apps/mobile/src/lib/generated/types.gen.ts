@@ -46,6 +46,7 @@ export type ApplicationCreate = {
      * Note
      */
     note: string;
+    waiver?: WaiverAcceptanceIn | null;
 };
 
 /**
@@ -101,6 +102,7 @@ export type ApplicationOut = {
      * Volunteer Name
      */
     volunteer_name: string;
+    waiver?: WaiverAcceptanceOut | null;
 };
 
 /**
@@ -117,6 +119,91 @@ export type ApplicationTransition = {
      * Version
      */
     version: number;
+};
+
+/**
+ * AttendanceRowOut
+ */
+export type AttendanceRowOut = {
+    /**
+     * Application Id
+     */
+    application_id: string;
+    /**
+     * Hours
+     */
+    hours: number;
+    /**
+     * Notes
+     */
+    notes: string;
+    status: AttendanceStatus;
+    /**
+     * Volunteer Email
+     */
+    volunteer_email: string;
+    /**
+     * Volunteer Name
+     */
+    volunteer_name: string;
+};
+
+/**
+ * AttendanceSheetOut
+ */
+export type AttendanceSheetOut = {
+    /**
+     * Attended
+     */
+    attended: number;
+    /**
+     * Default Hours
+     */
+    default_hours: number;
+    /**
+     * Expected
+     */
+    expected: number;
+    /**
+     * No Show
+     */
+    no_show: number;
+    /**
+     * Opportunity Id
+     */
+    opportunity_id: string;
+    /**
+     * Opportunity Title
+     */
+    opportunity_title: string;
+    /**
+     * Rows
+     */
+    rows: Array<AttendanceRowOut>;
+    /**
+     * Total Hours
+     */
+    total_hours: number;
+};
+
+/**
+ * AttendanceStatus
+ */
+export type AttendanceStatus = 'expected' | 'attended' | 'no_show' | 'excused';
+
+/**
+ * AttendanceUpdate
+ */
+export type AttendanceUpdate = {
+    /**
+     * Hours
+     */
+    hours?: number | null;
+    /**
+     * Notes
+     */
+    notes?: string;
+    status: AttendanceStatus;
 };
 
 /**
@@ -145,6 +232,86 @@ export type HttpValidationError = {
      * Detail
      */
     detail?: Array<ValidationError>;
+};
+
+/**
+ * ImpactCauseOut
+ */
+export type ImpactCauseOut = {
+    /**
+     * Events
+     */
+    events: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Slug
+     */
+    slug: string;
+};
+
+/**
+ * ImpactEventOut
+ */
+export type ImpactEventOut = {
+    /**
+     * Hours
+     */
+    hours: number;
+    /**
+     * Opportunity Id
+     */
+    opportunity_id: string;
+    /**
+     * Organisation Name
+     */
+    organisation_name: string;
+    /**
+     * Starts At
+     */
+    starts_at: string;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+/**
+ * ImpactOut
+ *
+ * A volunteer's own record of what they have actually contributed.
+ */
+export type ImpactOut = {
+    /**
+     * Causes
+     */
+    causes: Array<ImpactCauseOut>;
+    /**
+     * Events Attended
+     */
+    events_attended: number;
+    /**
+     * Hours This Year
+     */
+    hours_this_year: number;
+    /**
+     * Organisations Supported
+     */
+    organisations_supported: number;
+    /**
+     * Recent
+     */
+    recent: Array<ImpactEventOut>;
+    /**
+     * Total Hours
+     */
+    total_hours: number;
+    /**
+     * Upcoming Confirmed
+     */
+    upcoming_confirmed: number;
 };
 
 /**
@@ -285,6 +452,10 @@ export type OpportunityCreate = {
     postcode?: string | null;
     recurrence?: Recurrence;
     /**
+     * Requires Waiver
+     */
+    requires_waiver?: boolean;
+    /**
      * Safety Notes
      */
     safety_notes?: string;
@@ -416,6 +587,10 @@ export type OpportunityOut = {
     postcode: string | null;
     recurrence: Recurrence;
     /**
+     * Requires Waiver
+     */
+    requires_waiver?: boolean;
+    /**
      * Safety Notes
      */
     safety_notes: string;
@@ -524,6 +699,10 @@ export type OpportunityUpdate = {
      */
     postcode?: string | null;
     recurrence?: Recurrence | null;
+    /**
+     * Requires Waiver
+     */
+    requires_waiver?: boolean | null;
     /**
      * Safety Notes
      */
@@ -752,6 +931,116 @@ export type ValidationError = {
      * Error Type
      */
     type: string;
+};
+
+/**
+ * WaiverAcceptanceIn
+ *
+ * Captured at the moment of applying; the version signed is pinned by id.
+ */
+export type WaiverAcceptanceIn = {
+    /**
+     * Agreed
+     */
+    agreed: boolean;
+    /**
+     * Guardian Email
+     */
+    guardian_email?: string | null;
+    /**
+     * Guardian Name
+     */
+    guardian_name?: string | null;
+    /**
+     * Guardian Relationship
+     */
+    guardian_relationship?: string | null;
+    /**
+     * Is Minor
+     */
+    is_minor?: boolean;
+    /**
+     * Signed Name
+     */
+    signed_name: string;
+    /**
+     * Waiver Document Id
+     */
+    waiver_document_id: string;
+};
+
+/**
+ * WaiverAcceptanceOut
+ */
+export type WaiverAcceptanceOut = {
+    /**
+     * Accepted At
+     */
+    accepted_at: string;
+    /**
+     * Guardian Email
+     */
+    guardian_email: string | null;
+    /**
+     * Guardian Name
+     */
+    guardian_name: string | null;
+    /**
+     * Guardian Relationship
+     */
+    guardian_relationship: string | null;
+    /**
+     * Is Minor
+     */
+    is_minor: boolean;
+    /**
+     * Signed Name
+     */
+    signed_name: string;
+    /**
+     * Waiver Title
+     */
+    waiver_title: string;
+    /**
+     * Waiver Version
+     */
+    waiver_version: number;
+};
+
+/**
+ * WaiverOut
+ */
+export type WaiverOut = {
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * WaiverUpdate
+ */
+export type WaiverUpdate = {
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Title
+     */
+    title: string;
 };
 
 export type HealthHealthGetData = {
@@ -1114,6 +1403,38 @@ export type SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponses = {
 
 export type SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponse = SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponses[keyof SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponses];
 
+export type GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetData = {
+    body?: never;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: never;
+    url: '/v1/opportunities/{opportunity_id}/waiver';
+};
+
+export type GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetError = GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetErrors[keyof GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetErrors];
+
+export type GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponses = {
+    /**
+     * Response Get Opportunity Waiver V1 Opportunities  Opportunity Id  Waiver Get
+     *
+     * Successful Response
+     */
+    200: WaiverOut | null;
+};
+
+export type GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponse = GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponses[keyof GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponses];
+
 export type OrganiserAnalyticsV1OrganiserAnalyticsGetData = {
     body?: never;
     path?: never;
@@ -1159,6 +1480,36 @@ export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchRespon
 };
 
 export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponse = TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses[keyof TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses];
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutData = {
+    body: AttendanceUpdate;
+    path: {
+        /**
+         * Application Id
+         */
+        application_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/applications/{application_id}/attendance';
+};
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutError = RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors[keyof RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors];
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendanceRowOut;
+};
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponse = RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses[keyof RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses];
 
 export type OrganiserOpportunitiesV1OrganiserOpportunitiesGetData = {
     body?: never;
@@ -1304,6 +1655,36 @@ export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsC
     200: unknown;
 };
 
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetData = {
+    body?: never;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/opportunities/{opportunity_id}/attendance';
+};
+
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetError = AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors[keyof AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors];
+
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendanceSheetOut;
+};
+
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponse = AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses[keyof AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses];
+
 export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostData = {
     body: UploadRequest;
     path: {
@@ -1437,6 +1818,47 @@ export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPo
 
 export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponse = UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses[keyof UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses];
 
+export type GetOrganiserWaiverV1OrganiserWaiverGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/waiver';
+};
+
+export type GetOrganiserWaiverV1OrganiserWaiverGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: WaiverOut;
+};
+
+export type GetOrganiserWaiverV1OrganiserWaiverGetResponse = GetOrganiserWaiverV1OrganiserWaiverGetResponses[keyof GetOrganiserWaiverV1OrganiserWaiverGetResponses];
+
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutData = {
+    body: WaiverUpdate;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/waiver';
+};
+
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutError = UpdateOrganiserWaiverV1OrganiserWaiverPutErrors[keyof UpdateOrganiserWaiverV1OrganiserWaiverPutErrors];
+
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: WaiverOut;
+};
+
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutResponse = UpdateOrganiserWaiverV1OrganiserWaiverPutResponses[keyof UpdateOrganiserWaiverV1OrganiserWaiverPutResponses];
+
 export type CreateProfileV1ProfilesPostData = {
     body: ProfileCreate;
     path?: never;
@@ -1538,3 +1960,19 @@ export type ListSuburbsV1ReferenceSuburbsGetResponses = {
 };
 
 export type ListSuburbsV1ReferenceSuburbsGetResponse = ListSuburbsV1ReferenceSuburbsGetResponses[keyof ListSuburbsV1ReferenceSuburbsGetResponses];
+
+export type MyImpactV1VolunteersMeImpactGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/volunteers/me/impact';
+};
+
+export type MyImpactV1VolunteersMeImpactGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ImpactOut;
+};
+
+export type MyImpactV1VolunteersMeImpactGetResponse = MyImpactV1VolunteersMeImpactGetResponses[keyof MyImpactV1VolunteersMeImpactGetResponses];

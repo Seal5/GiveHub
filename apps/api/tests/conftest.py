@@ -55,3 +55,20 @@ def identity_override():
 
     return set_identity
 
+
+@pytest.fixture
+def signed_waiver(client: TestClient):
+    """Builds the waiver acceptance payload an application needs."""
+
+    def build(opportunity_id: str, **overrides: object) -> dict[str, object]:
+        waiver = client.get(f"/v1/opportunities/{opportunity_id}/waiver").json()
+        return {
+            "waiver_document_id": waiver["id"],
+            "agreed": True,
+            "signed_name": "Mia Thompson",
+            "is_minor": False,
+            **overrides,
+        }
+
+    return build
+

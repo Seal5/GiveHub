@@ -9,13 +9,25 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "nz.co.givehub.app"
+      "bundleIdentifier": "nz.co.givehub.app",
+      "associatedDomains": ["applinks:givehub.nz", "applinks:www.givehub.nz"]
     },
     "android": {
       "package": "nz.co.givehub.app",
       "adaptiveIcon": {
         "backgroundColor": "#102219"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "givehub.nz", "pathPrefix": "/o" },
+            { "scheme": "https", "host": "www.givehub.nz", "pathPrefix": "/o" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "plugins": [
       "expo-router",
@@ -32,4 +44,3 @@
     }
   }
 }
-

@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
-import { Body, BrandMark, Button, Card, LoadingState, Screen } from "@/components/ui";
+import { Body, BrandMark, Button, Card, ErrorState, LoadingState, Screen, useThemeColours } from "@/components/ui";
 
 function Metric({ value, label }: { value: string; label: string }) {
   return (
@@ -15,15 +15,32 @@ function Metric({ value, label }: { value: string; label: string }) {
   );
 }
 
+function greeting(hour = new Date().getHours()) {
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function OrganiserOverview() {
   const { profile, token } = useAuth();
+  const colours = useThemeColours();
   const events = useQuery({ queryKey: ["organiser", "events"], queryFn: () => api.organiserOpportunities(token) });
   const analytics = useQuery({ queryKey: ["organiser", "analytics"], queryFn: () => api.organiserAnalytics(token) });
   if (events.isLoading || analytics.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
   const organisation = profile?.organisation_name ?? "Your organisation";
+  const refresh = () => { void events.refetch(); void analytics.refetch(); };
+
+  if (events.isError || analytics.isError) {
+    return (
+      <Screen className="px-5 pb-6 pt-3">
+        <BrandMark />
+        <View className="mt-8"><ErrorState error={events.error ?? analytics.error} onRetry={refresh} /></View>
+      </Screen>
+    );
+  }
 
   return (
-    <Screen className="px-5 pb-6 pt-3">
+    <Screen className="px-5 pb-6 pt-3" refreshing={events.isRefetching || analytics.isRefetching} onRefresh={refresh}>
       <View className="flex-row items-center justify-between">
         <BrandMark />
         <View className="h-10 w-10 items-center justify-center rounded-full bg-secondary dark:bg-dark-secondary">
@@ -32,13 +49,14 @@ export default function OrganiserOverview() {
       </View>
 
       <Text className="mt-7 font-strong text-xs uppercase tracking-[1.5px] text-primary dark:text-dark-primary">{organisation}</Text>
-      <Text accessibilityRole="header" className="mt-2 font-display text-[30px] leading-8 tracking-[-1px] text-foreground dark:text-dark-foreground">Good morning, team.</Text>
+      <Text accessibilityRole="header" className="mt-2 font-display text-[30px] leading-8 tracking-[-1px] text-foreground dark:text-dark-foreground">{greeting()}, team.</Text>
       <Body className="mt-2">See what needs attention before volunteers are left waiting.</Body>
 
       <View className="mt-6 flex-row flex-wrap justify-between">
         <Metric value={String(analytics.data?.views ?? 0)} label="Opportunity views" />
         <Metric value={String(analytics.data?.application_starts ?? 0)} label="Application starts" />
         <Metric value={String(analytics.data?.applications_submitted ?? 0)} label="Applications" />
+        <Metric value={String(analytics.data?.shares ?? 0)} label="Shares" />
         <Metric value={`${analytics.data?.view_to_application_rate ?? 0}%`} label="View-to-application" />
       </View>
 
@@ -49,17 +67,17 @@ export default function OrganiserOverview() {
       <Pressable onPress={() => router.push("/(organiser)/pipeline")} accessibilityRole="button">
         <Card className="mt-1 p-4">
           <View className="flex-row items-center gap-3">
-            <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary dark:bg-dark-secondary"><Ionicons name="people-outline" size={20} color="#2A8D58" /></View>
+            <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary dark:bg-dark-secondary"><Ionicons name="people-outline" size={20} color={colours.primary} /></View>
             <View className="flex-1">
               <Text className="font-strong text-sm text-foreground dark:text-dark-foreground">{analytics.data?.applications_submitted ?? 0} volunteer applications</Text>
               <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{events.data?.[0]?.title ?? "Your latest opportunity"} · filter or export the applicant list</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#2A8D58" />
+            <Ionicons name="chevron-forward" size={18} color={colours.primary} />
           </View>
         </Card>
       </Pressable>
 
-      <Button className="mt-7" label="Create a new opportunity" icon={<Ionicons name="add" size={20} color="#F8FFF8" />} onPress={() => router.push("/(organiser)/create")} />
+      <Button className="mt-7" label="Create a new opportunity" icon={<Ionicons name="add" size={20} color={colours.primaryForeground} />} onPress={() => router.push("/(organiser)/create")} />
     </Screen>
   );
 }

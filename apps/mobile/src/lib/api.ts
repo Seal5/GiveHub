@@ -3,12 +3,17 @@ import type {
   Analytics,
   Application,
   ApplicationStatus,
+  AttendanceSheet,
+  AttendanceStatus,
+  Impact,
   LocationPoint,
   Opportunity,
   OpportunityEventType,
   Profile,
   Role,
   ThemePreference,
+  Waiver,
+  WaiverAcceptanceInput,
 } from "./types";
 
 const apiUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "");
@@ -35,6 +40,49 @@ const demoAnalytics: Analytics = {
   view_to_application_rate: Math.round((applications.length / 48) * 1000) / 10,
 };
 const demoProfiles: Record<Role, Profile> = { volunteer: profileFor("volunteer"), organiser: profileFor("organiser") };
+const demoAttendance: Record<string, { status: AttendanceStatus; hours: number; notes: string }> = {};
+/** Derived from demo attendance so the impact screen responds to check-ins. */
+const demoImpact = (): Impact => {
+  const attended = Object.entries(demoAttendance).filter(([, record]) => record.status === "attended");
+  const events = attended
+    .map(([id, record]) => ({ application: demoApplications.find((item) => item.id === id), record }))
+    .filter((entry): entry is { application: Application; record: { status: AttendanceStatus; hours: number; notes: string } } => Boolean(entry.application));
+  const opportunitiesFor = events.map((entry) => demoOpportunities.find((item) => item.id === entry.application.opportunity_id));
+  return {
+    total_hours: events.reduce((sum, entry) => sum + entry.record.hours, 0),
+    events_attended: events.length,
+    organisations_supported: new Set(opportunitiesFor.map((item) => item?.organisation_name)).size,
+    upcoming_confirmed: demoApplications.filter((item) => item.status === "confirmed").length,
+    hours_this_year: events.reduce((sum, entry) => sum + entry.record.hours, 0),
+    causes: [...new Set(opportunitiesFor.flatMap((item) => item?.causes ?? []).map((cause) => cause.slug))].map((slug) => ({
+      slug,
+      name: causes.find((cause) => cause.slug === slug)?.name ?? slug,
+      events: 1,
+    })),
+    recent: events.map((entry, index) => ({
+      opportunity_id: entry.application.opportunity_id,
+      title: entry.application.opportunity_title,
+      organisation_name: opportunitiesFor[index]?.organisation_name ?? "",
+      starts_at: opportunitiesFor[index]?.starts_at ?? new Date().toISOString(),
+      hours: entry.record.hours,
+    })),
+  };
+};
+const demoWaiver: Waiver = {
+  id: "00000000-0000-4000-8000-000000000090",
+  title: "GiveHub volunteer agreement",
+  version: 1,
+  body: [
+    "By signing below you agree to take part in this volunteer activity on the following terms.",
+    "",
+    "1. Voluntary participation. You are taking part of your own free will and are not an employee of the host organisation or of GiveHub.",
+    "2. Health and fitness. You confirm you are reasonably fit for the tasks described, and will tell the host about any medical condition, allergy, or access need.",
+    "3. Instructions and safety. You agree to follow the host's briefing, wear any protective equipment provided, and stop any task you believe is unsafe.",
+    "4. Assumption of risk. You accept the ordinary risks of volunteering. Nothing here removes rights under the Accident Compensation Act 2001 or other New Zealand law that cannot be excluded.",
+    "5. Under 18s. If you are under 18, a parent or guardian must consent on your behalf.",
+    "6. Personal information. Your application details are shared with the host under the Privacy Act 2020.",
+  ].join("\n"),
+};
 
 type Options = RequestInit & { token?: string | null };
 
@@ -167,18 +215,33 @@ export const api = {
     }
     return request(`/v1/opportunities/${id}/saved`, { method: saved ? "PUT" : "DELETE", token });
   },
+  opportunityWaiver: async (id: string, token?: string | null): Promise<Waiver | null> =>
+    demoMode ? demoWaiver : request(`/v1/opportunities/${id}/waiver`, { token }),
   apply: async (
     id: string,
-    input: { note: string; experience: string; availability: string },
+    input: { note: string; experience: string; availability: string; waiver?: WaiverAcceptanceInput },
     token?: string | null,
   ): Promise<Application> => {
     if (demoMode) {
       const event = demoOpportunities.find((item) => item.id === id)!;
+      const { waiver, ...answers } = input;
       const application: Application = {
         id: `application-${Date.now()}`, opportunity_id: id, opportunity_title: event.title,
         volunteer_id: profileFor("volunteer").id, volunteer_name: "Mia Thompson", volunteer_email: "volunteer@example.com",
-        ...input, status: "received", version: 1,
+        ...answers, status: "received", version: 1,
         next_step: "Your application was received. The host will review it next.", history: [],
+        waiver: waiver
+          ? {
+              signed_name: waiver.signed_name,
+              is_minor: waiver.is_minor,
+              guardian_name: waiver.guardian_name ?? null,
+              guardian_email: waiver.guardian_email ?? null,
+              guardian_relationship: waiver.guardian_relationship ?? null,
+              accepted_at: new Date().toISOString(),
+              waiver_version: demoWaiver.version,
+              waiver_title: demoWaiver.title,
+            }
+          : null,
       };
       demoApplications = [application, ...demoApplications.filter((item) => item.opportunity_id !== id)];
       demoAnalytics.applications_submitted += 1;
@@ -191,10 +254,68 @@ export const api = {
   },
   myApplications: async (token?: string | null): Promise<Application[]> =>
     demoMode ? demoApplications : request("/v1/applications/me", { token }),
+  myImpact: async (token?: string | null): Promise<Impact> =>
+    demoMode ? demoImpact() : request("/v1/volunteers/me/impact", { token }),
+  attendanceSheet: async (opportunityId: string, token?: string | null): Promise<AttendanceSheet> => {
+    if (demoMode) {
+      const event = demoOpportunities.find((item) => item.id === opportunityId)!;
+      const rows = demoApplications
+        .filter((item) => item.opportunity_id === opportunityId && item.status === "confirmed")
+        .map((item) => ({
+          application_id: item.id,
+          volunteer_name: item.volunteer_name,
+          volunteer_email: item.volunteer_email,
+          status: demoAttendance[item.id]?.status ?? ("expected" as AttendanceStatus),
+          hours: demoAttendance[item.id]?.hours ?? 0,
+          notes: demoAttendance[item.id]?.notes ?? "",
+        }));
+      return {
+        opportunity_id: opportunityId,
+        opportunity_title: event.title,
+        default_hours: 3,
+        expected: rows.filter((row) => row.status === "expected").length,
+        attended: rows.filter((row) => row.status === "attended").length,
+        no_show: rows.filter((row) => row.status === "no_show").length,
+        total_hours: rows.reduce((sum, row) => sum + row.hours, 0),
+        rows,
+      };
+    }
+    return request(`/v1/organiser/opportunities/${opportunityId}/attendance`, { token });
+  },
+  recordAttendance: async (
+    applicationId: string,
+    input: { status: AttendanceStatus; hours?: number; notes?: string },
+    token?: string | null,
+  ): Promise<void> => {
+    if (demoMode) {
+      demoAttendance[applicationId] = {
+        status: input.status,
+        hours: input.status === "attended" ? input.hours ?? 3 : 0,
+        notes: input.notes ?? "",
+      };
+      return;
+    }
+    await request(`/v1/organiser/applications/${applicationId}/attendance`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+      token,
+    });
+  },
   organiserOpportunities: async (token?: string | null): Promise<Opportunity[]> =>
     demoMode ? demoOpportunities : request("/v1/organiser/opportunities", { token }),
   organiserAnalytics: async (token?: string | null): Promise<Analytics> =>
     demoMode ? { ...demoAnalytics } : request("/v1/organiser/analytics", { token }),
+  organiserWaiver: async (token?: string | null): Promise<Waiver> =>
+    demoMode ? demoWaiver : request("/v1/organiser/waiver", { token }),
+  publishWaiver: async (input: { title: string; body: string }, token?: string | null): Promise<Waiver> => {
+    if (demoMode) {
+      demoWaiver.title = input.title;
+      demoWaiver.body = input.body;
+      demoWaiver.version += 1;
+      return { ...demoWaiver };
+    }
+    return request("/v1/organiser/waiver", { method: "PUT", body: JSON.stringify(input), token });
+  },
   createOpportunity: async (input: Record<string, unknown>, token?: string | null): Promise<Opportunity> => {
     if (demoMode) {
       const created: Opportunity = {

@@ -16,7 +16,56 @@ export type Analytics = {
   view_to_application_rate: number;
 };
 
+export type AttendanceStatus = "expected" | "attended" | "no_show" | "excused";
+export type AttendanceRow = {
+  application_id: string;
+  volunteer_name: string;
+  volunteer_email: string;
+  status: AttendanceStatus;
+  hours: number;
+  notes: string;
+};
+export type AttendanceSheet = {
+  opportunity_id: string;
+  opportunity_title: string;
+  default_hours: number;
+  expected: number;
+  attended: number;
+  no_show: number;
+  total_hours: number;
+  rows: AttendanceRow[];
+};
+export type Impact = {
+  total_hours: number;
+  events_attended: number;
+  organisations_supported: number;
+  upcoming_confirmed: number;
+  hours_this_year: number;
+  causes: { slug: string; name: string; events: number }[];
+  recent: { opportunity_id: string; title: string; organisation_name: string; starts_at: string; hours: number }[];
+};
+
 export type Cause = { id: string; slug: string; name: string };
+export type Waiver = { id: string; title: string; body: string; version: number };
+export type WaiverAcceptanceInput = {
+  waiver_document_id: string;
+  agreed: boolean;
+  signed_name: string;
+  is_minor: boolean;
+  guardian_name?: string;
+  guardian_email?: string;
+  guardian_relationship?: string;
+};
+export type WaiverAcceptance = {
+  signed_name: string;
+  is_minor: boolean;
+  guardian_name: string | null;
+  guardian_email: string | null;
+  guardian_relationship: string | null;
+  accepted_at: string;
+  waiver_version: number;
+  waiver_title: string;
+};
 export type LocationPoint = {
   place_id?: string;
   label: string;
@@ -55,6 +104,7 @@ export type Opportunity = {
   accessibility: string;
   safety_notes: string;
   capacity: number;
+  requires_waiver: boolean;
   confirmed_count: number;
   image_url: string | null;
   status: "draft" | "published" | "unpublished";
@@ -87,4 +137,5 @@ export type Application = {
   version: number;
   next_step: string;
   history: { from_status: ApplicationStatus | null; to_status: ApplicationStatus; created_at: string }[];
+  waiver: WaiverAcceptance | null;
 };

@@ -9,6 +9,7 @@ import { useFonts as useDisplay, LibreBaskerville_700Bold } from "@expo-google-f
 import { useFonts as useMono, DMMono_500Medium } from "@expo-google-fonts/dm-mono";
 import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 import { LoadingState } from "@/components/ui";
+import { takePendingRoute } from "@/lib/pendingRoute";
 import { useColorScheme as useNativeWindColourScheme } from "nativewind";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1 } } });
@@ -20,8 +21,15 @@ function NavigationGuard() {
   useEffect(() => {
     if (loading) return;
     const group = segments[0];
+    // The share route resolves its own destination once auth state settles.
+    if (group === "o") return;
     if (!profile) {
       if (group === "(volunteer)" || group === "(organiser)") router.replace("/welcome");
+      return;
+    }
+    const pending = takePendingRoute();
+    if (pending && profile.role === "volunteer") {
+      router.replace(pending as Parameters<typeof router.replace>[0]);
       return;
     }
     if (profile.role === "volunteer" && group !== "(volunteer)") router.replace("/(volunteer)");

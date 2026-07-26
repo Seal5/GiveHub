@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetData, ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors, ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses, ApplyV1OpportunitiesOpportunityIdApplicationsPostData, ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors, ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses, AutocompleteLocationV1LocationsAutocompleteGetData, AutocompleteLocationV1LocationsAutocompleteGetErrors, AutocompleteLocationV1LocationsAutocompleteGetResponses, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostData, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses, CreateOpportunityV1OrganiserOpportunitiesPostData, CreateOpportunityV1OrganiserOpportunitiesPostErrors, CreateOpportunityV1OrganiserOpportunitiesPostResponses, CreateProfileV1ProfilesPostData, CreateProfileV1ProfilesPostErrors, CreateProfileV1ProfilesPostResponses, ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetData, ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors, ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetResponses, GetMeV1ProfilesMeGetData, GetMeV1ProfilesMeGetResponses, GetOpportunityV1OpportunitiesOpportunityIdGetData, GetOpportunityV1OpportunitiesOpportunityIdGetErrors, GetOpportunityV1OpportunitiesOpportunityIdGetResponses, HealthHealthGetData, HealthHealthGetResponses, ListCausesV1ReferenceCausesGetData, ListCausesV1ReferenceCausesGetResponses, ListOpportunitiesV1OpportunitiesGetData, ListOpportunitiesV1OpportunitiesGetErrors, ListOpportunitiesV1OpportunitiesGetResponses, ListSuburbsV1ReferenceSuburbsGetData, ListSuburbsV1ReferenceSuburbsGetResponses, MyApplicationsV1ApplicationsMeGetData, MyApplicationsV1ApplicationsMeGetResponses, OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetData, OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors, OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses, OrganiserAnalyticsV1OrganiserAnalyticsGetData, OrganiserAnalyticsV1OrganiserAnalyticsGetResponses, OrganiserOpportunitiesV1OrganiserOpportunitiesGetData, OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponses, PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostData, PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors, PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses, ReadyReadyGetData, ReadyReadyGetResponses, RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostData, RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostErrors, RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponses, ResolveLocationV1LocationsPlacesPlaceIdGetData, ResolveLocationV1LocationsPlacesPlaceIdGetErrors, ResolveLocationV1LocationsPlacesPlaceIdGetResponses, SaveOpportunityV1OpportunitiesOpportunityIdSavedPutData, SaveOpportunityV1OpportunitiesOpportunityIdSavedPutErrors, SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponses, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchData, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses, UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostData, UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostErrors, UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses, UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteData, UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteErrors, UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteResponses, UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchData, UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchErrors, UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses, UpdatePreferencesV1ProfilesMePreferencesPutData, UpdatePreferencesV1ProfilesMePreferencesPutErrors, UpdatePreferencesV1ProfilesMePreferencesPutResponses, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostData, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses } from './types.gen';
+import type { ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetData, ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors, ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses, ApplyV1OpportunitiesOpportunityIdApplicationsPostData, ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors, ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses, AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetData, AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors, AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses, AutocompleteLocationV1LocationsAutocompleteGetData, AutocompleteLocationV1LocationsAutocompleteGetErrors, AutocompleteLocationV1LocationsAutocompleteGetResponses, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostData, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses, CreateOpportunityV1OrganiserOpportunitiesPostData, CreateOpportunityV1OrganiserOpportunitiesPostErrors, CreateOpportunityV1OrganiserOpportunitiesPostResponses, CreateProfileV1ProfilesPostData, CreateProfileV1ProfilesPostErrors, CreateProfileV1ProfilesPostResponses, ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetData, ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors, ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetResponses, GetMeV1ProfilesMeGetData, GetMeV1ProfilesMeGetResponses, GetOpportunityV1OpportunitiesOpportunityIdGetData, GetOpportunityV1OpportunitiesOpportunityIdGetErrors, GetOpportunityV1OpportunitiesOpportunityIdGetResponses, GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetData, GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetErrors, GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponses, GetOrganiserWaiverV1OrganiserWaiverGetData, GetOrganiserWaiverV1OrganiserWaiverGetResponses, HealthHealthGetData, HealthHealthGetResponses, ListCausesV1ReferenceCausesGetData, ListCausesV1ReferenceCausesGetResponses, ListOpportunitiesV1OpportunitiesGetData, ListOpportunitiesV1OpportunitiesGetErrors, ListOpportunitiesV1OpportunitiesGetResponses, ListSuburbsV1ReferenceSuburbsGetData, ListSuburbsV1ReferenceSuburbsGetResponses, MyApplicationsV1ApplicationsMeGetData, MyApplicationsV1ApplicationsMeGetResponses, MyImpactV1VolunteersMeImpactGetData, MyImpactV1VolunteersMeImpactGetResponses, OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetData, OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors, OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses, OrganiserAnalyticsV1OrganiserAnalyticsGetData, OrganiserAnalyticsV1OrganiserAnalyticsGetResponses, OrganiserOpportunitiesV1OrganiserOpportunitiesGetData, OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponses, PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostData, PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors, PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses, ReadyReadyGetData, ReadyReadyGetResponses, RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutData, RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors, RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses, RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostData, RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostErrors, RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponses, ResolveLocationV1LocationsPlacesPlaceIdGetData, ResolveLocationV1LocationsPlacesPlaceIdGetErrors, ResolveLocationV1LocationsPlacesPlaceIdGetResponses, SaveOpportunityV1OpportunitiesOpportunityIdSavedPutData, SaveOpportunityV1OpportunitiesOpportunityIdSavedPutErrors, SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponses, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchData, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses, UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostData, UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostErrors, UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses, UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteData, UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteErrors, UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteResponses, UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchData, UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchErrors, UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses, UpdateOrganiserWaiverV1OrganiserWaiverPutData, UpdateOrganiserWaiverV1OrganiserWaiverPutErrors, UpdateOrganiserWaiverV1OrganiserWaiverPutResponses, UpdatePreferencesV1ProfilesMePreferencesPutData, UpdatePreferencesV1ProfilesMePreferencesPutErrors, UpdatePreferencesV1ProfilesMePreferencesPutResponses, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostData, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors, WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -131,6 +131,17 @@ export const saveOpportunityV1OpportunitiesOpportunityIdSavedPut = <ThrowOnError
 });
 
 /**
+ * Get Opportunity Waiver
+ *
+ * Returns the waiver a volunteer must sign, or null when none is required.
+ */
+export const getOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGet = <ThrowOnError extends boolean = false>(options: Options<GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetData, ThrowOnError>): RequestResult<GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponses, GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetErrors, ThrowOnError> => (options.client ?? client).get<GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponses, GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/opportunities/{opportunity_id}/waiver',
+    ...options
+});
+
+/**
  * Organiser Analytics
  */
 export const organiserAnalyticsV1OrganiserAnalyticsGet = <ThrowOnError extends boolean = false>(options?: Options<OrganiserAnalyticsV1OrganiserAnalyticsGetData, ThrowOnError>): RequestResult<OrganiserAnalyticsV1OrganiserAnalyticsGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<OrganiserAnalyticsV1OrganiserAnalyticsGetResponses, unknown, ThrowOnError>({
@@ -145,6 +156,19 @@ export const organiserAnalyticsV1OrganiserAnalyticsGet = <ThrowOnError extends b
 export const transitionApplicationV1OrganiserApplicationsApplicationIdPatch = <ThrowOnError extends boolean = false>(options: Options<TransitionApplicationV1OrganiserApplicationsApplicationIdPatchData, ThrowOnError>): RequestResult<TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors, ThrowOnError> => (options.client ?? client).patch<TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses, TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v1/organiser/applications/{application_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Record Attendance
+ */
+export const recordAttendanceV1OrganiserApplicationsApplicationIdAttendancePut = <ThrowOnError extends boolean = false>(options: Options<RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutData, ThrowOnError>): RequestResult<RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses, RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors, ThrowOnError> => (options.client ?? client).put<RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses, RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/organiser/applications/{application_id}/attendance',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -206,6 +230,15 @@ export const exportApplicationsV1OrganiserOpportunitiesOpportunityIdApplications
 });
 
 /**
+ * Attendance Sheet
+ */
+export const attendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGet = <ThrowOnError extends boolean = false>(options: Options<AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetData, ThrowOnError>): RequestResult<AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses, AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors, ThrowOnError> => (options.client ?? client).get<AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses, AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/organiser/opportunities/{opportunity_id}/attendance',
+    ...options
+});
+
+/**
  * Create Image Upload
  */
 export const createImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPost = <ThrowOnError extends boolean = false>(options: Options<CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostData, ThrowOnError>): RequestResult<CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors, ThrowOnError> => (options.client ?? client).post<CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses, CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors, ThrowOnError>({
@@ -243,6 +276,31 @@ export const unpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishP
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v1/organiser/opportunities/{opportunity_id}/unpublish',
     ...options
+});
+
+/**
+ * Get Organiser Waiver
+ */
+export const getOrganiserWaiverV1OrganiserWaiverGet = <ThrowOnError extends boolean = false>(options?: Options<GetOrganiserWaiverV1OrganiserWaiverGetData, ThrowOnError>): RequestResult<GetOrganiserWaiverV1OrganiserWaiverGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetOrganiserWaiverV1OrganiserWaiverGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/organiser/waiver',
+    ...options
+});
+
+/**
+ * Update Organiser Waiver
+ *
+ * Publishes a new waiver version. Existing acceptances keep pointing at the
+ * wording they were signed against, so past agreements stay auditable.
+ */
+export const updateOrganiserWaiverV1OrganiserWaiverPut = <ThrowOnError extends boolean = false>(options: Options<UpdateOrganiserWaiverV1OrganiserWaiverPutData, ThrowOnError>): RequestResult<UpdateOrganiserWaiverV1OrganiserWaiverPutResponses, UpdateOrganiserWaiverV1OrganiserWaiverPutErrors, ThrowOnError> => (options.client ?? client).put<UpdateOrganiserWaiverV1OrganiserWaiverPutResponses, UpdateOrganiserWaiverV1OrganiserWaiverPutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/organiser/waiver',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -289,3 +347,12 @@ export const listCausesV1ReferenceCausesGet = <ThrowOnError extends boolean = fa
  * List Suburbs
  */
 export const listSuburbsV1ReferenceSuburbsGet = <ThrowOnError extends boolean = false>(options?: Options<ListSuburbsV1ReferenceSuburbsGetData, ThrowOnError>): RequestResult<ListSuburbsV1ReferenceSuburbsGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListSuburbsV1ReferenceSuburbsGetResponses, unknown, ThrowOnError>({ url: '/v1/reference/suburbs', ...options });
+
+/**
+ * My Impact
+ */
+export const myImpactV1VolunteersMeImpactGet = <ThrowOnError extends boolean = false>(options?: Options<MyImpactV1VolunteersMeImpactGetData, ThrowOnError>): RequestResult<MyImpactV1VolunteersMeImpactGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<MyImpactV1VolunteersMeImpactGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/volunteers/me/impact',
+    ...options
+});

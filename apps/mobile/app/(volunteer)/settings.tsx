@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { LocationPicker } from "@/components/LocationPicker";
 import { api } from "@/lib/api";
 import type { LocationPoint, ThemePreference } from "@/lib/types";
 import { useAuth } from "@/providers/AuthProvider";
-import { Body, Button, Card, Chip, Display, Eyebrow, Screen } from "@/components/ui";
+import { Body, Button, Card, Chip, Display, Eyebrow, IconButton, Screen } from "@/components/ui";
+
+const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
+const THEME_OPTIONS: ThemePreference[] = ["system", "light", "dark"];
 
 export default function SettingsScreen() {
   const { profile, token, signOut, refreshProfile } = useAuth();
@@ -24,17 +26,45 @@ export default function SettingsScreen() {
       if (!location) throw new Error("Choose a location or use your current location.");
       return api.updatePreferences({ search_location_label: location.label, search_latitude: location.latitude, search_longitude: location.longitude, search_radius_km: radius, theme }, token);
     },
-    onSuccess: async () => { await refreshProfile(); await client.invalidateQueries(); router.back(); },
+    onSuccess: async () => {
+      await refreshProfile();
+      await client.invalidateQueries();
+      router.back();
+    },
   });
-  return <Screen className="px-5 pt-3">
-    <Pressable accessibilityLabel="Close preferences" onPress={() => router.back()} className="mb-6 h-10 w-10 items-center justify-center rounded-full bg-card dark:bg-dark-card"><Ionicons name="close" size={21} color="#2A8D58" /></Pressable>
-    <Eyebrow>Volunteer preferences</Eyebrow><Display className="text-[30px] leading-8">Find something worth showing up for.</Display>
-    <Body className="mb-7 mt-3">Choose where to search and how far you are willing to travel. Your live location is never tracked in the background.</Body>
-    <LocationPicker value={location} onChange={(next) => { setLocation(next); setValidationError(null); }} token={token} />
-    <Card className="mb-5"><Text className="mb-3 font-strong text-sm text-foreground dark:text-dark-foreground">Travel radius</Text><View className="flex-row flex-wrap gap-y-2">{[5, 10, 25, 50, 100].map((value) => <Chip key={value} label={`${value} km`} selected={radius === value} onPress={() => setRadius(value)} />)}</View></Card>
-    <Card className="mb-7"><Text className="mb-3 font-strong text-sm text-foreground dark:text-dark-foreground">Appearance</Text><View className="flex-row">{(["system", "light", "dark"] as ThemePreference[]).map((value) => <Chip key={value} label={value} selected={theme === value} onPress={() => setTheme(value)} />)}</View></Card>
-    {validationError || save.error ? <Text className="mb-3 font-sans text-destructive dark:text-dark-destructive">{validationError ?? save.error?.message}</Text> : null}
-    <Button label="Save preferences" loading={save.isPending} onPress={() => { if (!location) { setValidationError("Choose a location or use your current location."); return; } save.mutate(); }} />
-    <Button label="Sign out" variant="secondary" className="mt-3" onPress={async () => { await signOut(); router.replace("/welcome"); }} />
-  </Screen>;
+
+  return (
+    <Screen className="px-5 pt-3">
+      <IconButton icon="close" label="Close preferences" className="mb-6" onPress={() => router.back()} />
+      <Eyebrow>Volunteer preferences</Eyebrow>
+      <Display className="text-[30px] leading-8">Find something worth showing up for.</Display>
+      <Body className="mb-7 mt-3">Choose where to search and how far you are willing to travel. Your live location is never tracked in the background.</Body>
+
+      <LocationPicker value={location} onChange={(next) => { setLocation(next); setValidationError(null); }} token={token} />
+
+      <Card className="mb-5">
+        <Text className="mb-3 font-strong text-sm text-foreground dark:text-dark-foreground">Travel radius</Text>
+        <View className="flex-row flex-wrap gap-y-2">
+          {RADIUS_OPTIONS.map((value) => <Chip key={value} label={`${value} km`} selected={radius === value} onPress={() => setRadius(value)} />)}
+        </View>
+      </Card>
+
+      <Card className="mb-5">
+        <Text className="mb-3 font-strong text-sm text-foreground dark:text-dark-foreground">Appearance</Text>
+        <View className="flex-row">
+          {THEME_OPTIONS.map((value) => <Chip key={value} label={value} selected={theme === value} onPress={() => setTheme(value)} />)}
+        </View>
+      </Card>
+
+      <Card className="mb-7">
+        <Text className="mb-1 font-strong text-sm text-foreground dark:text-dark-foreground">Account</Text>
+        <Body>{profile?.display_name}</Body>
+        <Body>{profile?.email}</Body>
+      </Card>
+
+      {validationError || save.error ? <Text accessibilityRole="alert" className="mb-3 font-sans text-sm text-destructive dark:text-dark-destructive">{validationError ?? save.error?.message}</Text> : null}
+      <Button label="Save preferences" loading={save.isPending} onPress={() => { if (!location) { setValidationError("Choose a location or use your current location."); return; } save.mutate(); }} />
+      <Button label="Sign out" variant="secondary" className="mt-3" onPress={async () => { await signOut(); router.replace("/welcome"); }} />
+    </Screen>
+  );
 }

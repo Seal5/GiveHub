@@ -13,6 +13,7 @@ from givehub.config import get_settings
 from givehub.database import Base, SessionLocal, engine
 from givehub.schemas import ErrorDetail, ErrorEnvelope
 from givehub.seed import seed_reference_data
+from givehub.sharing import router as sharing_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("givehub")
@@ -41,6 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+app.include_router(sharing_router)
 
 
 @app.middleware("http")

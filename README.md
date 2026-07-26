@@ -78,5 +78,33 @@ The beta includes role-specific onboarding, address/current-location preferences
 5–100 km discovery filtering, saves, review-required applications, volunteer
 status tracking, organiser opportunity publishing, per-event pipelines, applicant
 filtering and CSV export, posting funnel analytics, transactional email, waitlists,
-and capacity enforcement. Social features, messaging, attendance, push
-notifications, comments, and store submission are intentionally deferred.
+and capacity enforcement.
+
+It also includes:
+
+- **Signed waivers.** Versioned agreements with a per-application acceptance record
+  (typed signature, timestamp, waiver version, originating IP) and guardian consent
+  for volunteers under 18. Editing publishes a new version so past acceptances stay
+  tied to the wording actually signed. Organisers publish their own text at
+  `PUT /v1/organiser/waiver`; otherwise the GiveHub default applies.
+- **Shareable links.** `GET /o/<id>` serves a public Open Graph landing page that
+  deep links into the app, so a shared opportunity previews correctly in messaging
+  apps and still works for someone without GiveHub installed.
+- **Attendance and volunteer impact.** Organisers mark confirmed volunteers off on
+  the day, which credits hours to that volunteer's own impact record
+  (`GET /v1/volunteers/me/impact`).
+
+Social features, messaging, push notifications, comments, and store submission are
+intentionally deferred.
+
+GiveHub does not provide legal advice. The default waiver is a starting point that
+organisations should have reviewed before relying on it.
+
+### Universal links
+
+Shared links use `EXPO_PUBLIC_SHARE_BASE_URL`, falling back to `EXPO_PUBLIC_API_URL`
+so links work without a marketing domain. To make `https://` links open the app
+directly, point that variable at the domain configured in `app.json`
+(`ios.associatedDomains` and `android.intentFilters`), route its `/o/*` path to the
+API, and serve `/.well-known/apple-app-site-association` and
+`/.well-known/assetlinks.json` from it.

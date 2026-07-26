@@ -5,7 +5,7 @@ import { z } from "zod";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Display, Field, Screen, Body, Eyebrow } from "@/components/ui";
+import { Button, Display, Field, IconButton, Screen, Body, Eyebrow, useThemeColours } from "@/components/ui";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Role } from "@/lib/types";
 
@@ -23,6 +23,7 @@ export default function AuthScreen() {
   const [signIn, setSignIn] = useState(mode === "signin");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { signIn: login, signUp } = useAuth();
+  const colours = useThemeColours();
   const { control, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema), defaultValues: { name: "", organisationName: "", email: "", password: "" },
   });
@@ -39,9 +40,9 @@ export default function AuthScreen() {
   });
   return (
     <Screen className="px-6 pb-8 pt-4">
-      <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full bg-card dark:bg-dark-card"><Ionicons name="arrow-back" size={20} color="#2A8D58" /></Pressable>
+      <IconButton icon="arrow-back" label="Back" onPress={() => router.back()} />
       <View className="mt-6 h-12 w-12 items-center justify-center rounded-card bg-secondary dark:bg-dark-secondary">
-        <Ionicons name={organiser ? "shield-checkmark-outline" : "heart-outline"} size={23} color="#2A8D58" />
+        <Ionicons name={organiser ? "shield-checkmark-outline" : "heart-outline"} size={23} color={colours.primary} />
       </View>
       <View className="mt-6"><Eyebrow>{organiser ? "For verified hosts" : "For local volunteers"}</Eyebrow></View>
       <Display className="text-[30px] leading-8">{signIn ? "Welcome back." : `Create your ${role} account.`}</Display>

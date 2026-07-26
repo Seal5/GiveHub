@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { FlatList, Platform, Share, Text, View } from "react-native";
+import { router } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { ApplicationStatus } from "@/lib/types";
 import { useAuth } from "@/providers/AuthProvider";
-import { Body, Button, Card, Chip, Display, EmptyState, Eyebrow, Field, LoadingState, Screen } from "@/components/ui";
+import { Body, Button, Card, Chip, Display, EmptyState, ErrorState, Eyebrow, Field, LoadingState, Screen } from "@/components/ui";
 import { StatusCard } from "@/components/StatusCard";
+import { shareOpportunity } from "@/lib/share";
 
 const stages: ApplicationStatus[] = ["received", "under_review", "confirmed", "waitlisted"];
 
@@ -44,6 +46,10 @@ export default function PipelineScreen() {
     onSuccess: (csv) => Platform.OS === "web" ? setPreparedCsv(csv) : deliverCsv(csv, exportFileName),
   });
   if (events.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
+  if (events.isError) return <Screen><ErrorState error={events.error} onRetry={() => events.refetch()} /></Screen>;
+  if (!events.data?.length) {
+    return <Screen><Eyebrow>Application pipeline</Eyebrow><Display className="mb-7 text-[30px] leading-8">Review one person at a time.</Display><EmptyState title="No opportunities yet" body="Publish an opportunity and applicants will appear here." /></Screen>;
+  }
   const visible = pipeline.data?.applications ?? [];
   const total = pipeline.data ? Object.values(pipeline.data.counts).reduce((sum, count) => sum + count, 0) : 0;
   return <Screen><Eyebrow>Application pipeline</Eyebrow><Display className="text-[30px] leading-8">Review one person at a time.</Display><Text className="mb-3 mt-6 font-strong text-sm text-foreground dark:text-dark-foreground">Opportunity</Text><FlatList horizontal showsHorizontalScrollIndicator={false} data={events.data} keyExtractor={(item) => item.id} renderItem={({ item }) => <Chip label={item.title} selected={eventId === item.id} onPress={() => setEventId(item.id)} />} />
@@ -53,8 +59,24 @@ export default function PipelineScreen() {
         <View><Text className="font-display text-2xl text-primary dark:text-dark-primary">{analytics.data?.views ?? 0}</Text><Body>Views</Body></View>
         <View><Text className="font-display text-2xl text-primary dark:text-dark-primary">{analytics.data?.application_starts ?? 0}</Text><Body>Starts</Body></View>
         <View><Text className="font-display text-2xl text-primary dark:text-dark-primary">{analytics.data?.applications_submitted ?? 0}</Text><Body>Applied</Body></View>
+        <View><Text className="font-display text-2xl text-primary dark:text-dark-primary">{analytics.data?.shares ?? 0}</Text><Body>Shares</Body></View>
         <View><Text className="font-display text-2xl text-primary dark:text-dark-primary">{analytics.data?.view_to_application_rate ?? 0}%</Text><Body>Conversion</Body></View>
       </View>
+      {selectedEvent ? (
+        <>
+          <Button
+            className="mt-5"
+            label="Take attendance"
+            onPress={() => router.push(`/(organiser)/attendance/${selectedEvent.id}`)}
+          />
+          <Button
+            className="mt-3"
+            label="Share this opportunity"
+            variant="secondary"
+            onPress={() => { void shareOpportunity(selectedEvent, token); }}
+          />
+        </>
+      ) : null}
     </Card>
     <Text className="mb-3 mt-6 font-strong text-sm text-foreground dark:text-dark-foreground">Stage</Text>
     <View className="flex-row">
@@ -75,7 +97,9 @@ export default function PipelineScreen() {
           <Text className="font-strong text-xs text-primary dark:text-dark-primary">{visible.length}</Text>
         </View>
       </View>
-      {pipeline.isLoading ? <View className="py-6"><LoadingState /></View> : visible.length ? (
+      {pipeline.isLoading ? <View className="py-6"><LoadingState /></View> : pipeline.isError ? (
+        <View className="mt-4"><ErrorState error={pipeline.error} onRetry={() => pipeline.refetch()} /></View>
+      ) : visible.length ? (
         <View className="mt-4 overflow-hidden rounded-xl border border-border dark:border-dark-border">
           {visible.slice(0, 5).map((item, index) => (
             <View key={item.id} className={`p-3 ${index ? "border-t border-border dark:border-dark-border" : ""}`}>
@@ -105,6 +129,6 @@ export default function PipelineScreen() {
       {exportCsv.error ? <Text className="mt-3 font-sans text-sm text-destructive dark:text-dark-destructive">{exportCsv.error.message}</Text> : null}
     </Card>
     <Text className="mb-3 mt-7 font-strong text-sm text-foreground dark:text-dark-foreground">Review queue</Text>
-    <View>{pipeline.isLoading ? <LoadingState /> : visible.length ? visible.map((item) => <StatusCard key={item.id} item={item} organiser />) : <EmptyState title="No people in this stage" body="Applications will move here as you make decisions." />}</View>
+    <View>{pipeline.isLoading ? <LoadingState /> : pipeline.isError ? <ErrorState error={pipeline.error} onRetry={() => pipeline.refetch()} /> : visible.length ? visible.map((item) => <StatusCard key={item.id} item={item} organiser />) : <EmptyState title="No people in this stage" body="Applications will move here as you make decisions." />}</View>
   </Screen>;
 }

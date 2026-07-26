@@ -4,8 +4,10 @@ import { Ionicons } from "@expo/vector-icons";
 import type { Opportunity } from "@/lib/types";
 import { formatEventDate } from "@/lib/format";
 import { opportunityImage } from "@/lib/localAssets";
+import { useThemeColours } from "@/components/ui";
 
 export function EventCard({ item, compact = false }: { item: Opportunity; compact?: boolean }) {
+  const colours = useThemeColours();
   const recurrence = item.recurrence === "one_off" ? "One-off" : item.recurrence;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`Open ${item.title}`} onPress={() => router.push(`/(volunteer)/opportunity/${item.id}`)} className="mb-4 overflow-hidden rounded-feature border border-border bg-card active:opacity-90 dark:border-dark-border dark:bg-dark-card">
@@ -20,7 +22,7 @@ export function EventCard({ item, compact = false }: { item: Opportunity; compac
         <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{item.organisation_name}</Text>
         <View className="mt-3 flex-row items-center justify-between">
           <Text className="flex-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{formatEventDate(item.starts_at)} · {item.location_label}</Text>
-          <View className="ml-3 flex-row items-center gap-1"><Ionicons name="navigate-outline" size={13} color="#657166" /><Text className="font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{item.distance_km === null ? "—" : `${item.distance_km.toFixed(1)} km`}</Text></View>
+          <View className="ml-3 flex-row items-center gap-1"><Ionicons name="navigate-outline" size={13} color={colours.mutedForeground} /><Text className="font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{item.distance_km === null ? "—" : `${item.distance_km.toFixed(1)} km`}</Text></View>
         </View>
       </View>
     </Pressable>

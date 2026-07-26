@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from givehub.models import (
     ApplicationStatus,
+    AttendanceStatus,
     OpportunityEventType,
     OpportunityStatus,
     Recurrence,
@@ -97,6 +98,7 @@ class OpportunityBase(BaseModel):
     accessibility: str = "Contact the host to discuss access needs."
     safety_notes: str = "Closed shoes and water recommended."
     capacity: int = Field(default=20, ge=1, le=10000)
+    requires_waiver: bool = True
     cause_ids: list[uuid.UUID] = Field(min_length=1)
     image_url: str | None = None
 
@@ -136,6 +138,7 @@ class OpportunityUpdate(BaseModel):
     accessibility: str | None = None
     safety_notes: str | None = None
     capacity: int | None = Field(default=None, ge=1, le=10000)
+    requires_waiver: bool | None = None
     cause_ids: list[uuid.UUID] | None = None
     image_url: str | None = None
     version: int = Field(ge=1)
@@ -156,6 +159,7 @@ class OpportunityOut(ORMModel):
     accessibility: str
     safety_notes: str
     capacity: int
+    requires_waiver: bool = True
     confirmed_count: int = 0
     image_url: str | None
     status: OpportunityStatus
@@ -175,10 +179,54 @@ class OpportunityOut(ORMModel):
     is_saved: bool = False
 
 
+class WaiverOut(ORMModel):
+    id: uuid.UUID
+    title: str
+    body: str
+    version: int
+
+
+class WaiverUpdate(BaseModel):
+    title: str = Field(min_length=4, max_length=180)
+    body: str = Field(min_length=40)
+
+
+class WaiverAcceptanceIn(BaseModel):
+    """Captured at the moment of applying; the version signed is pinned by id."""
+
+    waiver_document_id: uuid.UUID
+    agreed: bool
+    signed_name: str = Field(min_length=2, max_length=120)
+    is_minor: bool = False
+    guardian_name: str | None = Field(default=None, max_length=120)
+    guardian_email: EmailStr | None = None
+    guardian_relationship: str | None = Field(default=None, max_length=80)
+
+    @model_validator(mode="after")
+    def validate_consent(self) -> WaiverAcceptanceIn:
+        if not self.agreed:
+            raise ValueError("The waiver must be accepted to apply")
+        if self.is_minor and not (self.guardian_name and self.guardian_email):
+            raise ValueError("A guardian name and email are required for volunteers under 18")
+        return self
+
+
+class WaiverAcceptanceOut(ORMModel):
+    signed_name: str
+    is_minor: bool
+    guardian_name: str | None
+    guardian_email: EmailStr | None
+    guardian_relationship: str | None
+    accepted_at: datetime
+    waiver_version: int
+    waiver_title: str
+
+
 class ApplicationCreate(BaseModel):
     note: str = Field(min_length=10, max_length=2000)
     experience: str = Field(default="", max_length=2000)
     availability: str = Field(default="Available for the full event", max_length=240)
+    waiver: WaiverAcceptanceIn | None = None
 
 
 class ApplicationTransition(BaseModel):
@@ -206,6 +254,7 @@ class ApplicationOut(ORMModel):
     version: int
     next_step: str
     history: list[StatusHistoryOut]
+    waiver: WaiverAcceptanceOut | None = None
 
 
 class PipelineOut(BaseModel):
@@ -223,6 +272,58 @@ class AnalyticsOut(BaseModel):
     applications_submitted: int
     shares: int
     view_to_application_rate: float
+
+
+class AttendanceUpdate(BaseModel):
+    status: AttendanceStatus
+    hours: float | None = Field(default=None, ge=0, le=24)
+    notes: str = Field(default="", max_length=500)
+
+
+class AttendanceRowOut(BaseModel):
+    application_id: uuid.UUID
+    volunteer_name: str
+    volunteer_email: EmailStr
+    status: AttendanceStatus
+    hours: float
+    notes: str
+
+
+class AttendanceSheetOut(BaseModel):
+    opportunity_id: uuid.UUID
+    opportunity_title: str
+    default_hours: float
+    expected: int
+    attended: int
+    no_show: int
+    total_hours: float
+    rows: list[AttendanceRowOut]
+
+
+class ImpactCauseOut(BaseModel):
+    slug: str
+    name: str
+    events: int
+
+
+class ImpactEventOut(BaseModel):
+    opportunity_id: uuid.UUID
+    title: str
+    organisation_name: str
+    starts_at: datetime
+    hours: float
+
+
+class ImpactOut(BaseModel):
+    """A volunteer's own record of what they have actually contributed."""
+
+    total_hours: float
+    events_attended: int
+    organisations_supported: int
+    upcoming_confirmed: int
+    hours_this_year: float
+    causes: list[ImpactCauseOut]
+    recent: list[ImpactEventOut]
 
 
 class UploadRequest(BaseModel):
