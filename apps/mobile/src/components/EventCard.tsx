@@ -3,26 +3,67 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import type { Opportunity } from "@/lib/types";
 import { formatEventDate } from "@/lib/format";
+import { opportunityImage } from "@/lib/localAssets";
 
-export function EventCard({ item, compact = false }: { item: Opportunity; compact?: boolean }) {
+export function EventCard({
+  item,
+  compact = false,
+}: {
+  item: Opportunity;
+  compact?: boolean;
+}) {
+  const recurrence =
+    item.recurrence === "one_off" ? "One-off" : item.recurrence;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Open ${item.title}`}
       onPress={() => router.push(`/(volunteer)/opportunity/${item.id}`)}
-      className="mb-4 overflow-hidden rounded-card border border-ink/10 bg-white active:opacity-90 dark:border-paper/10 dark:bg-white/5"
+      className="mb-4 overflow-hidden rounded-feature border border-border bg-card active:opacity-90 dark:border-dark-border dark:bg-dark-card"
     >
-      {item.image_url ? <Image source={{ uri: item.image_url }} className={compact ? "h-32 w-full" : "h-48 w-full"} resizeMode="cover" /> : null}
-      <View className="p-4">
-        <View className="mb-2 flex-row items-center justify-between">
-          <Text className="font-mono text-xs uppercase tracking-wider text-moss dark:text-fern">{item.causes[0]?.name ?? "Community"}</Text>
-          <Text className="font-sans text-sm text-ink/60 dark:text-paper/60">{item.distance_km?.toFixed(1)} km</Text>
+      <View className="relative">
+        {opportunityImage(item.id, item.image_url) ? (
+          <Image
+            source={opportunityImage(item.id, item.image_url)}
+            className="w-full"
+            style={
+              compact
+                ? { height: 128, flexShrink: 0 }
+                : { height: 144, flexShrink: 0 }
+            }
+            resizeMode="cover"
+          />
+        ) : (
+          <View
+            className="w-full bg-secondary dark:bg-dark-secondary"
+            style={compact ? { height: 128 } : { height: 144 }}
+          />
+        )}
+        <View className="absolute left-3 top-3 rounded-full bg-black/45 px-3 py-1.5">
+          <Text className="font-strong text-[10px] uppercase tracking-[1px] text-white">
+            {recurrence}
+          </Text>
         </View>
-        <Text className="font-display text-xl leading-7 text-ink dark:text-paper">{item.title}</Text>
-        <Text className="mt-2 font-sans text-sm text-ink/65 dark:text-paper/65">{formatEventDate(item.starts_at)} · {item.suburb.name}</Text>
+      </View>
+      <View className="p-4">
+        <Text className="font-display text-lg leading-6 tracking-[-0.4px] text-foreground dark:text-dark-foreground">
+          {item.title}
+        </Text>
+        <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">
+          {item.organisation_name}
+        </Text>
         <View className="mt-3 flex-row items-center justify-between">
-          <Text className="font-medium text-sm text-moss dark:text-fern">Explore this event</Text>
-          <Ionicons name="arrow-forward" size={18} color="#2D945D" />
+          <Text className="flex-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">
+            {formatEventDate(item.starts_at)} · {item.location_label}
+          </Text>
+          <View className="ml-3 flex-row items-center gap-1">
+            <Ionicons name="navigate-outline" size={13} color="#657166" />
+            <Text className="font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">
+              {item.distance_km === null
+                ? "—"
+                : `${item.distance_km.toFixed(1)} km`}
+            </Text>
+          </View>
         </View>
       </View>
     </Pressable>

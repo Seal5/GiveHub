@@ -5,7 +5,15 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
-from givehub.models import ApplicationStatus, OpportunityStatus, Recurrence, Role
+from givehub.models import (
+    ApplicationStatus,
+    OpportunityEventType,
+    OpportunityStatus,
+    Recurrence,
+    ReportReason,
+    ReportStatus,
+    Role,
+)
 
 
 class ORMModel(BaseModel):
@@ -38,9 +46,19 @@ class ProfileCreate(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
-    suburb_id: uuid.UUID | None = None
-    search_radius_km: int = Field(default=15, ge=1, le=100)
+    search_location_label: str | None = Field(default=None, max_length=240)
+    search_latitude: float | None = Field(default=None, ge=-90, le=90)
+    search_longitude: float | None = Field(default=None, ge=-180, le=180)
+    search_radius_km: int = Field(default=25, ge=1, le=100)
     theme: str = Field(default="system", pattern="^(system|light|dark)$")
+
+    @model_validator(mode="after")
+    def coordinates_are_complete(self) -> ProfileUpdate:
+        if (self.search_latitude is None) != (self.search_longitude is None):
+            raise ValueError("Latitude and longitude must be supplied together")
+        if self.search_latitude is not None and not self.search_location_label:
+            raise ValueError("A location label is required with coordinates")
+        return self
 
 
 class ProfileOut(ORMModel):
@@ -48,7 +66,9 @@ class ProfileOut(ORMModel):
     role: Role
     display_name: str
     email: EmailStr
-    suburb: SuburbOut | None
+    search_location_label: str | None
+    search_latitude: float | None
+    search_longitude: float | None
     search_radius_km: int
     theme: str
     organisation_name: str | None = None
@@ -59,8 +79,18 @@ class OpportunityBase(BaseModel):
     description: str = Field(min_length=20)
     impact_statement: str = Field(min_length=8, max_length=240)
     tasks: str = Field(min_length=5)
-    suburb_id: uuid.UUID
     meeting_point: str = Field(min_length=4, max_length=240)
+    location_label: str = Field(min_length=2, max_length=240)
+    address_line: str = Field(min_length=2, max_length=240)
+    locality: str = Field(default="", max_length=120)
+    city: str = Field(default="Wellington", min_length=2, max_length=120)
+    postcode: str | None = Field(default=None, max_length=20)
+    country_code: str = Field(default="NZ", min_length=2, max_length=2)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    location_visibility: str = Field(
+        default="public", pattern="^(public|approximate|confirmed_only)$"
+    )
     starts_at: datetime
     ends_at: datetime
     recurrence: Recurrence = Recurrence.one_off
@@ -88,8 +118,18 @@ class OpportunityUpdate(BaseModel):
     description: str | None = Field(default=None, min_length=20)
     impact_statement: str | None = Field(default=None, min_length=8, max_length=240)
     tasks: str | None = None
-    suburb_id: uuid.UUID | None = None
     meeting_point: str | None = None
+    location_label: str | None = Field(default=None, min_length=2, max_length=240)
+    address_line: str | None = Field(default=None, min_length=2, max_length=240)
+    locality: str | None = Field(default=None, max_length=120)
+    city: str | None = Field(default=None, min_length=2, max_length=120)
+    postcode: str | None = Field(default=None, max_length=20)
+    country_code: str | None = Field(default=None, min_length=2, max_length=2)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    location_visibility: str | None = Field(
+        default=None, pattern="^(public|approximate|confirmed_only)$"
+    )
     starts_at: datetime | None = None
     ends_at: datetime | None = None
     recurrence: Recurrence | None = None
@@ -123,7 +163,15 @@ class OpportunityOut(ORMModel):
     status: OpportunityStatus
     version: int
     organisation_name: str
-    suburb: SuburbOut
+    location_label: str
+    address_line: str
+    locality: str
+    city: str
+    postcode: str | None
+    country_code: str
+    latitude: float
+    longitude: float
+    location_visibility: str
     causes: list[CauseOut]
     distance_km: float | None = None
     is_saved: bool = False
@@ -167,6 +215,32 @@ class PipelineOut(BaseModel):
     applications: list[ApplicationOut]
 
 
+class OpportunityEventCreate(BaseModel):
+    event_type: OpportunityEventType
+
+
+class OpportunityReportCreate(BaseModel):
+    reason: ReportReason
+    details: str = Field(default="", max_length=1000)
+
+
+class OpportunityReportOut(ORMModel):
+    id: uuid.UUID
+    opportunity_id: uuid.UUID
+    reason: ReportReason
+    details: str
+    status: ReportStatus
+    created_at: datetime
+
+
+class AnalyticsOut(BaseModel):
+    views: int
+    application_starts: int
+    applications_submitted: int
+    shares: int
+    view_to_application_rate: float
+
+
 class UploadRequest(BaseModel):
     filename: str = Field(min_length=1, max_length=180)
     content_type: str = Field(pattern="^image/(jpeg|png|webp)$")
@@ -179,6 +253,23 @@ class UploadOut(BaseModel):
     public_url: str
 
 
+class LocationSuggestion(BaseModel):
+    place_id: str
+    label: str
+
+
+class LocationResult(BaseModel):
+    place_id: str
+    label: str
+    address_line: str
+    locality: str = ""
+    city: str = ""
+    postcode: str | None = None
+    country_code: str = "NZ"
+    latitude: float
+    longitude: float
+
+
 class ErrorDetail(BaseModel):
     code: str
     message: str
@@ -186,4 +277,3 @@ class ErrorDetail(BaseModel):
 
 class ErrorEnvelope(BaseModel):
     error: ErrorDetail
-

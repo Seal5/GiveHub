@@ -41,6 +41,8 @@ class OpportunityStatus(str, enum.Enum):
     draft = "draft"
     published = "published"
     unpublished = "unpublished"
+    closed = "closed"
+    removed = "removed"
 
 
 class Recurrence(str, enum.Enum):
@@ -58,10 +60,33 @@ class ApplicationStatus(str, enum.Enum):
     withdrawn = "withdrawn"
 
 
+class OpportunityEventType(str, enum.Enum):
+    viewed = "viewed"
+    application_started = "application_started"
+    application_submitted = "application_submitted"
+    shared = "shared"
+
+
+class ReportReason(str, enum.Enum):
+    misleading = "misleading"
+    unsafe = "unsafe"
+    inappropriate = "inappropriate"
+    scam = "scam"
+    other = "other"
+
+
+class ReportStatus(str, enum.Enum):
+    open = "open"
+    resolved = "resolved"
+    dismissed = "dismissed"
+
+
 opportunity_causes = Table(
     "opportunity_causes",
     Base.metadata,
-    Column("opportunity_id", Uuid, ForeignKey("opportunities.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "opportunity_id", Uuid, ForeignKey("opportunities.id", ondelete="CASCADE"), primary_key=True
+    ),
     Column("cause_id", Uuid, ForeignKey("causes.id", ondelete="CASCADE"), primary_key=True),
 )
 
@@ -81,7 +106,10 @@ class Profile(TimestampMixin, Base):
     display_name: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     suburb_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("suburbs.id"))
-    search_radius_km: Mapped[int] = mapped_column(Integer, default=15)
+    search_location_label: Mapped[str | None] = mapped_column(String(240))
+    search_latitude: Mapped[float | None] = mapped_column(Float)
+    search_longitude: Mapped[float | None] = mapped_column(Float)
+    search_radius_km: Mapped[int] = mapped_column(Integer, default=25)
     theme: Mapped[str] = mapped_column(String(16), default="system")
 
     suburb: Mapped[Suburb | None] = relationship()
@@ -129,18 +157,29 @@ class Opportunity(TimestampMixin, Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     organisation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organisations.id"), index=True)
-    suburb_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("suburbs.id"), index=True)
+    suburb_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("suburbs.id"), index=True)
     title: Mapped[str] = mapped_column(String(180), index=True)
     description: Mapped[str] = mapped_column(Text)
     impact_statement: Mapped[str] = mapped_column(String(240))
     tasks: Mapped[str] = mapped_column(Text)
     meeting_point: Mapped[str] = mapped_column(String(240))
+    location_label: Mapped[str] = mapped_column(String(240))
+    address_line: Mapped[str] = mapped_column(String(240))
+    locality: Mapped[str] = mapped_column(String(120), default="")
+    city: Mapped[str] = mapped_column(String(120), default="Wellington")
+    postcode: Mapped[str | None] = mapped_column(String(20))
+    country_code: Mapped[str] = mapped_column(String(2), default="NZ")
+    latitude: Mapped[float] = mapped_column(Float, index=True)
+    longitude: Mapped[float] = mapped_column(Float, index=True)
+    location_visibility: Mapped[str] = mapped_column(String(24), default="public")
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     recurrence: Mapped[Recurrence] = mapped_column(Enum(Recurrence, native_enum=False))
     effort: Mapped[str] = mapped_column(String(32), default="moderate")
     minimum_age: Mapped[int] = mapped_column(Integer, default=16)
-    accessibility: Mapped[str] = mapped_column(Text, default="Contact the host to discuss access needs.")
+    accessibility: Mapped[str] = mapped_column(
+        Text, default="Contact the host to discuss access needs."
+    )
     safety_notes: Mapped[str] = mapped_column(Text, default="Closed shoes and water recommended.")
     capacity: Mapped[int] = mapped_column(Integer, default=20)
     image_url: Mapped[str | None] = mapped_column(String(1000))
@@ -150,11 +189,17 @@ class Opportunity(TimestampMixin, Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
 
     organisation: Mapped[Organisation] = relationship(back_populates="opportunities")
-    suburb: Mapped[Suburb] = relationship()
+    suburb: Mapped[Suburb | None] = relationship()
     causes: Mapped[list[Cause]] = relationship(
         secondary=opportunity_causes, back_populates="opportunities"
     )
     applications: Mapped[list[Application]] = relationship(back_populates="opportunity")
+    events: Mapped[list[OpportunityEvent]] = relationship(
+        back_populates="opportunity", cascade="all, delete-orphan"
+    )
+    reports: Mapped[list[OpportunityReport]] = relationship(
+        back_populates="opportunity", cascade="all, delete-orphan"
+    )
 
 
 class SavedOpportunity(TimestampMixin, Base):
@@ -186,7 +231,9 @@ class Application(TimestampMixin, Base):
     opportunity: Mapped[Opportunity] = relationship(back_populates="applications")
     volunteer: Mapped[Profile] = relationship()
     history: Mapped[list[ApplicationStatusHistory]] = relationship(
-        back_populates="application", cascade="all, delete-orphan", order_by="ApplicationStatusHistory.created_at"
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="ApplicationStatusHistory.created_at",
     )
 
 
@@ -205,3 +252,50 @@ class ApplicationStatusHistory(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
     application: Mapped[Application] = relationship(back_populates="history")
+
+
+class OpportunityEvent(Base):
+    __tablename__ = "opportunity_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("opportunities.id", ondelete="CASCADE"), index=True
+    )
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("profiles.id", ondelete="CASCADE"), index=True
+    )
+    event_type: Mapped[OpportunityEventType] = mapped_column(
+        Enum(OpportunityEventType, native_enum=False), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now_utc, index=True
+    )
+
+    opportunity: Mapped[Opportunity] = relationship(back_populates="events")
+    profile: Mapped[Profile] = relationship()
+
+
+class OpportunityReport(Base):
+    __tablename__ = "opportunity_reports"
+    __table_args__ = (UniqueConstraint("opportunity_id", "reporter_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("opportunities.id", ondelete="CASCADE"), index=True
+    )
+    reporter_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("profiles.id", ondelete="CASCADE"), index=True
+    )
+    reason: Mapped[ReportReason] = mapped_column(
+        Enum(ReportReason, native_enum=False), index=True
+    )
+    details: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[ReportStatus] = mapped_column(
+        Enum(ReportStatus, native_enum=False), default=ReportStatus.open, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now_utc, index=True
+    )
+
+    opportunity: Mapped[Opportunity] = relationship(back_populates="reports")
+    reporter: Mapped[Profile] = relationship()

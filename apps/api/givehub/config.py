@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     supabase_publishable_key: str = ""
     supabase_secret_key: str = ""
     supabase_storage_bucket: str = "opportunity-images"
+    google_places_api_key: str = ""
+    resend_api_key: str = ""
+    email_from: str = "GiveHub <notifications@givehub.nz>"
     cors_origins: list[str] = ["http://localhost:8081"]
 
     @field_validator("cors_origins", mode="before")
@@ -30,4 +33,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

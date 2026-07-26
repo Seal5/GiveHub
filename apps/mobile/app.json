@@ -14,10 +14,19 @@
     "android": {
       "package": "nz.co.givehub.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0B1710"
+        "backgroundColor": "#102219"
       }
     },
-    "plugins": ["expo-router", "expo-secure-store"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow GiveHub to find volunteer opportunities near you."
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     }
