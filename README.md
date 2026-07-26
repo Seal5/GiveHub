@@ -19,6 +19,12 @@ GiveHub is a Wellington-focused volunteer discovery and coordination beta. It pa
 
 Demo mode is explicit. Set `EXPO_PUBLIC_DEMO_MODE=true` in `apps/mobile/.env` only when you intentionally want in-memory fixtures. In normal connected development it must be `false`; missing API or Supabase values then produce a configuration error instead of silently switching to demo data.
 
+For a persistent local demo without Supabase Auth, set
+`EXPO_PUBLIC_DEMO_MODE=false`, `EXPO_PUBLIC_LOCAL_AUTH=true`, and point
+`EXPO_PUBLIC_API_URL` at the local FastAPI server. This uses the seeded
+development identities while storing all domain data in the configured API
+database. Local authentication is rejected by production deployments.
+
 ### Physical Android device
 
 1. Connect the phone by USB, enable Developer options and USB debugging, then confirm it appears under `adb devices`.
@@ -37,6 +43,11 @@ Demo API identities are accepted only outside production:
 
 - Volunteer: `Authorization: Bearer dev:00000000-0000-4000-8000-000000000020`
 - Organiser: `Authorization: Bearer dev:00000000-0000-4000-8000-000000000010`
+
+Transactional email is optional in local development. Set `RESEND_API_KEY` and
+`EMAIL_FROM` in the API `.env` to notify organisers about new applications and
+volunteers about status changes. Applications continue safely when email is not
+configured or the provider is temporarily unavailable.
 
 ## Supabase
 
@@ -63,4 +74,9 @@ docker build -f apps/api/Dockerfile -t givehub-api .
 
 ## Scope
 
-The beta includes role-specific onboarding, address/current-location preferences, 5–100 km discovery filtering, saves, review-required applications, volunteer status tracking, organiser opportunity publishing, per-event pipelines, waitlists, and capacity enforcement. Social features, messaging, attendance, push notifications, comments, and store submission are intentionally deferred.
+The beta includes role-specific onboarding, address/current-location preferences,
+5–100 km discovery filtering, saves, review-required applications, volunteer
+status tracking, organiser opportunity publishing, per-event pipelines, applicant
+filtering and CSV export, posting funnel analytics, transactional email, waitlists,
+and capacity enforcement. Social features, messaging, attendance, push
+notifications, comments, and store submission are intentionally deferred.

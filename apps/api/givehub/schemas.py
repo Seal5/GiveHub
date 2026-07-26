@@ -5,7 +5,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
-from givehub.models import ApplicationStatus, OpportunityStatus, Recurrence, Role
+from givehub.models import (
+    ApplicationStatus,
+    OpportunityEventType,
+    OpportunityStatus,
+    Recurrence,
+    Role,
+)
 
 
 class ORMModel(BaseModel):
@@ -80,7 +86,9 @@ class OpportunityBase(BaseModel):
     country_code: str = Field(default="NZ", min_length=2, max_length=2)
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
-    location_visibility: str = Field(default="public", pattern="^(public|approximate|confirmed_only)$")
+    location_visibility: str = Field(
+        default="public", pattern="^(public|approximate|confirmed_only)$"
+    )
     starts_at: datetime
     ends_at: datetime
     recurrence: Recurrence = Recurrence.one_off
@@ -117,7 +125,9 @@ class OpportunityUpdate(BaseModel):
     country_code: str | None = Field(default=None, min_length=2, max_length=2)
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
-    location_visibility: str | None = Field(default=None, pattern="^(public|approximate|confirmed_only)$")
+    location_visibility: str | None = Field(
+        default=None, pattern="^(public|approximate|confirmed_only)$"
+    )
     starts_at: datetime | None = None
     ends_at: datetime | None = None
     recurrence: Recurrence | None = None
@@ -203,6 +213,18 @@ class PipelineOut(BaseModel):
     applications: list[ApplicationOut]
 
 
+class OpportunityEventCreate(BaseModel):
+    event_type: OpportunityEventType
+
+
+class AnalyticsOut(BaseModel):
+    views: int
+    application_starts: int
+    applications_submitted: int
+    shares: int
+    view_to_application_rate: float
+
+
 class UploadRequest(BaseModel):
     filename: str = Field(min_length=1, max_length=180)
     content_type: str = Field(pattern="^image/(jpeg|png|webp)$")
@@ -239,4 +261,3 @@ class ErrorDetail(BaseModel):
 
 class ErrorEnvelope(BaseModel):
     error: ErrorDetail
-

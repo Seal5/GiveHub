@@ -1,4 +1,5 @@
-import { Image, Pressable, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Image, Pressable, Share, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,8 +22,14 @@ export default function OpportunityDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const client = useQueryClient();
+  const viewRecorded = useRef(false);
   const query = useQuery({ queryKey: ["opportunity", id], queryFn: () => api.opportunity(id, token) });
   const save = useMutation({ mutationFn: (value: boolean) => api.setSaved(id, value, token), onSuccess: () => { client.invalidateQueries({ queryKey: ["opportunity", id] }); client.invalidateQueries({ queryKey: ["opportunities"] }); } });
+  useEffect(() => {
+    if (!id || viewRecorded.current) return;
+    viewRecorded.current = true;
+    void api.trackOpportunityEvent(id, "viewed", token);
+  }, [id, token]);
   if (query.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
   const item = query.data;
   if (!item) return <Screen><EmptyState title="Opportunity unavailable" body="It may have been unpublished by the host." /></Screen>;
@@ -32,7 +39,20 @@ export default function OpportunityDetail() {
       <View className="relative">
         {image ? <Image source={image} className="h-72 w-full" resizeMode="cover" /> : <View className="h-72 bg-secondary dark:bg-dark-secondary" />}
         <Pressable accessibilityLabel="Back" onPress={() => router.back()} className="absolute left-5 top-5 h-11 w-11 items-center justify-center rounded-full bg-background/95"><Ionicons name="arrow-back" size={21} color="#17221A" /></Pressable>
-        <Pressable accessibilityLabel="Save opportunity" onPress={() => save.mutate(!item.is_saved)} className="absolute right-5 top-5 h-11 w-11 items-center justify-center rounded-full bg-background/95"><Ionicons name={item.is_saved ? "bookmark" : "bookmark-outline"} size={21} color="#2A8D58" /></Pressable>
+        <Pressable accessibilityLabel="Save opportunity" onPress={() => save.mutate(!item.is_saved)} className="absolute right-[72px] top-5 h-11 w-11 items-center justify-center rounded-full bg-background/95"><Ionicons name={item.is_saved ? "bookmark" : "bookmark-outline"} size={21} color="#2A8D58" /></Pressable>
+        <Pressable
+          accessibilityLabel="Share opportunity"
+          onPress={async () => {
+            await Share.share({
+              title: item.title,
+              message: `${item.title} with ${item.organisation_name}\n${item.location_label}\n\nOpen GiveHub to volunteer.`,
+            });
+            await api.trackOpportunityEvent(id, "shared", token);
+          }}
+          className="absolute right-5 top-5 h-11 w-11 items-center justify-center rounded-full bg-background/95"
+        >
+          <Ionicons name="share-social-outline" size={21} color="#2A8D58" />
+        </Pressable>
       </View>
       <View className="px-5 pb-10 pt-6">
         <Eyebrow>{item.organisation_name}</Eyebrow>

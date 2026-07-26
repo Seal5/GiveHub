@@ -21,7 +21,7 @@ function NavigationGuard() {
     if (loading) return;
     const group = segments[0];
     if (!profile) {
-      if (group === "(volunteer)" || group === "(organiser)") router.replace("/");
+      if (group === "(volunteer)" || group === "(organiser)") router.replace("/welcome");
       return;
     }
     if (profile.role === "volunteer" && group !== "(volunteer)") router.replace("/(volunteer)");

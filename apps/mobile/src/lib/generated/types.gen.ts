@@ -5,6 +5,32 @@ export type ClientOptions = {
 };
 
 /**
+ * AnalyticsOut
+ */
+export type AnalyticsOut = {
+    /**
+     * Application Starts
+     */
+    application_starts: number;
+    /**
+     * Applications Submitted
+     */
+    applications_submitted: number;
+    /**
+     * Shares
+     */
+    shares: number;
+    /**
+     * View To Application Rate
+     */
+    view_to_application_rate: number;
+    /**
+     * Views
+     */
+    views: number;
+};
+
+/**
  * ApplicationCreate
  */
 export type ApplicationCreate = {
@@ -275,6 +301,18 @@ export type OpportunityCreate = {
      */
     title: string;
 };
+
+/**
+ * OpportunityEventCreate
+ */
+export type OpportunityEventCreate = {
+    event_type: OpportunityEventType;
+};
+
+/**
+ * OpportunityEventType
+ */
+export type OpportunityEventType = 'viewed' | 'application_started' | 'application_submitted' | 'shared';
 
 /**
  * OpportunityOut
@@ -986,6 +1024,36 @@ export type ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses = {
 
 export type ApplyV1OpportunitiesOpportunityIdApplicationsPostResponse = ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses[keyof ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses];
 
+export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostData = {
+    body: OpportunityEventCreate;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: never;
+    url: '/v1/opportunities/{opportunity_id}/events';
+};
+
+export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostError = RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostErrors[keyof RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostErrors];
+
+export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponse = RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponses[keyof RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponses];
+
 export type UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteData = {
     body?: never;
     path: {
@@ -1045,6 +1113,22 @@ export type SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponses = {
 };
 
 export type SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponse = SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponses[keyof SaveOpportunityV1OpportunitiesOpportunityIdSavedPutResponses];
+
+export type OrganiserAnalyticsV1OrganiserAnalyticsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/analytics';
+};
+
+export type OrganiserAnalyticsV1OrganiserAnalyticsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalyticsOut;
+};
+
+export type OrganiserAnalyticsV1OrganiserAnalyticsGetResponse = OrganiserAnalyticsV1OrganiserAnalyticsGetResponses[keyof OrganiserAnalyticsV1OrganiserAnalyticsGetResponses];
 
 export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchData = {
     body: ApplicationTransition;
@@ -1149,6 +1233,77 @@ export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses
 
 export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponse = UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses[keyof UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses];
 
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetData = {
+    body?: never;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/opportunities/{opportunity_id}/analytics';
+};
+
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetError = OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors[keyof OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors];
+
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalyticsOut;
+};
+
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponse = OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses[keyof OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses];
+
+export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetData = {
+    body?: never;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: {
+        /**
+         * Stage
+         */
+        stage?: ApplicationStatus | null;
+        /**
+         * Q
+         */
+        q?: string | null;
+        /**
+         * Availability
+         */
+        availability?: string | null;
+    };
+    url: '/v1/organiser/opportunities/{opportunity_id}/applications.csv';
+};
+
+export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetError = ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors[keyof ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors];
+
+export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
 export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostData = {
     body: UploadRequest;
     path: {
@@ -1192,6 +1347,14 @@ export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetD
          * Stage
          */
         stage?: ApplicationStatus | null;
+        /**
+         * Q
+         */
+        q?: string | null;
+        /**
+         * Availability
+         */
+        availability?: string | null;
     };
     url: '/v1/organiser/opportunities/{opportunity_id}/pipeline';
 };

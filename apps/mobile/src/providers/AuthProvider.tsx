@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
-import { api, apiConfigurationError, demoMode } from "@/lib/api";
+import { api, apiConfigurationError, demoMode, localAuthMode } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import type { Profile, Role } from "@/lib/types";
 
@@ -22,7 +22,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (demoMode || !supabase) {
+    if (demoMode || localAuthMode || !supabase) {
       setLoading(false);
       return;
     }
@@ -52,9 +52,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const value = useMemo<AuthValue>(() => ({
     profile, token, loading,
     async signIn(role, email, password) {
-      if (demoMode) {
-        setToken(`dev:${profileForId(role)}`);
-        setProfile(await api.profile(role));
+      if (demoMode || localAuthMode) {
+        const nextToken = `dev:${profileForId(role)}`;
+        setToken(nextToken);
+        setProfile(await api.profile(role, nextToken));
         return;
       }
       if (apiConfigurationError) throw new Error(apiConfigurationError);
@@ -67,9 +68,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setProfile(next);
     },
     async signUp(input) {
-      if (demoMode) {
-        setToken(`dev:${profileForId(input.role)}`);
-        setProfile(await api.createProfile({ role: input.role, display_name: input.name, email: input.email, organisation_name: input.organisationName }));
+      if (demoMode || localAuthMode) {
+        const nextToken = `dev:${profileForId(input.role)}`;
+        setToken(nextToken);
+        setProfile(
+          localAuthMode
+            ? await api.profile(input.role, nextToken)
+            : await api.createProfile(
+                {
+                  role: input.role,
+                  display_name: input.name,
+                  email: input.email,
+                  organisation_name: input.organisationName,
+                },
+                nextToken,
+              ),
+        );
         return;
       }
       if (apiConfigurationError) throw new Error(apiConfigurationError);
@@ -84,7 +98,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       // Clear local state before any network work so navigation responds immediately.
       setProfile(null);
       setToken(null);
-      if (!demoMode && supabase) {
+      if (!demoMode && !localAuthMode && supabase) {
         const { error } = await supabase.auth.signOut({ scope: "local" });
         if (error) console.warn("Supabase local sign-out failed", error.message);
       }
@@ -98,11 +112,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
 }
 
 const profileForId = (role: Role) => role === "volunteer" ? "00000000-0000-4000-8000-000000000020" : "00000000-0000-4000-8000-000000000010";
-const missingSupabaseMessage = "Connected mode is enabled, but Supabase Auth is missing. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY to apps/mobile/.env, then restart Expo with --clear.";
+const missingSupabaseMessage = "Connected mode is enabled, but Supabase Auth is missing. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY, or set EXPO_PUBLIC_LOCAL_AUTH=true for local development, then restart Expo with --clear.";
 
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used inside AuthProvider");
   return context;
 }
-

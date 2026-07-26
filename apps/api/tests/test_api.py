@@ -1,4 +1,3 @@
-
 from fastapi.testclient import TestClient
 
 from givehub.seed import DEMO_ORGANISER_ID
@@ -20,18 +19,14 @@ def test_opportunities_are_distance_ordered(client: TestClient) -> None:
 
 
 def test_opportunities_support_coordinate_radius_filtering(client: TestClient) -> None:
-    response = client.get(
-        "/v1/opportunities?lat=-41.2866&lng=174.7756&radius_km=5"
-    )
+    response = client.get("/v1/opportunities?lat=-41.2866&lng=174.7756&radius_km=5")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 3
     assert all(item["distance_km"] <= 5 for item in data)
     assert data == sorted(data, key=lambda item: item["distance_km"])
 
-    wider = client.get(
-        "/v1/opportunities?lat=-41.2866&lng=174.7756&radius_km=100"
-    )
+    wider = client.get("/v1/opportunities?lat=-41.2866&lng=174.7756&radius_km=100")
     assert wider.status_code == 200
     assert len(wider.json()) == 5
     assert client.get("/v1/opportunities?lat=-41.2866").status_code == 422
@@ -110,3 +105,90 @@ def test_role_authorization(client: TestClient) -> None:
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "http_403"
 
+
+def test_opportunity_funnel_analytics_and_csv_export(client: TestClient, identity_override) -> None:
+    opportunity = client.get("/v1/opportunities").json()[0]
+    opportunity_id = opportunity["id"]
+    assert (
+        client.post(
+            f"/v1/opportunities/{opportunity_id}/events",
+            json={"event_type": "viewed"},
+        ).status_code
+        == 204
+    )
+    assert (
+        client.post(
+            f"/v1/opportunities/{opportunity_id}/events",
+            json={"event_type": "application_started"},
+        ).status_code
+        == 204
+    )
+    applied = client.post(
+        f"/v1/opportunities/{opportunity_id}/applications",
+        json={
+            "note": '=HYPERLINK("unsafe.example", "I can help")',
+            "experience": "First aid and community gardening",
+            "availability": "Available during the daytime",
+        },
+    )
+    assert applied.status_code == 201
+
+    identity_override(DEMO_ORGANISER_ID)
+    analytics = client.get(f"/v1/organiser/opportunities/{opportunity_id}/analytics")
+    assert analytics.status_code == 200
+    assert analytics.json() == {
+        "views": 1,
+        "application_starts": 1,
+        "applications_submitted": 1,
+        "shares": 0,
+        "view_to_application_rate": 100.0,
+    }
+    overview = client.get("/v1/organiser/analytics")
+    assert overview.status_code == 200
+    assert overview.json()["applications_submitted"] == 1
+
+    filtered = client.get(
+        f"/v1/organiser/opportunities/{opportunity_id}/pipeline",
+        params={"stage": "received", "q": "first aid", "availability": "daytime"},
+    )
+    assert filtered.status_code == 200
+    assert len(filtered.json()["applications"]) == 1
+    exported = client.get(
+        f"/v1/organiser/opportunities/{opportunity_id}/applications.csv",
+        params={"stage": "received", "q": "first aid"},
+    )
+    assert exported.status_code == 200
+    assert exported.headers["content-type"].startswith("text/csv")
+    assert "attachment; filename=" in exported.headers["content-disposition"]
+    assert "Mia Thompson" in exported.text
+    assert "First aid and community gardening" in exported.text
+    assert "'=HYPERLINK" in exported.text
+
+
+def test_application_and_status_change_send_email(
+    client: TestClient, identity_override, monkeypatch
+) -> None:
+    sent: list[dict[str, str]] = []
+
+    def capture_email(_settings, *, recipient: str, subject: str, text: str) -> bool:
+        sent.append({"recipient": recipient, "subject": subject, "text": text})
+        return True
+
+    monkeypatch.setattr("givehub.api.send_email", capture_email)
+    opportunity_id = client.get("/v1/opportunities").json()[0]["id"]
+    applied = client.post(
+        f"/v1/opportunities/{opportunity_id}/applications",
+        json={"note": "I would be glad to help throughout the entire event."},
+    )
+    assert applied.status_code == 201
+    assert sent[0]["recipient"] == "organiser@example.com"
+    assert "New GiveHub application" in sent[0]["subject"]
+
+    identity_override(DEMO_ORGANISER_ID)
+    confirmed = client.patch(
+        f"/v1/organiser/applications/{applied.json()['id']}",
+        json={"status": "confirmed", "version": 1},
+    )
+    assert confirmed.status_code == 200
+    assert sent[1]["recipient"] == "volunteer@example.com"
+    assert "confirmed" in sent[1]["subject"]
