@@ -41,6 +41,8 @@ class OpportunityStatus(str, enum.Enum):
     draft = "draft"
     published = "published"
     unpublished = "unpublished"
+    closed = "closed"
+    removed = "removed"
 
 
 class Recurrence(str, enum.Enum):
@@ -63,6 +65,20 @@ class OpportunityEventType(str, enum.Enum):
     application_started = "application_started"
     application_submitted = "application_submitted"
     shared = "shared"
+
+
+class ReportReason(str, enum.Enum):
+    misleading = "misleading"
+    unsafe = "unsafe"
+    inappropriate = "inappropriate"
+    scam = "scam"
+    other = "other"
+
+
+class ReportStatus(str, enum.Enum):
+    open = "open"
+    resolved = "resolved"
+    dismissed = "dismissed"
 
 
 opportunity_causes = Table(
@@ -181,6 +197,9 @@ class Opportunity(TimestampMixin, Base):
     events: Mapped[list[OpportunityEvent]] = relationship(
         back_populates="opportunity", cascade="all, delete-orphan"
     )
+    reports: Mapped[list[OpportunityReport]] = relationship(
+        back_populates="opportunity", cascade="all, delete-orphan"
+    )
 
 
 class SavedOpportunity(TimestampMixin, Base):
@@ -254,3 +273,29 @@ class OpportunityEvent(Base):
 
     opportunity: Mapped[Opportunity] = relationship(back_populates="events")
     profile: Mapped[Profile] = relationship()
+
+
+class OpportunityReport(Base):
+    __tablename__ = "opportunity_reports"
+    __table_args__ = (UniqueConstraint("opportunity_id", "reporter_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("opportunities.id", ondelete="CASCADE"), index=True
+    )
+    reporter_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("profiles.id", ondelete="CASCADE"), index=True
+    )
+    reason: Mapped[ReportReason] = mapped_column(
+        Enum(ReportReason, native_enum=False), index=True
+    )
+    details: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[ReportStatus] = mapped_column(
+        Enum(ReportStatus, native_enum=False), default=ReportStatus.open, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now_utc, index=True
+    )
+
+    opportunity: Mapped[Opportunity] = relationship(back_populates="reports")
+    reporter: Mapped[Profile] = relationship()

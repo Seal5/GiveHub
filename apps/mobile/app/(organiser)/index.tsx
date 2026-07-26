@@ -59,6 +59,13 @@ export default function OrganiserOverview() {
         </Card>
       </Pressable>
 
+      <Text className="mb-3 mt-7 font-display text-2xl tracking-[-0.7px] text-foreground dark:text-dark-foreground">Your posts</Text>
+      {events.data?.map((event) => <Pressable key={event.id} accessibilityRole="button" accessibilityLabel={`Manage ${event.title}`} onPress={() => router.push({ pathname: "/(organiser)/opportunity/[id]", params: { id: event.id } })}>
+        <Card className="mb-3 p-4"><View className="flex-row items-center justify-between">
+          <View className="flex-1 pr-4"><Text className="font-strong text-sm text-foreground dark:text-dark-foreground">{event.title}</Text><Text className="mt-1 font-sans text-xs capitalize text-muted-foreground dark:text-dark-muted-foreground">{event.status} · {event.confirmed_count} confirmed</Text></View>
+          <View className="flex-row items-center gap-2"><Text className="font-strong text-xs text-primary dark:text-dark-primary">Manage</Text><Ionicons name="settings-outline" size={18} color="#2A8D58" /></View>
+        </View></Card>
+      </Pressable>)}
       <Button className="mt-7" label="Create a new opportunity" icon={<Ionicons name="add" size={20} color="#F8FFF8" />} onPress={() => router.push("/(organiser)/create")} />
     </Screen>
   );

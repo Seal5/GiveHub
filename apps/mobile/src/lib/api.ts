@@ -6,7 +6,9 @@ import type {
   LocationPoint,
   Opportunity,
   OpportunityEventType,
+  OpportunityReport,
   Profile,
+  ReportReason,
   Role,
   ThemePreference,
 } from "./types";
@@ -27,6 +29,7 @@ export const apiConfigurationError = !demoMode && !apiConfigured
     : null;
 let demoApplications = [...applications];
 let demoOpportunities = [...opportunities];
+let demoReports: OpportunityReport[] = [];
 const demoAnalytics: Analytics = {
   views: 48,
   application_starts: 14,
@@ -121,6 +124,7 @@ export const api = {
       const lat = filters.lat ?? profile.search_latitude; const lng = filters.lng ?? profile.search_longitude;
       const radius = filters.radius_km ?? profile.search_radius_km;
       return demoOpportunities.map((item) => ({ ...item, distance_km: lat !== null && lng !== null ? distanceKm(lat, lng, item.latitude, item.longitude) : null })).filter((item) =>
+        (item.status === "published" || item.status === "closed") &&
         (!query || [item.title, item.organisation_name, item.description, item.tasks, item.location_label].join(" ").toLowerCase().includes(query)) &&
         (!filters.cause || item.causes.some((cause) => cause.slug === filters.cause)) &&
         (!filters.recurrence || item.recurrence === filters.recurrence) &&
@@ -160,6 +164,30 @@ export const api = {
       token,
     });
   },
+  reportOpportunity: async (
+    id: string,
+    input: { reason: ReportReason; details: string },
+    token?: string | null,
+  ): Promise<OpportunityReport> => {
+    if (demoMode) {
+      if (demoReports.some((item) => item.opportunity_id === id)) throw new Error("You have already reported this opportunity");
+      const report: OpportunityReport = {
+        id: `report-${Date.now()}`,
+        opportunity_id: id,
+        reason: input.reason,
+        details: input.details,
+        status: "open",
+        created_at: new Date().toISOString(),
+      };
+      demoReports = [report, ...demoReports];
+      return report;
+    }
+    return request(`/v1/opportunities/${id}/reports`, {
+      method: "POST",
+      body: JSON.stringify(input),
+      token,
+    });
+  },
   setSaved: async (id: string, saved: boolean, token?: string | null): Promise<void> => {
     if (demoMode) {
       demoOpportunities = demoOpportunities.map((item) => item.id === id ? { ...item, is_saved: saved } : item);
@@ -192,7 +220,7 @@ export const api = {
   myApplications: async (token?: string | null): Promise<Application[]> =>
     demoMode ? demoApplications : request("/v1/applications/me", { token }),
   organiserOpportunities: async (token?: string | null): Promise<Opportunity[]> =>
-    demoMode ? demoOpportunities : request("/v1/organiser/opportunities", { token }),
+    demoMode ? demoOpportunities.filter((item) => item.status !== "removed") : request("/v1/organiser/opportunities", { token }),
   organiserAnalytics: async (token?: string | null): Promise<Analytics> =>
     demoMode ? { ...demoAnalytics } : request("/v1/organiser/analytics", { token }),
   createOpportunity: async (input: Record<string, unknown>, token?: string | null): Promise<Opportunity> => {
@@ -217,6 +245,37 @@ export const api = {
     }
     return request(`/v1/organiser/opportunities/${id}/publish`, { method: "POST", token });
   },
+  closeOpportunity: async (id: string, token?: string | null): Promise<Opportunity> => {
+    if (demoMode) {
+      const found = demoOpportunities.find((item) => item.id === id)!;
+      const updated = { ...found, status: "closed" as const, version: found.version + 1 };
+      demoOpportunities = demoOpportunities.map((item) => item.id === id ? updated : item);
+      return updated;
+    }
+    return request(`/v1/organiser/opportunities/${id}/close`, { method: "POST", token });
+  },
+  unpublishOpportunity: async (id: string, token?: string | null): Promise<Opportunity> => {
+    if (demoMode) {
+      const found = demoOpportunities.find((item) => item.id === id)!;
+      const updated = { ...found, status: "unpublished" as const, version: found.version + 1 };
+      demoOpportunities = demoOpportunities.map((item) => item.id === id ? updated : item);
+      return updated;
+    }
+    return request(`/v1/organiser/opportunities/${id}/unpublish`, { method: "POST", token });
+  },
+  removeOpportunity: async (id: string, token?: string | null): Promise<Opportunity> => {
+    if (demoMode) {
+      const found = demoOpportunities.find((item) => item.id === id)!;
+      const updated = { ...found, status: "removed" as const, version: found.version + 1 };
+      demoOpportunities = demoOpportunities.map((item) => item.id === id ? updated : item);
+      return updated;
+    }
+    return request(`/v1/organiser/opportunities/${id}`, { method: "DELETE", token });
+  },
+  opportunityReports: async (id: string, token?: string | null): Promise<OpportunityReport[]> =>
+    demoMode
+      ? demoReports.filter((item) => item.opportunity_id === id && item.status === "open")
+      : request(`/v1/organiser/opportunities/${id}/reports`, { token }),
   updateOpportunity: async (id: string, input: Record<string, unknown>, token?: string | null): Promise<Opportunity> => {
     if (demoMode) {
       const found = demoOpportunities.find((item) => item.id === id)!;

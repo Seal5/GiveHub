@@ -8,6 +8,16 @@ export type ApplicationStatus =
   | "declined"
   | "withdrawn";
 export type OpportunityEventType = "viewed" | "application_started" | "shared";
+export type OpportunityStatus = "draft" | "published" | "unpublished" | "closed" | "removed";
+export type ReportReason = "misleading" | "unsafe" | "inappropriate" | "scam" | "other";
+export type OpportunityReport = {
+  id: string;
+  opportunity_id: string;
+  reason: ReportReason;
+  details: string;
+  status: "open" | "resolved" | "dismissed";
+  created_at: string;
+};
 export type Analytics = {
   views: number;
   application_starts: number;
@@ -57,7 +67,7 @@ export type Opportunity = {
   capacity: number;
   confirmed_count: number;
   image_url: string | null;
-  status: "draft" | "published" | "unpublished";
+  status: OpportunityStatus;
   version: number;
   organisation_name: string;
   location_label: string;

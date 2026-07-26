@@ -1,13 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image, Pressable, Share, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
-import { Body, Button, Card, EmptyState, Eyebrow, Heading, LoadingState, Screen } from "@/components/ui";
+import { Body, Button, Card, Chip, EmptyState, Eyebrow, Field, Heading, LoadingState, Screen } from "@/components/ui";
 import { formatEventDate } from "@/lib/format";
 import { opportunityImage } from "@/lib/localAssets";
+import type { ReportReason } from "@/lib/types";
 
 function DetailRow({ icon, title, value }: { icon: keyof typeof Ionicons.glyphMap; title: string; value: string }) {
   return (
@@ -23,8 +24,15 @@ export default function OpportunityDetail() {
   const { token } = useAuth();
   const client = useQueryClient();
   const viewRecorded = useRef(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason>("misleading");
+  const [reportDetails, setReportDetails] = useState("");
   const query = useQuery({ queryKey: ["opportunity", id], queryFn: () => api.opportunity(id, token) });
   const save = useMutation({ mutationFn: (value: boolean) => api.setSaved(id, value, token), onSuccess: () => { client.invalidateQueries({ queryKey: ["opportunity", id] }); client.invalidateQueries({ queryKey: ["opportunities"] }); } });
+  const report = useMutation({
+    mutationFn: () => api.reportOpportunity(id, { reason: reportReason, details: reportDetails }, token),
+    onSuccess: () => setReportOpen(false),
+  });
   useEffect(() => {
     if (!id || viewRecorded.current) return;
     viewRecorded.current = true;
@@ -65,7 +73,37 @@ export default function OpportunityDetail() {
         <DetailRow icon="people-outline" title="Places" value={`${item.confirmed_count} of ${item.capacity} confirmed · minimum age ${item.minimum_age}`} />
         <DetailRow icon="accessibility-outline" title="Access" value={item.accessibility} />
         <DetailRow icon="shield-checkmark-outline" title="Safety and what to bring" value={item.safety_notes} />
-        <Button label="Apply to help" onPress={() => router.push(`/(volunteer)/apply/${item.id}`)} />
+        {item.status === "closed" ? (
+          <Card className="border-0 bg-secondary dark:bg-dark-secondary">
+            <Text className="font-strong text-sm text-foreground dark:text-dark-foreground">Applications are closed</Text>
+            <Body className="mt-1">The host is no longer accepting applications for this opportunity.</Body>
+          </Card>
+        ) : <Button label="Apply to help" onPress={() => router.push(`/(volunteer)/apply/${item.id}`)} />}
+        {report.isSuccess ? (
+          <Card className="mt-4 border-0 bg-secondary dark:bg-dark-secondary">
+            <Text className="font-strong text-sm text-primary dark:text-dark-primary">Report received</Text>
+            <Body className="mt-1">The report is stored for moderation review.</Body>
+          </Card>
+        ) : (
+          <>
+            <Button className="mt-4" label={reportOpen ? "Cancel report" : "Report this opportunity"} variant="secondary" onPress={() => setReportOpen((value) => !value)} />
+            {reportOpen ? (
+              <Card className="mt-4">
+                <Text className="font-display text-xl text-foreground dark:text-dark-foreground">Why are you reporting this?</Text>
+                <View className="mt-4 flex-row flex-wrap gap-y-2">
+                  {(["misleading", "unsafe", "inappropriate", "scam", "other"] as ReportReason[]).map((reason) => (
+                    <Chip key={reason} label={reason} selected={reportReason === reason} onPress={() => setReportReason(reason)} />
+                  ))}
+                </View>
+                <View className="mt-4">
+                  <Field label="Additional details (optional)" value={reportDetails} onChangeText={setReportDetails} multiline numberOfLines={4} textAlignVertical="top" placeholder="Tell the moderation team what happened" />
+                </View>
+                {report.error ? <Text className="mb-3 font-sans text-sm text-destructive dark:text-dark-destructive">{report.error.message}</Text> : null}
+                <Button label="Submit report" loading={report.isPending} onPress={() => report.mutate()} />
+              </Card>
+            ) : null}
+          </>
+        )}
       </View>
     </Screen>
   );

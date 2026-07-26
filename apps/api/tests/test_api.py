@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from givehub.seed import DEMO_ORGANISER_ID
+from givehub.seed import DEMO_ORGANISER_ID, DEMO_VOLUNTEER_ID
 
 
 def test_health_and_ready(client: TestClient) -> None:
@@ -104,6 +104,72 @@ def test_role_authorization(client: TestClient) -> None:
     response = client.get("/v1/organiser/opportunities")
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "http_403"
+
+
+def test_opportunity_reporting_and_organiser_moderation(
+    client: TestClient, identity_override
+) -> None:
+    opportunity = client.get("/v1/opportunities").json()[0]
+    opportunity_id = opportunity["id"]
+    reported = client.post(
+        f"/v1/opportunities/{opportunity_id}/reports",
+        json={
+            "reason": "unsafe",
+            "details": "The safety instructions do not mention protective gloves.",
+        },
+    )
+    assert reported.status_code == 201
+    assert reported.json()["reason"] == "unsafe"
+    assert (
+        client.post(
+            f"/v1/opportunities/{opportunity_id}/reports",
+            json={"reason": "other", "details": "Duplicate report"},
+        ).status_code
+        == 409
+    )
+
+    identity_override(DEMO_ORGANISER_ID)
+    reports = client.get(f"/v1/organiser/opportunities/{opportunity_id}/reports")
+    assert reports.status_code == 200
+    assert reports.json()[0]["details"].startswith("The safety instructions")
+
+    edited = client.patch(
+        f"/v1/organiser/opportunities/{opportunity_id}",
+        json={"title": "Updated Oriental Bay Beach Clean", "version": opportunity["version"]},
+    )
+    assert edited.status_code == 200
+    closed = client.post(f"/v1/organiser/opportunities/{opportunity_id}/close")
+    assert closed.status_code == 200
+    assert closed.json()["status"] == "closed"
+    assert opportunity_id in [item["id"] for item in client.get("/v1/opportunities").json()]
+    identity_override(DEMO_VOLUNTEER_ID)
+    assert (
+        client.post(
+            f"/v1/opportunities/{opportunity_id}/applications",
+            json={
+                "note": "I would like to help.",
+                "experience": "Community volunteering",
+                "availability": "Available for the event",
+            },
+        ).status_code
+        == 409
+    )
+
+    identity_override(DEMO_ORGANISER_ID)
+    reopened = client.post(f"/v1/organiser/opportunities/{opportunity_id}/publish")
+    assert reopened.status_code == 200
+    assert reopened.json()["status"] == "published"
+    unpublished = client.post(f"/v1/organiser/opportunities/{opportunity_id}/unpublish")
+    assert unpublished.status_code == 200
+    assert unpublished.json()["status"] == "unpublished"
+    assert opportunity_id not in [item["id"] for item in client.get("/v1/opportunities").json()]
+
+    removed = client.delete(f"/v1/organiser/opportunities/{opportunity_id}")
+    assert removed.status_code == 200
+    assert removed.json()["status"] == "removed"
+    assert opportunity_id not in [
+        item["id"] for item in client.get("/v1/organiser/opportunities").json()
+    ]
 
 
 def test_opportunity_funnel_analytics_and_csv_export(client: TestClient, identity_override) -> None:

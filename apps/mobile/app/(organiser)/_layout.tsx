@@ -11,5 +11,6 @@ export default function OrganiserLayout() {
     <Tabs.Screen name="create" options={{ title: "Post", tabBarIcon: icon("add-circle-outline") }} />
     <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: icon("menu-outline") }} />
     <Tabs.Screen name="application/[id]" options={{ href: null }} />
+    <Tabs.Screen name="opportunity/[id]" options={{ href: null }} />
   </Tabs>;
 }

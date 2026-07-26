@@ -10,6 +10,8 @@ from givehub.models import (
     OpportunityEventType,
     OpportunityStatus,
     Recurrence,
+    ReportReason,
+    ReportStatus,
     Role,
 )
 
@@ -215,6 +217,20 @@ class PipelineOut(BaseModel):
 
 class OpportunityEventCreate(BaseModel):
     event_type: OpportunityEventType
+
+
+class OpportunityReportCreate(BaseModel):
+    reason: ReportReason
+    details: str = Field(default="", max_length=1000)
+
+
+class OpportunityReportOut(ORMModel):
+    id: uuid.UUID
+    opportunity_id: uuid.UUID
+    reason: ReportReason
+    details: str
+    status: ReportStatus
+    created_at: datetime
 
 
 class AnalyticsOut(BaseModel):

@@ -25,10 +25,12 @@ from givehub.models import (
     Opportunity,
     OpportunityEvent,
     OpportunityEventType,
+    OpportunityReport,
     OpportunityStatus,
     Organisation,
     Profile,
     Recurrence,
+    ReportStatus,
     Role,
     SavedOpportunity,
     Suburb,
@@ -45,6 +47,8 @@ from givehub.schemas import (
     OpportunityCreate,
     OpportunityEventCreate,
     OpportunityOut,
+    OpportunityReportCreate,
+    OpportunityReportOut,
     OpportunityUpdate,
     PipelineOut,
     ProfileCreate,
@@ -335,7 +339,9 @@ def list_opportunities(
         )
     )
     effective_radius = radius_km or viewer.search_radius_km
-    statement = opportunity_query().where(Opportunity.status == OpportunityStatus.published)
+    statement = opportunity_query().where(
+        Opportunity.status.in_([OpportunityStatus.published, OpportunityStatus.closed])
+    )
     if q:
         term = f"%{q.strip()}%"
         statement = statement.join(Opportunity.organisation).where(
@@ -383,7 +389,7 @@ def get_opportunity(
     viewer = require_profile(db, identity.user_id)
     item = db.scalar(opportunity_query().where(Opportunity.id == opportunity_id))
     if item is None or (
-        item.status != OpportunityStatus.published
+        item.status not in (OpportunityStatus.published, OpportunityStatus.closed)
         and (not viewer.organisation or item.organisation_id != viewer.organisation.id)
     ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
@@ -407,8 +413,13 @@ def record_opportunity_event(
 ) -> None:
     profile = require_profile(db, identity.user_id, Role.volunteer)
     item = db.get(Opportunity, opportunity_id)
-    if not item or item.status != OpportunityStatus.published:
+    if not item or item.status not in (OpportunityStatus.published, OpportunityStatus.closed):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
+    if (
+        item.status == OpportunityStatus.closed
+        and payload.event_type == OpportunityEventType.application_started
+    ):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This opportunity is closed")
     if payload.event_type == OpportunityEventType.application_submitted:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -424,6 +435,39 @@ def record_opportunity_event(
     db.commit()
 
 
+@router.post(
+    "/opportunities/{opportunity_id}/reports",
+    response_model=OpportunityReportOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def report_opportunity(
+    opportunity_id: uuid.UUID,
+    payload: OpportunityReportCreate,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> OpportunityReport:
+    reporter = require_profile(db, identity.user_id, Role.volunteer)
+    item = db.get(Opportunity, opportunity_id)
+    if not item or item.status not in (OpportunityStatus.published, OpportunityStatus.closed):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
+    report = OpportunityReport(
+        opportunity_id=opportunity_id,
+        reporter_id=reporter.id,
+        reason=payload.reason,
+        details=payload.details.strip(),
+    )
+    db.add(report)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "You have already reported this opportunity"
+        ) from exc
+    db.refresh(report)
+    return report
+
+
 @router.put("/opportunities/{opportunity_id}/saved", status_code=status.HTTP_204_NO_CONTENT)
 def save_opportunity(
     opportunity_id: uuid.UUID,
@@ -432,7 +476,7 @@ def save_opportunity(
 ) -> None:
     profile = require_profile(db, identity.user_id, Role.volunteer)
     item = db.get(Opportunity, opportunity_id)
-    if not item or item.status != OpportunityStatus.published:
+    if not item or item.status not in (OpportunityStatus.published, OpportunityStatus.closed):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
     existing = db.scalar(
         select(SavedOpportunity).where(
@@ -478,6 +522,8 @@ def apply(
 ) -> ApplicationOut:
     volunteer = require_profile(db, identity.user_id, Role.volunteer)
     item = db.get(Opportunity, opportunity_id)
+    if item and item.status == OpportunityStatus.closed:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This opportunity is closed")
     if not item or item.status != OpportunityStatus.published:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
     application = Application(
@@ -571,6 +617,7 @@ def organiser_opportunities(
         db.scalars(
             opportunity_query()
             .where(Opportunity.organisation_id == organiser.organisation.id)
+            .where(Opportunity.status != OpportunityStatus.removed)
             .order_by(Opportunity.starts_at)
         )
         .unique()
@@ -621,6 +668,8 @@ def update_opportunity(
 ) -> OpportunityOut:
     organiser = require_profile(db, identity.user_id, Role.organiser)
     item = require_owned_opportunity(db, opportunity_id, organiser.id)
+    if item.status == OpportunityStatus.removed:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Removed opportunities cannot be edited")
     if item.version != payload.version:
         raise HTTPException(status.HTTP_409_CONFLICT, "Opportunity changed; refresh and try again")
     updates = payload.model_dump(exclude_unset=True, exclude={"version", "cause_ids"})
@@ -644,9 +693,29 @@ def publish_opportunity(
     organiser = require_profile(db, identity.user_id, Role.organiser)
     item = require_owned_opportunity(db, opportunity_id, organiser.id)
     assert organiser.organisation
+    if item.status == OpportunityStatus.removed:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Removed opportunities cannot be published")
     if organiser.organisation.verification_status != VerificationStatus.approved:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Organisation verification is required")
     item.status = OpportunityStatus.published
+    item.version += 1
+    db.commit()
+    return to_opportunity_out(db, item)
+
+
+@router.post("/organiser/opportunities/{opportunity_id}/close", response_model=OpportunityOut)
+def close_opportunity(
+    opportunity_id: uuid.UUID,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> OpportunityOut:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    item = require_owned_opportunity(db, opportunity_id, organiser.id)
+    if item.status == OpportunityStatus.removed:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Opportunity has already been removed")
+    if item.status != OpportunityStatus.published:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only published opportunities can be closed")
+    item.status = OpportunityStatus.closed
     item.version += 1
     db.commit()
     return to_opportunity_out(db, item)
@@ -660,10 +729,49 @@ def unpublish_opportunity(
 ) -> OpportunityOut:
     organiser = require_profile(db, identity.user_id, Role.organiser)
     item = require_owned_opportunity(db, opportunity_id, organiser.id)
+    if item.status == OpportunityStatus.removed:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Opportunity has already been removed")
     item.status = OpportunityStatus.unpublished
     item.version += 1
     db.commit()
     return to_opportunity_out(db, item)
+
+
+@router.delete("/organiser/opportunities/{opportunity_id}", response_model=OpportunityOut)
+def remove_opportunity(
+    opportunity_id: uuid.UUID,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> OpportunityOut:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    item = require_owned_opportunity(db, opportunity_id, organiser.id)
+    item.status = OpportunityStatus.removed
+    item.version += 1
+    db.commit()
+    return to_opportunity_out(db, item)
+
+
+@router.get(
+    "/organiser/opportunities/{opportunity_id}/reports",
+    response_model=list[OpportunityReportOut],
+)
+def opportunity_reports(
+    opportunity_id: uuid.UUID,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> list[OpportunityReport]:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    require_owned_opportunity(db, opportunity_id, organiser.id)
+    return list(
+        db.scalars(
+            select(OpportunityReport)
+            .where(
+                OpportunityReport.opportunity_id == opportunity_id,
+                OpportunityReport.status == ReportStatus.open,
+            )
+            .order_by(OpportunityReport.created_at.desc())
+        ).all()
+    )
 
 
 @router.get("/organiser/opportunities/{opportunity_id}/pipeline", response_model=PipelineOut)
