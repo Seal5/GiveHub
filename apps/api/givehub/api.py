@@ -60,6 +60,7 @@ from givehub.schemas import (
     ApplicationCreate,
     ApplicationOut,
     ApplicationTransition,
+    ApplicationUpdate,
     AttendanceRowOut,
     AttendanceSheetOut,
     AttendanceUpdate,
@@ -69,6 +70,8 @@ from givehub.schemas import (
     ImpactOut,
     LocationResult,
     LocationSuggestion,
+    NotificationPreferencesOut,
+    NotificationPreferencesUpdate,
     OpportunityCreate,
     OpportunityEventCreate,
     OpportunityOut,
@@ -366,6 +369,13 @@ def list_opportunities(
     lng: float | None = Query(default=None, ge=-180, le=180),
     radius_km: int | None = Query(default=None, ge=1, le=100),
     starts_after: datetime | None = None,
+    starts_before: datetime | None = None,
+    max_time_commitment_minutes: int | None = Query(default=None, ge=15, le=10080),
+    accessible_only: bool = False,
+    max_minimum_age: int | None = Query(default=None, ge=0, le=100),
+    training_required: bool | None = None,
+    screening_required: bool | None = None,
+    application_mode: str | None = Query(default=None, pattern="^(internal|external)$"),
     saved: bool = False,
     identity: Identity = Depends(current_identity),
     db: Session = Depends(get_db),
@@ -405,6 +415,22 @@ def list_opportunities(
         statement = statement.where(Opportunity.recurrence == recurrence)
     if starts_after:
         statement = statement.where(Opportunity.starts_at >= starts_after)
+    if starts_before:
+        statement = statement.where(Opportunity.starts_at <= starts_before)
+    if max_time_commitment_minutes is not None:
+        statement = statement.where(
+            Opportunity.time_commitment_minutes <= max_time_commitment_minutes
+        )
+    if accessible_only:
+        statement = statement.where(Opportunity.is_accessible.is_(True))
+    if max_minimum_age is not None:
+        statement = statement.where(Opportunity.minimum_age <= max_minimum_age)
+    if training_required is not None:
+        statement = statement.where(Opportunity.training_required.is_(training_required))
+    if screening_required is not None:
+        statement = statement.where(Opportunity.screening_required.is_(screening_required))
+    if application_mode is not None:
+        statement = statement.where(Opportunity.application_mode == application_mode)
     saved_ids = saved_opportunity_ids(db, viewer.id)
     if saved:
         statement = statement.where(Opportunity.id.in_(saved_ids))
@@ -553,6 +579,11 @@ def apply(
     item = db.get(Opportunity, opportunity_id)
     if not item or item.status != OpportunityStatus.published:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
+    if item.application_mode == "external":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "This organisation accepts applications on its own website",
+        )
     waiver: WaiverDocument | None = None
     if item.requires_waiver:
         if payload.waiver is None:
@@ -614,12 +645,13 @@ def apply(
         select(Application).options(*application_options()).where(Application.id == application.id)
     )
     assert loaded
-    queue_message(
-        background_tasks,
-        settings,
-        recipient=loaded.opportunity.organisation.owner.email,
-        message=application_received_for_organiser(loaded),
-    )
+    if loaded.opportunity.organisation.notify_new_applications:
+        queue_message(
+            background_tasks,
+            settings,
+            recipient=loaded.opportunity.organisation.owner.email,
+            message=application_received_for_organiser(loaded),
+        )
     queue_message(
         background_tasks,
         settings,
@@ -651,6 +683,54 @@ def my_applications(
         .order_by(Application.created_at.desc())
     ).all()
     return [to_application_out(item) for item in items]
+
+
+@router.get("/applications/{application_id}", response_model=ApplicationOut)
+def get_application(
+    application_id: uuid.UUID,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> ApplicationOut:
+    volunteer = require_profile(db, identity.user_id, Role.volunteer)
+    item = db.scalar(
+        select(Application).options(*application_options()).where(Application.id == application_id)
+    )
+    if not item or item.volunteer_id != volunteer.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Application not found")
+    return to_application_out(item)
+
+
+@router.patch("/applications/{application_id}", response_model=ApplicationOut)
+def update_application(
+    application_id: uuid.UUID,
+    payload: ApplicationUpdate,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> ApplicationOut:
+    volunteer = require_profile(db, identity.user_id, Role.volunteer)
+    item = db.scalar(
+        select(Application).options(*application_options()).where(Application.id == application_id)
+    )
+    if not item or item.volunteer_id != volunteer.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Application not found")
+    if item.status in {
+        ApplicationStatus.confirmed,
+        ApplicationStatus.declined,
+        ApplicationStatus.withdrawn,
+    }:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "This application can no longer be edited",
+        )
+    if item.version != payload.version:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Application changed; refresh and try again")
+    item.note = payload.note
+    item.experience = payload.experience
+    item.availability = payload.availability
+    item.version += 1
+    db.commit()
+    db.refresh(item)
+    return to_application_out(item)
 
 
 @router.post("/applications/{application_id}/withdraw", response_model=ApplicationOut)
@@ -700,6 +780,33 @@ def organiser_analytics(
     organiser = require_profile(db, identity.user_id, Role.organiser)
     assert organiser.organisation
     return analytics_out(db, organisation_id=organiser.organisation.id)
+
+
+@router.get("/organiser/notification-preferences", response_model=NotificationPreferencesOut)
+def get_notification_preferences(
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> NotificationPreferencesOut:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    assert organiser.organisation
+    return NotificationPreferencesOut(
+        notify_new_applications=organiser.organisation.notify_new_applications
+    )
+
+
+@router.put("/organiser/notification-preferences", response_model=NotificationPreferencesOut)
+def update_notification_preferences(
+    payload: NotificationPreferencesUpdate,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> NotificationPreferencesOut:
+    organiser = require_profile(db, identity.user_id, Role.organiser)
+    assert organiser.organisation
+    organiser.organisation.notify_new_applications = payload.notify_new_applications
+    db.commit()
+    return NotificationPreferencesOut(
+        notify_new_applications=organiser.organisation.notify_new_applications
+    )
 
 
 @router.get("/organiser/waiver", response_model=WaiverOut)
@@ -789,6 +896,16 @@ def update_opportunity(
         item.causes = require_causes(db, payload.cause_ids)
     if item.ends_at <= item.starts_at:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "End time must follow start time")
+    if item.application_mode == "external" and not item.external_application_url:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "An external application URL is required",
+        )
+    if item.application_mode == "internal" and item.external_application_url:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "External application URLs are only valid for external applications",
+        )
     item.version += 1
     db.commit()
     return to_opportunity_out(db, item)
@@ -805,6 +922,11 @@ def publish_opportunity(
     assert organiser.organisation
     if organiser.organisation.verification_status != VerificationStatus.approved:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Organisation verification is required")
+    if item.application_mode == "external" and not item.external_application_url:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Add the organisation's application URL before publishing",
+        )
     item.status = OpportunityStatus.published
     item.version += 1
     db.commit()

@@ -13,9 +13,31 @@ export default function SearchScreen() {
   const [search, setSearch] = useState("");
   const [cause, setCause] = useState("");
   const [recurrence, setRecurrence] = useState("");
+  const [dateRange, setDateRange] = useState("");
+  const [duration, setDuration] = useState("");
+  const [fit, setFit] = useState("");
   const { profile, token } = useAuth();
   const colours = useThemeColours();
-  const query = useQuery({ queryKey: ["opportunities", search, cause, recurrence, profile?.search_latitude, profile?.search_longitude, profile?.search_radius_km], queryFn: () => api.opportunities({ q: search, cause, recurrence }, token) });
+  const now = new Date();
+  const startsBefore = dateRange
+    ? new Date(now.getTime() + Number(dateRange) * 86400000).toISOString()
+    : undefined;
+  const filters = {
+    q: search,
+    cause,
+    recurrence,
+    starts_after: dateRange ? now.toISOString() : undefined,
+    starts_before: startsBefore,
+    max_time_commitment_minutes: duration ? Number(duration) : undefined,
+    accessible_only: fit === "accessible" || undefined,
+    max_minimum_age: fit === "under18" ? 17 : undefined,
+    training_required: fit === "no_training" ? false : undefined,
+    screening_required: fit === "no_screening" ? false : undefined,
+  };
+  const query = useQuery({
+    queryKey: ["opportunities", filters, profile?.search_latitude, profile?.search_longitude, profile?.search_radius_km],
+    queryFn: () => api.opportunities(filters, token),
+  });
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background dark:bg-dark-background">
       <View className="px-5 pt-3">
@@ -37,6 +59,22 @@ export default function SearchScreen() {
         </View>
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={["", "cleanup", "planting", "monitoring", "community"]} keyExtractor={(item) => item || "all"} renderItem={({ item }) => <Chip label={item ? item[0]!.toUpperCase() + item.slice(1) : "All causes"} selected={cause === item} onPress={() => setCause(item)} />} className="mb-3 grow-0" />
         <FlatList horizontal showsHorizontalScrollIndicator={false} data={["", "one_off", "weekly", "monthly"]} keyExtractor={(item) => item || "any"} renderItem={({ item }) => <Chip label={item ? item.replace("_", " ") : "Any frequency"} selected={recurrence === item} onPress={() => setRecurrence(item)} />} className="grow-0" />
+        <FlatList horizontal showsHorizontalScrollIndicator={false} data={["", "7", "30"]} keyExtractor={(item) => item || "any-date"} renderItem={({ item }) => <Chip label={item ? `Next ${item} days` : "Any date"} selected={dateRange === item} onPress={() => setDateRange(item)} />} className="mt-3 grow-0" />
+        <FlatList horizontal showsHorizontalScrollIndicator={false} data={["", "120", "240"]} keyExtractor={(item) => item || "any-duration"} renderItem={({ item }) => <Chip label={item ? `${Number(item) / 60} hours or less` : "Any duration"} selected={duration === item} onPress={() => setDuration(item)} />} className="mt-3 grow-0" />
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={[
+            { value: "", label: "Any fit" },
+            { value: "accessible", label: "Accessible" },
+            { value: "under18", label: "Under 18 welcome" },
+            { value: "no_training", label: "No training" },
+            { value: "no_screening", label: "No screening" },
+          ]}
+          keyExtractor={(item) => item.value || "any-fit"}
+          renderItem={({ item }) => <Chip label={item.label} selected={fit === item.value} onPress={() => setFit(item.value)} />}
+          className="mt-3 grow-0"
+        />
         <Pressable accessibilityRole="button" onPress={() => router.push("/(volunteer)/settings")} className="mt-3 min-h-11 flex-row items-center">
           <Ionicons name="location-outline" size={18} color={colours.primary} />
           <Text className="ml-2 font-sans text-sm text-primary dark:text-dark-primary">Within {profile?.search_radius_km ?? 25} km of {profile?.search_location_label ?? "your chosen location"}</Text>

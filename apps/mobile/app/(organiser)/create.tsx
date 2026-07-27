@@ -20,6 +20,14 @@ const schema = z.object({
   tasks: z.string().min(5),
   meeting: z.string().min(4),
   capacity: z.string().regex(/^\d+$/, "Enter a valid capacity"),
+  timeCommitment: z.string().regex(/^\d+$/, "Enter minutes"),
+  eligibility: z.string().min(4),
+  training: z.string().min(4),
+  screening: z.string().min(4),
+  transport: z.string().min(4),
+  qualifications: z.string().min(4),
+  accessibility: z.string().min(4),
+  externalUrl: z.string(),
 });
 type Values = z.infer<typeof schema>;
 
@@ -31,15 +39,32 @@ export default function CreateOpportunityScreen() {
   const [eventLocation, setEventLocation] = useState<LocationPoint | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [requiresWaiver, setRequiresWaiver] = useState(true);
+  const [isAccessible, setIsAccessible] = useState(true);
+  const [trainingRequired, setTrainingRequired] = useState(false);
+  const [screeningRequired, setScreeningRequired] = useState(false);
+  const [applicationMode, setApplicationMode] = useState<"internal" | "external">("internal");
   const causes = useQuery({ queryKey: ["causes"], queryFn: api.causes });
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { title: "", description: "", impact: "", tasks: "", meeting: "", capacity: "20" },
+    defaultValues: {
+      title: "", description: "", impact: "", tasks: "", meeting: "", capacity: "20",
+      timeCommitment: "180",
+      eligibility: "Open to volunteers who meet the listed minimum age.",
+      training: "No training required.",
+      screening: "No screening required.",
+      transport: "Plan your own transport to the meeting point.",
+      qualifications: "No prior qualifications required.",
+      accessibility: "Contact the host to discuss access needs.",
+      externalUrl: "",
+    },
   });
 
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
       if (!eventLocation) throw new Error("Choose the opportunity location before publishing.");
+      if (applicationMode === "external" && !/^https?:\/\//.test(values.externalUrl)) {
+        throw new Error("Enter the full organisation application URL, including https://.");
+      }
       const causeId = causes.data?.[0]?.id;
       if (!causeId) {
         throw new Error(
@@ -70,10 +95,24 @@ export default function CreateOpportunityScreen() {
         recurrence: "one_off",
         effort: "moderate",
         minimum_age: 16,
-        accessibility: "Contact the host to discuss access needs.",
+        accessibility: values.accessibility,
+        is_accessible: isAccessible,
+        eligibility_notes: values.eligibility,
+        time_commitment_minutes: Number(values.timeCommitment),
+        training_required: trainingRequired,
+        training_commitment: values.training,
+        screening_required: screeningRequired,
+        screening_steps: values.screening,
+        transportation_info: values.transport,
+        qualifications: values.qualifications,
         safety_notes: "Closed shoes and water recommended.",
         capacity: Number(values.capacity),
-        requires_waiver: requiresWaiver,
+        requires_waiver: applicationMode === "internal" && requiresWaiver,
+        listing_source: "GiveHub organiser",
+        listing_verification_status: "verified",
+        source_updated_at: new Date().toISOString(),
+        application_mode: applicationMode,
+        external_application_url: applicationMode === "external" ? values.externalUrl : null,
         cause_ids: [causeId],
         image_url: image?.uri ?? "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=1200&q=85",
       }, token);
@@ -97,7 +136,7 @@ export default function CreateOpportunityScreen() {
 
   if (published) return <Screen><Eyebrow>Published</Eyebrow><Display>Your opportunity is ready to find its people.</Display><Body className="mb-7 mt-4">It now appears on the organiser overview and in volunteer discovery. New applications will enter its own pipeline.</Body><Button label="Back to overview" onPress={() => router.replace("/(organiser)")} /></Screen>;
 
-  const field = (name: keyof Values, label: string, placeholder: string, multiline = false) => <Controller control={form.control} name={name} render={({ field: input }) => <Field label={label} placeholder={placeholder} multiline={multiline} numberOfLines={multiline ? 4 : 1} textAlignVertical={multiline ? "top" : "center"} value={String(input.value)} onChangeText={input.onChange} error={form.formState.errors[name]?.message} keyboardType={name === "capacity" ? "number-pad" : "default"} />} />;
+  const field = (name: keyof Values, label: string, placeholder: string, multiline = false) => <Controller control={form.control} name={name} render={({ field: input }) => <Field label={label} placeholder={placeholder} multiline={multiline} numberOfLines={multiline ? 4 : 1} textAlignVertical={multiline ? "top" : "center"} value={String(input.value)} onChangeText={input.onChange} error={form.formState.errors[name]?.message} keyboardType={name === "capacity" || name === "timeCommitment" ? "number-pad" : name === "externalUrl" ? "url" : "default"} autoCapitalize={name === "externalUrl" ? "none" : "sentences"} />} />;
 
   return <Screen>
     <Eyebrow>Post opportunity</Eyebrow>
@@ -111,14 +150,39 @@ export default function CreateOpportunityScreen() {
     <LocationPicker title="Opportunity address" value={eventLocation} onChange={(next) => { setEventLocation(next); setLocationError(null); }} token={token} />
     {field("meeting", "Arrival instructions", "e.g. Meet beside the north entrance")}
     {field("capacity", "Volunteer places", "20")}
+    {field("timeCommitment", "Time commitment (minutes)", "180")}
+    {field("eligibility", "Eligibility", "Who is this suitable for?", true)}
+    {field("accessibility", "Accessibility", "Step-free access, adaptable tasks, facilities", true)}
     <Card className="mb-5">
+      <Text className="mb-2 font-medium text-sm text-foreground dark:text-dark-foreground">Accessible opportunity</Text>
+      <View className="flex-row"><Chip label="Yes" selected={isAccessible} onPress={() => setIsAccessible(true)} /><Chip label="No / limited" selected={!isAccessible} onPress={() => setIsAccessible(false)} /></View>
+    </Card>
+    <Card className="mb-5">
+      <Text className="mb-2 font-medium text-sm text-foreground dark:text-dark-foreground">Training required</Text>
+      <View className="flex-row"><Chip label="No" selected={!trainingRequired} onPress={() => setTrainingRequired(false)} /><Chip label="Yes" selected={trainingRequired} onPress={() => setTrainingRequired(true)} /></View>
+    </Card>
+    {field("training", "Training commitment", "What training is required?", true)}
+    <Card className="mb-5">
+      <Text className="mb-2 font-medium text-sm text-foreground dark:text-dark-foreground">Screening required</Text>
+      <View className="flex-row"><Chip label="No" selected={!screeningRequired} onPress={() => setScreeningRequired(false)} /><Chip label="Yes" selected={screeningRequired} onPress={() => setScreeningRequired(true)} /></View>
+    </Card>
+    {field("screening", "Screening steps", "Police check, references, interview, or none", true)}
+    {field("transport", "Transportation", "Public transport, parking, pickup options", true)}
+    {field("qualifications", "Required or preferred qualifications", "Say if none are needed", true)}
+    <Card className="mb-5">
+      <Text className="mb-1 font-medium text-sm text-foreground dark:text-dark-foreground">Where volunteers apply</Text>
+      <Body className="mb-3">Internal applications are stored by GiveHub. External applications open your organisation’s form, and GiveHub stores no answers.</Body>
+      <View className="flex-row"><Chip label="GiveHub" selected={applicationMode === "internal"} onPress={() => setApplicationMode("internal")} /><Chip label="Organisation website" selected={applicationMode === "external"} onPress={() => setApplicationMode("external")} /></View>
+    </Card>
+    {applicationMode === "external" ? field("externalUrl", "Organisation application URL", "https://…") : null}
+    {applicationMode === "internal" ? <Card className="mb-5">
       <Text className="mb-1 font-medium text-sm text-foreground dark:text-dark-foreground">Volunteer agreement</Text>
       <Body className="mb-3">Volunteers sign your agreement before applying. Turn this off only for activities with no physical risk.</Body>
       <View className="flex-row">
         <Chip label="Required" selected={requiresWaiver} onPress={() => setRequiresWaiver(true)} />
         <Chip label="Not required" selected={!requiresWaiver} onPress={() => setRequiresWaiver(false)} />
       </View>
-    </Card>
+    </Card> : null}
     <Card className="mb-5 border-0 bg-secondary dark:bg-dark-secondary"><Text className="font-medium text-sm text-foreground dark:text-dark-foreground">Publishing checklist</Text><Body className="mt-2">Access information · safety notes · review expectations · precise event location</Body></Card>
     {locationError || mutation.error ? <Text accessibilityRole="alert" className="mb-3 font-sans text-sm text-destructive dark:text-dark-destructive">{locationError ?? mutation.error?.message}</Text> : null}
     <Button label="Publish opportunity" loading={mutation.isPending} onPress={form.handleSubmit((values) => { if (!eventLocation) { setLocationError("Choose the opportunity location before publishing."); return; } mutation.mutate(values); })} />

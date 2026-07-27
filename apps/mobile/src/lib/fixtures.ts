@@ -14,8 +14,27 @@ export const causes: Cause[] = [
   { id: "community", slug: "community", name: "Community" },
 ];
 const future = (days: number) => new Date(Date.now() + days * 86400000).toISOString();
+const requirementDefaults = {
+  is_accessible: true,
+  eligibility_notes: "Open to volunteers who meet the listed minimum age.",
+  time_commitment_minutes: 180,
+  training_required: false,
+  training_commitment: "A short briefing is provided at the meeting point.",
+  screening_required: false,
+  screening_steps: "No screening required.",
+  transportation_info: "Public transport is available nearby; plan your own trip to the meeting point.",
+  qualifications: "No prior qualifications required.",
+  listing_source: "GiveHub organiser",
+  listing_source_url: null,
+  listing_verification_status: "verified" as const,
+  source_updated_at: new Date().toISOString(),
+  application_mode: "internal" as const,
+  external_application_url: null,
+  updated_at: new Date().toISOString(),
+};
 export const opportunities: Opportunity[] = [
   {
+    ...requirementDefaults,
     id: "beach-clean",
     title: "Oriental Bay Beach Clean",
     description: "Spend a purposeful morning restoring the shoreline with a friendly local crew.",
@@ -31,6 +50,7 @@ export const opportunities: Opportunity[] = [
     causes: [causes[0]!], distance_km: 1.7, is_saved: false,
   },
   {
+    ...requirementDefaults,
     id: "garden-day", title: "Community Garden Planting Day",
     description: "Prepare garden beds and plant winter vegetables for the local food pantry.",
     impact_statement: "Grow fresh food that stays in the neighbourhood.",
@@ -43,6 +63,10 @@ export const opportunities: Opportunity[] = [
     causes: [causes[1]!], distance_km: 2.7, is_saved: true,
   },
   {
+    ...requirementDefaults,
+    is_accessible: false,
+    training_required: true,
+    training_commitment: "Complete a 45-minute field methods briefing before your first session.",
     id: "stream-watch", title: "Karori Stream Monitoring",
     description: "Measure stream health and identify freshwater species with trained coordinators.",
     impact_statement: "Build the evidence needed to protect an urban waterway.", tasks: "Take water readings, photograph sites, and log observations.",
@@ -54,6 +78,7 @@ export const opportunities: Opportunity[] = [
     causes: [causes[2]!], distance_km: 3.4, is_saved: false,
   },
   {
+    ...requirementDefaults,
     id: "hutt-planting", title: "Hutt River Native Planting",
     description: "Restore a riverbank corridor with native plants and local conservation guides.",
     impact_statement: "Create healthier habitat along Te Awa Kairangi.", tasks: "Prepare planting sites, place native seedlings, and spread mulch.",
@@ -64,6 +89,12 @@ export const opportunities: Opportunity[] = [
     causes: [causes[1]!], distance_km: 14.2, is_saved: false,
   },
   {
+    ...requirementDefaults,
+    application_mode: "external",
+    external_application_url: "https://example.org/volunteer/food-rescue",
+    listing_source: "Porirua Kai Collective website",
+    listing_source_url: "https://example.org/volunteer/food-rescue",
+    listing_verification_status: "pending",
     id: "porirua-food-rescue", title: "Porirua Food Rescue Sort",
     description: "Sort rescued groceries into whānau food parcels with an experienced community team.",
     impact_statement: "Keep good food out of landfill and support families across Porirua.", tasks: "Check produce, assemble parcels, label dietary needs, and tidy the workspace.",
