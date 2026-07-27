@@ -15,7 +15,7 @@ export default function SharedOpportunityLink() {
 
   useEffect(() => {
     if (loading || !id) return;
-    const target = `/(volunteer)/opportunity/${id}`;
+    const target = { pathname: "/(volunteer)/opportunity/[id]" as const, params: { id } };
     if (profile?.role === "volunteer") {
       router.replace(target);
       return;
@@ -25,7 +25,7 @@ export default function SharedOpportunityLink() {
       router.replace("/(organiser)");
       return;
     }
-    setPendingRoute(target);
+    setPendingRoute(`/(volunteer)/opportunity/${id}`);
     router.replace("/welcome");
   }, [id, loading, profile]);
 

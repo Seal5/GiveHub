@@ -7,6 +7,7 @@ import type {
   AttendanceStatus,
   Impact,
   LocationPoint,
+  NotificationPreferences,
   Opportunity,
   OpportunityEventType,
   Profile,
@@ -32,6 +33,7 @@ export const apiConfigurationError = !demoMode && !apiConfigured
     : null;
 let demoApplications = [...applications];
 let demoOpportunities = [...opportunities];
+let demoNotificationPreferences: NotificationPreferences = { notify_new_applications: true };
 const demoAnalytics: Analytics = {
   views: 48,
   application_starts: 14,
@@ -160,7 +162,12 @@ export const api = {
     return request(`/v1/locations/places/${encodeURIComponent(placeId)}`, { token });
   },
   opportunities: async (
-    filters: { q?: string; cause?: string; recurrence?: string; saved?: boolean; lat?: number; lng?: number; radius_km?: number } = {},
+    filters: {
+      q?: string; cause?: string; recurrence?: string; saved?: boolean; lat?: number; lng?: number;
+      radius_km?: number; starts_after?: string; starts_before?: string;
+      max_time_commitment_minutes?: number; accessible_only?: boolean; max_minimum_age?: number;
+      training_required?: boolean; screening_required?: boolean; application_mode?: "internal" | "external";
+    } = {},
     token?: string | null,
   ): Promise<Opportunity[]> => {
     if (demoMode) {
@@ -172,6 +179,14 @@ export const api = {
         (!query || [item.title, item.organisation_name, item.description, item.tasks, item.location_label].join(" ").toLowerCase().includes(query)) &&
         (!filters.cause || item.causes.some((cause) => cause.slug === filters.cause)) &&
         (!filters.recurrence || item.recurrence === filters.recurrence) &&
+        (!filters.starts_after || new Date(item.starts_at) >= new Date(filters.starts_after)) &&
+        (!filters.starts_before || new Date(item.starts_at) <= new Date(filters.starts_before)) &&
+        (!filters.max_time_commitment_minutes || item.time_commitment_minutes <= filters.max_time_commitment_minutes) &&
+        (!filters.accessible_only || item.is_accessible) &&
+        (filters.max_minimum_age === undefined || item.minimum_age <= filters.max_minimum_age) &&
+        (filters.training_required === undefined || item.training_required === filters.training_required) &&
+        (filters.screening_required === undefined || item.screening_required === filters.screening_required) &&
+        (!filters.application_mode || item.application_mode === filters.application_mode) &&
         (!filters.saved || item.is_saved) &&
         (item.distance_km === null || item.distance_km <= radius)
       ).sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0));
@@ -254,6 +269,38 @@ export const api = {
   },
   myApplications: async (token?: string | null): Promise<Application[]> =>
     demoMode ? demoApplications : request("/v1/applications/me", { token }),
+  application: async (id: string, token?: string | null): Promise<Application> => {
+    if (demoMode) {
+      const found = demoApplications.find((item) => item.id === id);
+      if (!found) throw new Error("Application not found");
+      return found;
+    }
+    return request(`/v1/applications/${id}`, { token });
+  },
+  updateApplication: async (
+    id: string,
+    input: { note: string; experience: string; availability: string; version: number },
+    token?: string | null,
+  ): Promise<Application> => {
+    if (demoMode) {
+      const found = demoApplications.find((item) => item.id === id)!;
+      const updated = { ...found, ...input, version: found.version + 1 };
+      demoApplications = demoApplications.map((item) => item.id === id ? updated : item);
+      return updated;
+    }
+    return request(`/v1/applications/${id}`, { method: "PATCH", body: JSON.stringify(input), token });
+  },
+  withdrawApplication: async (id: string, version: number, token?: string | null): Promise<Application> => {
+    if (demoMode) {
+      const found = demoApplications.find((item) => item.id === id)!;
+      const updated = { ...found, status: "withdrawn" as const, version: found.version + 1, next_step: "This application has been withdrawn." };
+      demoApplications = demoApplications.map((item) => item.id === id ? updated : item);
+      return updated;
+    }
+    return request(`/v1/applications/${id}/withdraw`, {
+      method: "POST", body: JSON.stringify({ status: "withdrawn", version }), token,
+    });
+  },
   myImpact: async (token?: string | null): Promise<Impact> =>
     demoMode ? demoImpact() : request("/v1/volunteers/me/impact", { token }),
   attendanceSheet: async (opportunityId: string, token?: string | null): Promise<AttendanceSheet> => {
@@ -305,6 +352,22 @@ export const api = {
     demoMode ? demoOpportunities : request("/v1/organiser/opportunities", { token }),
   organiserAnalytics: async (token?: string | null): Promise<Analytics> =>
     demoMode ? { ...demoAnalytics } : request("/v1/organiser/analytics", { token }),
+  notificationPreferences: async (token?: string | null): Promise<NotificationPreferences> =>
+    demoMode ? demoNotificationPreferences : request("/v1/organiser/notification-preferences", { token }),
+  updateNotificationPreferences: async (
+    notifyNewApplications: boolean,
+    token?: string | null,
+  ): Promise<NotificationPreferences> => {
+    if (demoMode) {
+      demoNotificationPreferences = { notify_new_applications: notifyNewApplications };
+      return demoNotificationPreferences;
+    }
+    return request("/v1/organiser/notification-preferences", {
+      method: "PUT",
+      body: JSON.stringify({ notify_new_applications: notifyNewApplications }),
+      token,
+    });
+  },
   organiserWaiver: async (token?: string | null): Promise<Waiver> =>
     demoMode ? demoWaiver : request("/v1/organiser/waiver", { token }),
   publishWaiver: async (input: { title: string; body: string }, token?: string | null): Promise<Waiver> => {

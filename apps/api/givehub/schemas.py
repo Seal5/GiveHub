@@ -96,9 +96,26 @@ class OpportunityBase(BaseModel):
     effort: str = Field(default="moderate", pattern="^(light|moderate|active)$")
     minimum_age: int = Field(default=16, ge=0, le=100)
     accessibility: str = "Contact the host to discuss access needs."
+    is_accessible: bool = True
+    eligibility_notes: str = "Open to volunteers who meet the listed minimum age."
+    time_commitment_minutes: int = Field(default=180, ge=15, le=10080)
+    training_required: bool = False
+    training_commitment: str = "No training required."
+    screening_required: bool = False
+    screening_steps: str = "No screening required."
+    transportation_info: str = "Plan your own transport to the meeting point."
+    qualifications: str = "No prior qualifications required."
     safety_notes: str = "Closed shoes and water recommended."
     capacity: int = Field(default=20, ge=1, le=10000)
     requires_waiver: bool = True
+    listing_source: str = Field(default="GiveHub organiser", max_length=180)
+    listing_source_url: str | None = Field(default=None, max_length=1000)
+    listing_verification_status: str = Field(
+        default="verified", pattern="^(verified|pending|unverified)$"
+    )
+    source_updated_at: datetime | None = None
+    application_mode: str = Field(default="internal", pattern="^(internal|external)$")
+    external_application_url: str | None = Field(default=None, max_length=1000)
     cause_ids: list[uuid.UUID] = Field(min_length=1)
     image_url: str | None = None
 
@@ -106,6 +123,10 @@ class OpportunityBase(BaseModel):
     def validate_schedule(self) -> OpportunityBase:
         if self.ends_at <= self.starts_at:
             raise ValueError("End time must be after start time")
+        if self.application_mode == "external" and not self.external_application_url:
+            raise ValueError("An external application URL is required")
+        if self.application_mode == "internal" and self.external_application_url:
+            raise ValueError("External application URLs are only valid for external applications")
         return self
 
 
@@ -136,9 +157,26 @@ class OpportunityUpdate(BaseModel):
     effort: str | None = None
     minimum_age: int | None = Field(default=None, ge=0, le=100)
     accessibility: str | None = None
+    is_accessible: bool | None = None
+    eligibility_notes: str | None = None
+    time_commitment_minutes: int | None = Field(default=None, ge=15, le=10080)
+    training_required: bool | None = None
+    training_commitment: str | None = None
+    screening_required: bool | None = None
+    screening_steps: str | None = None
+    transportation_info: str | None = None
+    qualifications: str | None = None
     safety_notes: str | None = None
     capacity: int | None = Field(default=None, ge=1, le=10000)
     requires_waiver: bool | None = None
+    listing_source: str | None = Field(default=None, max_length=180)
+    listing_source_url: str | None = Field(default=None, max_length=1000)
+    listing_verification_status: str | None = Field(
+        default=None, pattern="^(verified|pending|unverified)$"
+    )
+    source_updated_at: datetime | None = None
+    application_mode: str | None = Field(default=None, pattern="^(internal|external)$")
+    external_application_url: str | None = Field(default=None, max_length=1000)
     cause_ids: list[uuid.UUID] | None = None
     image_url: str | None = None
     version: int = Field(ge=1)
@@ -157,9 +195,25 @@ class OpportunityOut(ORMModel):
     effort: str
     minimum_age: int
     accessibility: str
+    is_accessible: bool
+    eligibility_notes: str
+    time_commitment_minutes: int
+    training_required: bool
+    training_commitment: str
+    screening_required: bool
+    screening_steps: str
+    transportation_info: str
+    qualifications: str
     safety_notes: str
     capacity: int
     requires_waiver: bool = True
+    listing_source: str
+    listing_source_url: str | None
+    listing_verification_status: str
+    source_updated_at: datetime | None
+    application_mode: str
+    external_application_url: str | None
+    updated_at: datetime
     confirmed_count: int = 0
     image_url: str | None
     status: OpportunityStatus
@@ -229,6 +283,13 @@ class ApplicationCreate(BaseModel):
     waiver: WaiverAcceptanceIn | None = None
 
 
+class ApplicationUpdate(BaseModel):
+    note: str = Field(min_length=10, max_length=2000)
+    experience: str = Field(default="", max_length=2000)
+    availability: str = Field(default="Available for the full event", max_length=240)
+    version: int = Field(ge=1)
+
+
 class ApplicationTransition(BaseModel):
     status: ApplicationStatus
     version: int = Field(ge=1)
@@ -255,6 +316,14 @@ class ApplicationOut(ORMModel):
     next_step: str
     history: list[StatusHistoryOut]
     waiver: WaiverAcceptanceOut | None = None
+
+
+class NotificationPreferencesOut(BaseModel):
+    notify_new_applications: bool
+
+
+class NotificationPreferencesUpdate(BaseModel):
+    notify_new_applications: bool
 
 
 class PipelineOut(BaseModel):

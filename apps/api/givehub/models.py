@@ -117,6 +117,7 @@ class Organisation(TimestampMixin, Base):
     verification_status: Mapped[VerificationStatus] = mapped_column(
         Enum(VerificationStatus, native_enum=False), default=VerificationStatus.approved
     )
+    notify_new_applications: Mapped[bool] = mapped_column(Boolean, default=True)
 
     owner: Mapped[Profile] = relationship(back_populates="organisation")
     opportunities: Mapped[list[Opportunity]] = relationship(back_populates="organisation")
@@ -172,9 +173,30 @@ class Opportunity(TimestampMixin, Base):
     accessibility: Mapped[str] = mapped_column(
         Text, default="Contact the host to discuss access needs."
     )
+    is_accessible: Mapped[bool] = mapped_column(Boolean, default=True)
+    eligibility_notes: Mapped[str] = mapped_column(
+        Text, default="Open to volunteers who meet the listed minimum age."
+    )
+    time_commitment_minutes: Mapped[int] = mapped_column(Integer, default=180)
+    training_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    training_commitment: Mapped[str] = mapped_column(Text, default="No training required.")
+    screening_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    screening_steps: Mapped[str] = mapped_column(Text, default="No screening required.")
+    transportation_info: Mapped[str] = mapped_column(
+        Text, default="Plan your own transport to the meeting point."
+    )
+    qualifications: Mapped[str] = mapped_column(
+        Text, default="No prior qualifications required."
+    )
     safety_notes: Mapped[str] = mapped_column(Text, default="Closed shoes and water recommended.")
     capacity: Mapped[int] = mapped_column(Integer, default=20)
     requires_waiver: Mapped[bool] = mapped_column(Boolean, default=True)
+    listing_source: Mapped[str] = mapped_column(String(180), default="GiveHub organiser")
+    listing_source_url: Mapped[str | None] = mapped_column(String(1000))
+    listing_verification_status: Mapped[str] = mapped_column(String(24), default="verified")
+    source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    application_mode: Mapped[str] = mapped_column(String(16), default="internal")
+    external_application_url: Mapped[str | None] = mapped_column(String(1000))
     image_url: Mapped[str | None] = mapped_column(String(1000))
     status: Mapped[OpportunityStatus] = mapped_column(
         Enum(OpportunityStatus, native_enum=False), default=OpportunityStatus.draft, index=True

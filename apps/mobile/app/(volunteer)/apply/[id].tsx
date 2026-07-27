@@ -249,7 +249,7 @@ export default function ApplyScreen() {
       <Eyebrow>Apply thoughtfully</Eyebrow>
       <Display>Tell the host how you can help.</Display>
       <Body className="mb-7 mt-3">
-        Your profile email and the answers below will be shared with {event.data?.organisation_name}.
+        Your profile email and the answers below will be stored by GiveHub and shared with {event.data?.organisation_name}. You can edit or withdraw this application later from Activities.
       </Body>
       <Controller
         control={form.control}

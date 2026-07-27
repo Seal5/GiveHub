@@ -2,3 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@media (hover: hover) {
+  [role="button"]:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 3px solid #2f9664;
+    outline-offset: 3px;
+  }
+}

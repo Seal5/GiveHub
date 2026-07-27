@@ -7,7 +7,12 @@ const statusColour = { confirmed: "bg-primary", waitlisted: "bg-accent", decline
 
 export function StatusCard({ item, organiser = false }: { item: Application; organiser?: boolean }) {
   return (
-    <Pressable accessibilityRole="button" onPress={() => router.push(organiser ? `/(organiser)/application/${item.id}` : `/(volunteer)/opportunity/${item.opportunity_id}`)} className="mb-4 rounded-card border border-border bg-card p-5 active:opacity-85 dark:border-dark-border dark:bg-dark-card">
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${organiser ? item.volunteer_name : item.opportunity_title}, ${statusLabel[item.status]}`}
+      onPress={() => router.push(organiser ? `/(organiser)/application/${item.id}` : `/(volunteer)/application/${item.id}`)}
+      className="mb-4 rounded-card border border-border bg-card p-5 active:opacity-85 dark:border-dark-border dark:bg-dark-card"
+    >
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1">
             <Text className="font-display text-xl text-foreground dark:text-dark-foreground">{organiser ? item.volunteer_name : item.opportunity_title}</Text>

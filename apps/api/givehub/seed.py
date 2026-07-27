@@ -225,10 +225,39 @@ def seed_reference_data(db: Session) -> None:
             effort="moderate",
             minimum_age=14,
             accessibility="Step-free meeting point; tasks can be adapted.",
+            is_accessible=True,
+            eligibility_notes="Open to volunteers aged 14 and over.",
+            time_commitment_minutes=180,
+            training_required=index == 2,
+            training_commitment=(
+                "Complete a 45-minute field methods briefing before your first session."
+                if index == 2
+                else "A short briefing is provided at the meeting point."
+            ),
+            screening_required=False,
+            screening_steps="No screening required.",
+            transportation_info="Public transport is available nearby; plan your own trip.",
+            qualifications="No prior qualifications required.",
             safety_notes="Bring water, sun protection, and closed shoes.",
             capacity=24,
             image_url=image,
             status=OpportunityStatus.published,
+            listing_source=(
+                "Porirua Kai Collective website" if index == len(fixtures) - 1 else "GiveHub organiser"
+            ),
+            listing_source_url=(
+                "https://example.org/volunteer/food-rescue"
+                if index == len(fixtures) - 1
+                else None
+            ),
+            listing_verification_status="verified",
+            source_updated_at=datetime.now(UTC),
+            application_mode="external" if index == len(fixtures) - 1 else "internal",
+            external_application_url=(
+                "https://example.org/volunteer/food-rescue"
+                if index == len(fixtures) - 1
+                else None
+            ),
             causes=[causes[cause]],
         )
         db.add(event)
