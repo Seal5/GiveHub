@@ -1,0 +1,44 @@
+name: Refresh volunteer opportunity sources
+
+on:
+  schedule:
+    - cron: "15 10 * * *"
+  workflow_dispatch:
+    inputs:
+      pages:
+        description: "Volunteer Success result pages to inspect"
+        required: false
+        default: "3"
+
+concurrency:
+  group: source-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      DATABASE_URL: ${{ secrets.GIVEHUB_DATABASE_URL }}
+      REFRESH_PAGES: ${{ inputs.pages || '3' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        if: env.DATABASE_URL != ''
+        with:
+          python-version: "3.13"
+      - name: Discover and refresh GTA listings
+        if: env.DATABASE_URL != ''
+        working-directory: apps/api
+        run: |
+          uv sync
+          uv run alembic upgrade head
+          uv run python -m givehub.source_refresh --pages "$REFRESH_PAGES" | tee source-refresh-report.json
+          cat source-refresh-report.json >> "$GITHUB_STEP_SUMMARY"
+          printf '\n### Pending review\n\n```json\n' >> "$GITHUB_STEP_SUMMARY"
+          uv run python -m givehub.source_refresh --list-pending >> "$GITHUB_STEP_SUMMARY"
+          printf '\n```\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Explain missing database configuration
+        if: env.DATABASE_URL == ''
+        run: echo "Add the GIVEHUB_DATABASE_URL repository secret to enable nightly refreshes." >> "$GITHUB_STEP_SUMMARY"

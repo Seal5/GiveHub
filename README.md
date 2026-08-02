@@ -55,6 +55,17 @@ Create a project in a region appropriate for New Zealand users and configure asy
 
 All domain reads and writes go through FastAPI. The mobile Supabase client is used only for authentication. FastAPI validates Supabase JWTs through JWKS and issues scoped Storage upload tokens for organiser-owned opportunities. Address autocomplete is proxied through FastAPI so the Places key is never shipped in the app. Opportunity radius filtering uses PostGIS in PostgreSQL and a Haversine fallback in local SQLite tests. GiveHub asks only for foreground location permission and does not track background location.
 
+## Opportunity source refresh
+
+External opportunities retain their original source link. The nightly refresh command:
+
+- checks supported public source pages and unpublishes expired or missing one-off listings;
+- discovers GTA opportunities from a bounded number of Volunteer Success result pages;
+- stores new discoveries in `source_candidates` with `pending` review status instead of publishing incomplete scraped data;
+- skips protected sources such as Volunteer Toronto until an authorized feed is available.
+
+Run it locally with `cd apps/api && uv run python -m givehub.source_refresh`. Use `uv run python -m givehub.source_refresh --list-pending` for the weekly review list. In GitHub, add the production database connection as the `GIVEHUB_DATABASE_URL` repository secret to enable the scheduled workflow. Review pending candidates weekly before promoting them to complete opportunities.
+
 ## Deployment
 
 - Railway builds `apps/api/Dockerfile`, runs `alembic upgrade head`, and checks `/ready`.

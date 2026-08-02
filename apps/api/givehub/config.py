@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_from: str = "GiveHub <notifications@givehub.nz>"
     cors_origins: list[str] = ["http://localhost:8081"]
+    source_refresh_postal_code: str = "M5V 2T6"
+    source_refresh_radius_km: int = 50
+    source_refresh_pages: int = 3
 
     @field_validator("cors_origins", mode="before")
     @classmethod

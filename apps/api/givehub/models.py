@@ -128,7 +128,7 @@ class Suburb(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), unique=True)
-    city: Mapped[str] = mapped_column(String(100), default="Wellington")
+    city: Mapped[str] = mapped_column(String(100), default="Toronto")
     latitude: Mapped[float] = mapped_column(Float)
     longitude: Mapped[float] = mapped_column(Float)
 
@@ -159,9 +159,9 @@ class Opportunity(TimestampMixin, Base):
     location_label: Mapped[str] = mapped_column(String(240))
     address_line: Mapped[str] = mapped_column(String(240))
     locality: Mapped[str] = mapped_column(String(120), default="")
-    city: Mapped[str] = mapped_column(String(120), default="Wellington")
+    city: Mapped[str] = mapped_column(String(120), default="Toronto")
     postcode: Mapped[str | None] = mapped_column(String(20))
-    country_code: Mapped[str] = mapped_column(String(2), default="NZ")
+    country_code: Mapped[str] = mapped_column(String(2), default="CA")
     latitude: Mapped[float] = mapped_column(Float, index=True)
     longitude: Mapped[float] = mapped_column(Float, index=True)
     location_visibility: Mapped[str] = mapped_column(String(24), default="public")
@@ -185,9 +185,7 @@ class Opportunity(TimestampMixin, Base):
     transportation_info: Mapped[str] = mapped_column(
         Text, default="Plan your own transport to the meeting point."
     )
-    qualifications: Mapped[str] = mapped_column(
-        Text, default="No prior qualifications required."
-    )
+    qualifications: Mapped[str] = mapped_column(Text, default="No prior qualifications required.")
     safety_notes: Mapped[str] = mapped_column(Text, default="Closed shoes and water recommended.")
     capacity: Mapped[int] = mapped_column(Integer, default=20)
     requires_waiver: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -195,6 +193,7 @@ class Opportunity(TimestampMixin, Base):
     listing_source_url: Mapped[str | None] = mapped_column(String(1000))
     listing_verification_status: Mapped[str] = mapped_column(String(24), default="verified")
     source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     application_mode: Mapped[str] = mapped_column(String(16), default="internal")
     external_application_url: Mapped[str | None] = mapped_column(String(1000))
     image_url: Mapped[str | None] = mapped_column(String(1000))
@@ -212,6 +211,23 @@ class Opportunity(TimestampMixin, Base):
     events: Mapped[list[OpportunityEvent]] = relationship(
         back_populates="opportunity", cascade="all, delete-orphan"
     )
+
+
+class SourceCandidate(TimestampMixin, Base):
+    """A newly discovered external listing awaiting a human quality review."""
+
+    __tablename__ = "source_candidates"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    source_name: Mapped[str] = mapped_column(String(120), index=True)
+    source_url: Mapped[str] = mapped_column(String(1000), unique=True)
+    title: Mapped[str] = mapped_column(String(180), index=True)
+    organisation_name: Mapped[str] = mapped_column(String(180))
+    location_label: Mapped[str] = mapped_column(String(240), default="Greater Toronto Area")
+    summary: Mapped[str] = mapped_column(Text, default="")
+    review_status: Mapped[str] = mapped_column(String(24), default="pending", index=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
 
 class SavedOpportunity(TimestampMixin, Base):

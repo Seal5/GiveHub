@@ -82,9 +82,9 @@ class OpportunityBase(BaseModel):
     location_label: str = Field(min_length=2, max_length=240)
     address_line: str = Field(min_length=2, max_length=240)
     locality: str = Field(default="", max_length=120)
-    city: str = Field(default="Wellington", min_length=2, max_length=120)
+    city: str = Field(default="Toronto", min_length=2, max_length=120)
     postcode: str | None = Field(default=None, max_length=20)
-    country_code: str = Field(default="NZ", min_length=2, max_length=2)
+    country_code: str = Field(default="CA", min_length=2, max_length=2)
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
     location_visibility: str = Field(
@@ -114,6 +114,7 @@ class OpportunityBase(BaseModel):
         default="verified", pattern="^(verified|pending|unverified)$"
     )
     source_updated_at: datetime | None = None
+    source_checked_at: datetime | None = None
     application_mode: str = Field(default="internal", pattern="^(internal|external)$")
     external_application_url: str | None = Field(default=None, max_length=1000)
     cause_ids: list[uuid.UUID] = Field(min_length=1)
@@ -175,6 +176,7 @@ class OpportunityUpdate(BaseModel):
         default=None, pattern="^(verified|pending|unverified)$"
     )
     source_updated_at: datetime | None = None
+    source_checked_at: datetime | None = None
     application_mode: str | None = Field(default=None, pattern="^(internal|external)$")
     external_application_url: str | None = Field(default=None, max_length=1000)
     cause_ids: list[uuid.UUID] | None = None
@@ -211,6 +213,7 @@ class OpportunityOut(ORMModel):
     listing_source_url: str | None
     listing_verification_status: str
     source_updated_at: datetime | None
+    source_checked_at: datetime | None
     application_mode: str
     external_application_url: str | None
     updated_at: datetime
@@ -419,7 +422,7 @@ class LocationResult(BaseModel):
     locality: str = ""
     city: str = ""
     postcode: str | None = None
-    country_code: str = "NZ"
+    country_code: str = "CA"
     latitude: float
     longitude: float
 

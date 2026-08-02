@@ -5,6 +5,7 @@ description = "GiveHub volunteer coordination API"
 requires-python = ">=3.13"
 dependencies = [
   "alembic>=1.16,<2",
+  "beautifulsoup4>=4.12,<5",
   "fastapi[standard]>=0.116,<1",
   "httpx>=0.28,<1",
   "psycopg[binary]>=3.2,<4",

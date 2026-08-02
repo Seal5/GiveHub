@@ -7,10 +7,10 @@ afterEach(() => {
 
 const event = {
   id: "beach-clean",
-  title: "Oriental Bay Beach Clean",
-  organisation_name: "Kaitiaki Coastal Network",
+  title: "Woodbine Beach Cleanup",
+  organisation_name: "Toronto Community Action Network",
   starts_at: "2026-08-01T21:00:00.000Z",
-  location_label: "Oriental Bay, Wellington",
+  location_label: "The Beaches, Toronto",
 };
 
 describe("opportunity share links", () => {
@@ -47,8 +47,8 @@ describe("opportunity share links", () => {
     const { opportunityShareMessage } = await import("./shareLink");
     const message = opportunityShareMessage(event);
 
-    expect(message).toContain("Oriental Bay Beach Clean");
-    expect(message).toContain("Kaitiaki Coastal Network");
-    expect(message).toContain("Oriental Bay, Wellington");
+    expect(message).toContain("Woodbine Beach Cleanup");
+    expect(message).toContain("Toronto Community Action Network");
+    expect(message).toContain("The Beaches, Toronto");
   });
 });

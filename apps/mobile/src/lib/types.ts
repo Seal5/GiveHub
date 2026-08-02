@@ -118,6 +118,7 @@ export type Opportunity = {
   listing_source_url: string | null;
   listing_verification_status: "verified" | "pending" | "unverified";
   source_updated_at: string | null;
+  source_checked_at: string | null;
   application_mode: "internal" | "external";
   external_application_url: string | null;
   updated_at: string;

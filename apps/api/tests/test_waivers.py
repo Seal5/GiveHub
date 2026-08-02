@@ -4,7 +4,9 @@ from givehub.seed import DEMO_ORGANISER_ID, DEMO_VOLUNTEER_ID
 
 
 def first_opportunity(client: TestClient) -> dict:
-    return client.get("/v1/opportunities").json()[0]
+    return client.get(
+        "/v1/opportunities", params={"application_mode": "internal"}
+    ).json()[0]
 
 
 def test_waiver_is_served_for_waiver_required_opportunities(client: TestClient) -> None:
@@ -15,7 +17,7 @@ def test_waiver_is_served_for_waiver_required_opportunities(client: TestClient) 
     waiver = response.json()
     assert waiver["version"] == 1
     assert waiver["title"] == "GiveHub volunteer agreement"
-    assert "Accident Compensation Act" in waiver["body"]
+    assert "Ontario and Canadian law" in waiver["body"]
 
 
 def test_application_without_waiver_is_rejected(client: TestClient) -> None:
@@ -97,7 +99,7 @@ def test_stale_waiver_version_is_rejected(
     published = client.put(
         "/v1/organiser/waiver",
         json={
-            "title": "Kaitiaki Coastal Network volunteer agreement",
+            "title": "Toronto Community Action Network volunteer agreement",
             "body": "Our own terms for coastal restoration volunteering. " * 3,
         },
     )
@@ -124,9 +126,7 @@ def test_organiser_waiver_versions_increment(client: TestClient, identity_overri
     assert client.get("/v1/organiser/waiver").json()["version"] == 2
 
 
-def test_waiver_columns_are_exported(
-    client: TestClient, identity_override, signed_waiver
-) -> None:
+def test_waiver_columns_are_exported(client: TestClient, identity_override, signed_waiver) -> None:
     item = first_opportunity(client)
     applied = client.post(
         f"/v1/opportunities/{item['id']}/applications",
@@ -153,7 +153,9 @@ def test_waiver_columns_are_exported(
 def test_guardian_receives_consent_copy(client: TestClient, signed_waiver, monkeypatch) -> None:
     sent: list[dict[str, object]] = []
 
-    def capture_email(_settings, *, recipient: str, subject: str, text: str, **extra: object) -> bool:
+    def capture_email(
+        _settings, *, recipient: str, subject: str, text: str, **extra: object
+    ) -> bool:
         sent.append({"recipient": recipient, "subject": subject, "text": text})
         return True
 

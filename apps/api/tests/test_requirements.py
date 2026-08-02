@@ -26,17 +26,38 @@ def test_opportunity_fit_filters_and_source_metadata(client: TestClient) -> None
         assert item["listing_verification_status"] in {"verified", "pending", "unverified"}
         assert item["updated_at"]
 
-    external = client.get(
-        "/v1/opportunities", params={"application_mode": "external"}
-    ).json()
-    assert len(external) == 1
-    assert external[0]["external_application_url"].startswith("https://")
+    external = client.get("/v1/opportunities", params={"application_mode": "external"}).json()
+    assert len(external) == 20
+    assert all(item["external_application_url"].startswith("https://") for item in external)
+
+
+def test_showcase_data_covers_discovery_filters(client: TestClient) -> None:
+    one_off = client.get("/v1/opportunities", params={"recurrence": "one_off"}).json()
+    assert {item["title"] for item in one_off} >= {
+        "High Park Pollinator Count",
+        "Rouge Valley Trail Restoration",
+    }
+
+    short = client.get("/v1/opportunities", params={"max_time_commitment_minutes": 60}).json()
+    assert "High Park Pollinator Count" in {item["title"] for item in short}
+    assert all(item["time_commitment_minutes"] <= 60 for item in short)
+
+    training = client.get("/v1/opportunities", params={"training_required": True}).json()
+    assert {item["title"] for item in training} >= {
+        "Don River Water Quality Monitoring",
+        "Etobicoke Seniors Tech Help",
+        "Markham Young Tree Care Day",
+    }
+
+    screening = client.get("/v1/opportunities", params={"screening_required": True}).json()
+    assert {item["title"] for item in screening} >= {
+        "Scarborough Newcomer Conversation Club",
+        "Downtown Youth Meal Kit Packing",
+    }
 
 
 def test_external_application_answers_are_never_collected(client: TestClient) -> None:
-    external = client.get(
-        "/v1/opportunities", params={"application_mode": "external"}
-    ).json()[0]
+    external = client.get("/v1/opportunities", params={"application_mode": "external"}).json()[0]
     response = client.post(
         f"/v1/opportunities/{external['id']}/applications",
         json={
@@ -49,12 +70,8 @@ def test_external_application_answers_are_never_collected(client: TestClient) ->
     assert client.get("/v1/applications/me").json() == []
 
 
-def test_volunteer_can_update_and_withdraw_application(
-    client: TestClient, signed_waiver
-) -> None:
-    internal = client.get(
-        "/v1/opportunities", params={"application_mode": "internal"}
-    ).json()[0]
+def test_volunteer_can_update_and_withdraw_application(client: TestClient, signed_waiver) -> None:
+    internal = client.get("/v1/opportunities", params={"application_mode": "internal"}).json()[0]
     opportunity_id = internal["id"]
     applied = client.post(
         f"/v1/opportunities/{opportunity_id}/applications",

@@ -23,14 +23,23 @@ router = APIRouter(include_in_schema=False)
 APP_SCHEME = "givehub"
 
 
-def _page(*, title: str, description: str, image_url: str | None, deep_link: str, heading: str, body: str, meta_line: str = "") -> str:
+def _page(
+    *,
+    title: str,
+    description: str,
+    image_url: str | None,
+    deep_link: str,
+    heading: str,
+    body: str,
+    meta_line: str = "",
+) -> str:
     safe_title = escape(title)
     safe_description = escape(description)
     image_tag = f'<meta property="og:image" content="{escape(image_url)}" />' if image_url else ""
     hero = f'<img class="hero" src="{escape(image_url)}" alt="" />' if image_url else ""
     meta_html = f'<p class="meta">{escape(meta_line)}</p>' if meta_line else ""
     return f"""<!doctype html>
-<html lang="en-NZ">
+<html lang="en-CA">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />

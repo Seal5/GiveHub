@@ -21,7 +21,7 @@ function WaiverSummary({ waiver }: { waiver: WaiverAcceptance | null }) {
   const colours = useThemeColours();
   const signed = Boolean(waiver);
   const signedOn = waiver
-    ? new Intl.DateTimeFormat("en-NZ", { day: "numeric", month: "short", year: "numeric", timeZone: "Pacific/Auckland" }).format(new Date(waiver.accepted_at))
+    ? new Intl.DateTimeFormat("en-CA", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Toronto" }).format(new Date(waiver.accepted_at))
     : null;
   return (
     <Card className="mb-7">

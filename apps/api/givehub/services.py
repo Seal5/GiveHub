@@ -149,6 +149,7 @@ def to_opportunity_out(
         listing_source_url=item.listing_source_url,
         listing_verification_status=item.listing_verification_status,
         source_updated_at=item.source_updated_at,
+        source_checked_at=item.source_checked_at,
         application_mode=item.application_mode,
         external_application_url=item.external_application_url,
         updated_at=item.updated_at,
