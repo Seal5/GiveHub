@@ -1,11 +1,16 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+REPOSITORY_ENV = Path(__file__).resolve().parents[3] / ".env"
+API_ENV = Path(__file__).resolve().parents[1] / ".env"
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # Support the documented repository-level file and an API-local override.
+    model_config = SettingsConfigDict(env_file=(REPOSITORY_ENV, API_ENV), extra="ignore")
 
     app_env: str = "development"
     database_url: str = "sqlite:///./givehub.db"

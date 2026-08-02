@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type PropsWith
 import { api, apiConfigurationError, demoMode, localAuthMode } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import type { Profile, Role } from "@/lib/types";
+import { clearLocalAuthRole, readLocalAuthRole, writeLocalAuthRole } from "@/lib/localAuthSession";
 
 type SignUpInput = { role: Role; name: string; email: string; password: string; organisationName?: string };
 type AuthValue = {
@@ -22,7 +23,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (demoMode || localAuthMode || !supabase) {
+    if (localAuthMode) {
+      let active = true;
+      void readLocalAuthRole().then(async (role) => {
+        if (!active || !role) return;
+        const nextToken = `dev:${profileForId(role)}`;
+        try {
+          const nextProfile = await api.profile(role, nextToken);
+          if (active) { setToken(nextToken); setProfile(nextProfile); }
+        } catch {
+          await clearLocalAuthRole();
+        }
+      }).finally(() => {
+        if (active) setLoading(false);
+      });
+      return () => { active = false; };
+    }
+    if (demoMode || !supabase) {
       setLoading(false);
       return;
     }
@@ -56,6 +73,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         const nextToken = `dev:${profileForId(role)}`;
         setToken(nextToken);
         setProfile(await api.profile(role, nextToken));
+        if (localAuthMode) await writeLocalAuthRole(role);
         return;
       }
       if (apiConfigurationError) throw new Error(apiConfigurationError);
@@ -84,6 +102,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
                 nextToken,
               ),
         );
+        if (localAuthMode) await writeLocalAuthRole(input.role);
         return;
       }
       if (apiConfigurationError) throw new Error(apiConfigurationError);
@@ -98,6 +117,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       // Clear local state before any network work so navigation responds immediately.
       setProfile(null);
       setToken(null);
+      if (localAuthMode) await clearLocalAuthRole();
       if (!demoMode && !localAuthMode && supabase) {
         const { error } = await supabase.auth.signOut({ scope: "local" });
         if (error) console.warn("Supabase local sign-out failed", error.message);

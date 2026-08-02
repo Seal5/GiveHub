@@ -1,5 +1,8 @@
+import httpx
 from fastapi.testclient import TestClient
 
+from givehub.config import Settings, get_settings
+from givehub.main import app
 from givehub.seed import DEMO_ORGANISER_ID
 
 
@@ -48,9 +51,101 @@ def test_volunteer_can_save_search_location(client: TestClient) -> None:
     assert response.json()["search_radius_km"] == 10
 
 
-def test_location_search_requires_provider_configuration(client: TestClient) -> None:
-    response = client.get("/v1/locations/autocomplete?q=Wellington")
-    assert response.status_code == 503
+def test_free_location_search_returns_greater_toronto_addresses(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def photon_autocomplete(url: str, **kwargs: object) -> httpx.Response:
+        captured.update({"url": url, **kwargs})
+        return httpx.Response(
+            200,
+            request=httpx.Request("GET", url),
+            json={
+                "features": [
+                    {
+                        "properties": {
+                            "name": "Example Road",
+                            "street": "Example Road",
+                            "housenumber": "6862",
+                            "city": "Toronto",
+                            "postcode": "M5V 2T6",
+                            "countrycode": "CA",
+                        },
+                        "geometry": {"coordinates": [-79.3832, 43.6532]},
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr("givehub.api.httpx.get", photon_autocomplete)
+    response = client.get("/v1/locations/autocomplete?q=6862")
+
+    assert response.status_code == 200
+    suggestion = response.json()[0]
+    assert suggestion["label"] == "6862 Example Road, Toronto, M5V 2T6"
+    assert suggestion["place_id"].startswith("photon-")
+    assert captured["url"] == "https://photon.komoot.io/api/"
+    assert captured["params"] == {
+        "q": "6862",
+        "countrycode": "CA",
+        "bbox": "-79.95,43.40,-78.90,44.10",
+        "limit": 6,
+        "lang": "en",
+    }
+
+    resolved = client.get(f"/v1/locations/places/{suggestion['place_id']}")
+    assert resolved.status_code == 200
+    assert resolved.json()["address_line"] == "6862 Example Road"
+    assert resolved.json()["latitude"] == 43.6532
+
+
+def test_google_places_autocomplete_returns_address_predictions(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def google_autocomplete(url: str, **kwargs: object) -> httpx.Response:
+        captured.update({"url": url, **kwargs})
+        return httpx.Response(
+            200,
+            request=httpx.Request("POST", url),
+            json={
+                "suggestions": [
+                    {
+                        "placePrediction": {
+                            "placeId": "google-place-6862",
+                            "text": {"text": "6862 Example Road, Toronto, Canada"},
+                        }
+                    }
+                ]
+            },
+        )
+
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        google_places_api_key="test-google-key"
+    )
+    monkeypatch.setattr("givehub.api.httpx.post", google_autocomplete)
+
+    response = client.get("/v1/locations/autocomplete?q=6862")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"place_id": "google-place-6862", "label": "6862 Example Road, Toronto, Canada"}
+    ]
+    assert captured["url"] == "https://places.googleapis.com/v1/places:autocomplete"
+    assert captured["json"] == {
+        "input": "6862",
+        "includedRegionCodes": ["ca"],
+        "locationRestriction": {
+            "rectangle": {
+                "low": {"latitude": 43.40, "longitude": -79.95},
+                "high": {"latitude": 44.10, "longitude": -78.90},
+            }
+        },
+    }
 
 
 def test_volunteer_can_save_and_apply(client: TestClient, signed_waiver) -> None:
@@ -180,7 +275,9 @@ def test_application_and_status_change_send_email(
 ) -> None:
     sent: list[dict[str, object]] = []
 
-    def capture_email(_settings, *, recipient: str, subject: str, text: str, **extra: object) -> bool:
+    def capture_email(
+        _settings, *, recipient: str, subject: str, text: str, **extra: object
+    ) -> bool:
         sent.append({"recipient": recipient, "subject": subject, "text": text, **extra})
         return True
 

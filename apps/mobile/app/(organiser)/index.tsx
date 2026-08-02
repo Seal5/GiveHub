@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import { Body, BrandMark, Button, Card, ErrorState, LoadingState, Screen, useThemeColours } from "@/components/ui";
+import { formatEventDate } from "@/lib/format";
 
 function Metric({ value, label }: { value: string; label: string }) {
   return (
@@ -76,6 +77,33 @@ export default function OrganiserOverview() {
           </View>
         </Card>
       </Pressable>
+
+      <View className="mb-2 mt-7 flex-row items-center justify-between">
+        <Text className="font-display text-2xl tracking-[-0.7px] text-foreground dark:text-dark-foreground">Your opportunities</Text>
+        <Text className="font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">Tap to edit</Text>
+      </View>
+      {events.data?.map((event) => (
+        <Pressable
+          key={event.id}
+          accessibilityRole="button"
+          accessibilityLabel={`Edit ${event.title}`}
+          onPress={() => router.push({ pathname: "/(organiser)/create", params: { id: event.id } })}
+          className="mb-3"
+        >
+          <Card className="p-4">
+            <View className="flex-row items-center gap-3">
+              <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary dark:bg-dark-secondary">
+                <Ionicons name="calendar-outline" size={20} color={colours.primary} />
+              </View>
+              <View className="flex-1">
+                <Text className="font-strong text-sm text-foreground dark:text-dark-foreground">{event.title}</Text>
+                <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{formatEventDate(event.starts_at)} · {event.status}</Text>
+              </View>
+              <Ionicons name="create-outline" size={19} color={colours.primary} />
+            </View>
+          </Card>
+        </Pressable>
+      ))}
 
       <Button className="mt-7" label="Create a new opportunity" icon={<Ionicons name="add" size={20} color={colours.primaryForeground} />} onPress={() => router.push("/(organiser)/create")} />
     </Screen>
