@@ -114,7 +114,7 @@ export default function AuthScreen() {
             render={({ field }) => (
               <Field
                 label="Organisation name"
-                placeholder="e.g. Kaitiaki Coastal Network"
+                placeholder="e.g. Toronto Community Action Network"
                 value={field.value}
                 onBlur={field.onBlur}
                 onChangeText={field.onChange}

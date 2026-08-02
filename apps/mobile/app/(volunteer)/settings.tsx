@@ -15,7 +15,7 @@ export default function SettingsScreen() {
   const { profile, token, signOut, refreshProfile } = useAuth();
   const client = useQueryClient();
   const initialLocation = profile?.search_latitude !== null && profile?.search_latitude !== undefined && profile.search_longitude !== null && profile.search_longitude !== undefined
-    ? { label: profile.search_location_label ?? "Saved location", address_line: profile.search_location_label ?? "", locality: "", city: "", postcode: null, country_code: "NZ", latitude: profile.search_latitude, longitude: profile.search_longitude }
+    ? { label: profile.search_location_label ?? "Saved location", address_line: profile.search_location_label ?? "", locality: "", city: "", postcode: null, country_code: "CA", latitude: profile.search_latitude, longitude: profile.search_longitude }
     : null;
   const [location, setLocation] = useState<LocationPoint | null>(initialLocation);
   const [radius, setRadius] = useState(profile?.search_radius_km ?? 25);

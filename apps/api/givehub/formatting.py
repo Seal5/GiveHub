@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-NZ = ZoneInfo("Pacific/Auckland")
+TORONTO = ZoneInfo("America/Toronto")
 
 _DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
@@ -14,8 +14,8 @@ def as_utc(value: datetime) -> datetime:
     return value if value.tzinfo else value.replace(tzinfo=UTC)
 
 
-def _as_nz(value: datetime) -> datetime:
-    return as_utc(value).astimezone(NZ)
+def _as_toronto(value: datetime) -> datetime:
+    return as_utc(value).astimezone(TORONTO)
 
 
 def _clock(value: datetime) -> str:
@@ -25,15 +25,15 @@ def _clock(value: datetime) -> str:
 
 
 def format_starts_at(value: datetime) -> str:
-    """e.g. "Sat 2 Aug, 9:30am" in New Zealand local time."""
-    local = _as_nz(value)
+    """e.g. "Sat 2 Aug, 9:30am" in Greater Toronto local time."""
+    local = _as_toronto(value)
     return f"{_DAYS[local.weekday()]} {local.day} {_MONTHS[local.month - 1]}, {_clock(local)}"
 
 
 def format_event_window(starts_at: datetime, ends_at: datetime) -> str:
     """e.g. "Sat 2 Aug, 9:30am – 12:30pm" collapsing the date when it does not change."""
-    start_local = _as_nz(starts_at)
-    end_local = _as_nz(ends_at)
+    start_local = _as_toronto(starts_at)
+    end_local = _as_toronto(ends_at)
     if start_local.date() == end_local.date():
         return f"{format_starts_at(starts_at)} – {_clock(end_local)}"
     return f"{format_starts_at(starts_at)} – {format_starts_at(ends_at)}"

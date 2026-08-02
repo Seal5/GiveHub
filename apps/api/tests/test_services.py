@@ -1,4 +1,3 @@
-
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -8,17 +7,17 @@ from givehub.seed import DEMO_ORGANISER_ID, DEMO_VOLUNTEER_ID
 from givehub.services import change_application_status, haversine_km
 
 
-def test_haversine_between_wellington_locations(db: Session) -> None:
+def test_haversine_between_toronto_locations(db: Session) -> None:
     volunteer = db.get(Profile, DEMO_VOLUNTEER_ID)
     assert volunteer and volunteer.search_latitude and volunteer.search_longitude
-    karori = db.query(Opportunity).filter(Opportunity.title.ilike("%Karori%")).one()
+    don_river = db.query(Opportunity).filter(Opportunity.title.ilike("%Don River%")).one()
     distance = haversine_km(
         volunteer.search_latitude,
         volunteer.search_longitude,
-        karori.latitude,
-        karori.longitude,
+        don_river.latitude,
+        don_river.longitude,
     )
-    assert 3 < distance < 6
+    assert 2 < distance < 5
 
 
 def test_capacity_prevents_extra_confirmation(db: Session) -> None:
@@ -51,4 +50,3 @@ def test_capacity_prevents_extra_confirmation(db: Session) -> None:
             db, second, ApplicationStatus.confirmed, DEMO_ORGANISER_ID, second.version
         )
     assert caught.value.status_code == 409
-

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -16,23 +16,31 @@ export default function SearchScreen() {
   const [dateRange, setDateRange] = useState("");
   const [duration, setDuration] = useState("");
   const [fit, setFit] = useState("");
+  const [applicationMode, setApplicationMode] = useState("");
   const { profile, token } = useAuth();
   const colours = useThemeColours();
-  const now = new Date();
-  const startsBefore = dateRange
-    ? new Date(now.getTime() + Number(dateRange) * 86400000).toISOString()
-    : undefined;
+  const dateBounds = useMemo(() => {
+    if (!dateRange) return { startsAfter: undefined, startsBefore: undefined };
+    const now = new Date();
+    return {
+      startsAfter: now.toISOString(),
+      startsBefore: new Date(now.getTime() + Number(dateRange) * 86400000).toISOString(),
+    };
+  }, [dateRange]);
   const filters = {
     q: search,
     cause,
     recurrence,
-    starts_after: dateRange ? now.toISOString() : undefined,
-    starts_before: startsBefore,
+    starts_after: dateBounds.startsAfter,
+    starts_before: dateBounds.startsBefore,
     max_time_commitment_minutes: duration ? Number(duration) : undefined,
     accessible_only: fit === "accessible" || undefined,
     max_minimum_age: fit === "under18" ? 17 : undefined,
-    training_required: fit === "no_training" ? false : undefined,
-    screening_required: fit === "no_screening" ? false : undefined,
+    training_required: fit === "training" ? true : fit === "no_training" ? false : undefined,
+    screening_required: fit === "screening" ? true : fit === "no_screening" ? false : undefined,
+    application_mode: applicationMode
+      ? applicationMode as "internal" | "external"
+      : undefined,
   };
   const query = useQuery({
     queryKey: ["opportunities", filters, profile?.search_latitude, profile?.search_longitude, profile?.search_radius_km],
@@ -69,10 +77,24 @@ export default function SearchScreen() {
             { value: "accessible", label: "Accessible" },
             { value: "under18", label: "Under 18 welcome" },
             { value: "no_training", label: "No training" },
+            { value: "training", label: "Training required" },
             { value: "no_screening", label: "No screening" },
+            { value: "screening", label: "Screening required" },
           ]}
           keyExtractor={(item) => item.value || "any-fit"}
           renderItem={({ item }) => <Chip label={item.label} selected={fit === item.value} onPress={() => setFit(item.value)} />}
+          className="mt-3 grow-0"
+        />
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={[
+            { value: "", label: "Any application" },
+            { value: "internal", label: "Apply in GiveHub" },
+            { value: "external", label: "External application" },
+          ]}
+          keyExtractor={(item) => item.value || "any-application"}
+          renderItem={({ item }) => <Chip label={item.label} selected={applicationMode === item.value} onPress={() => setApplicationMode(item.value)} />}
           className="mt-3 grow-0"
         />
         <Pressable accessibilityRole="button" onPress={() => router.push("/(volunteer)/settings")} className="mt-3 min-h-11 flex-row items-center">

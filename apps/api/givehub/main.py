@@ -28,10 +28,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             seed_reference_data(db)
     yield
 
+
 app = FastAPI(
     title="GiveHub API",
     version="0.1.0",
-    description="Volunteer discovery and coordination for Wellington.",
+    description="Volunteer discovery and coordination for the Greater Toronto Area.",
     lifespan=lifespan,
 )
 app.add_middleware(
@@ -50,7 +51,13 @@ async def request_context(request: Request, call_next):  # type: ignore[no-untyp
     request_id = request.headers.get("x-request-id", str(uuid.uuid4()))
     response = await call_next(request)
     response.headers["x-request-id"] = request_id
-    logger.info("request id=%s method=%s path=%s status=%s", request_id, request.method, request.url.path, response.status_code)
+    logger.info(
+        "request id=%s method=%s path=%s status=%s",
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+    )
     return response
 
 
@@ -75,4 +82,3 @@ def ready() -> dict[str, str]:
     with engine.connect() as connection:
         connection.execute(text("SELECT 1"))
     return {"status": "ready"}
-

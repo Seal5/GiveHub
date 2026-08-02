@@ -46,7 +46,8 @@ export default function OpportunityDetail() {
   if (!item) return <Screen><EmptyState title="Opportunity unavailable" body="It may have been unpublished by the host." /></Screen>;
   const image = opportunityImage(item.id, item.image_url);
   const placesLeft = Math.max(item.capacity - item.confirmed_count, 0);
-  const sourceDate = item.source_updated_at ?? item.updated_at;
+  const sourceDate = item.source_checked_at ?? item.source_updated_at ?? item.updated_at;
+  const sourceDateLabel = item.source_checked_at ? "checked" : "updated";
   const duration = item.time_commitment_minutes >= 60
     ? `${Math.round(item.time_commitment_minutes / 60 * 10) / 10} hours`
     : `${item.time_commitment_minutes} minutes`;
@@ -111,7 +112,7 @@ export default function OpportunityDetail() {
               : `Your application is stored by GiveHub and shared with ${item.organisation_name}.`}
           </Body>
           <Body className="mt-3 text-sm">
-            Source: {item.listing_source} · {item.listing_verification_status} · updated {new Date(sourceDate).toLocaleDateString("en-NZ")}
+            Source: {item.listing_source} · {item.listing_verification_status} · {sourceDateLabel} {new Date(sourceDate).toLocaleDateString("en-CA")}
           </Body>
         </Card>
         <Button

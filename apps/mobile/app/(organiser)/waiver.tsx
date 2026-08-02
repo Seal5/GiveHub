@@ -70,7 +70,7 @@ export default function WaiverEditor() {
         <Text className="font-medium text-sm text-foreground dark:text-dark-foreground">Before you publish</Text>
         <Body className="mt-2">
           GiveHub does not provide legal advice. Have your own wording reviewed, and keep the parts
-          covering under-18 consent and New Zealand law that cannot be excluded by agreement.
+          covering under-18 consent and Ontario or Canadian law that cannot be excluded by agreement.
         </Body>
       </Card>
 

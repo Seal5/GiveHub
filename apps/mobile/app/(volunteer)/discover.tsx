@@ -28,7 +28,7 @@ export default function DiscoverScreen() {
   if (query.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
   if (query.isError) return <Screen><ErrorState error={query.error} onRetry={() => query.refetch()} /></Screen>;
   if (!query.data?.length) {
-    return <Screen><EmptyState title="Nothing to discover yet" body="Widen your travel radius in preferences to see more of Wellington." /></Screen>;
+    return <Screen><EmptyState title="Nothing to discover yet" body="Widen your travel radius in preferences to see more of the GTA." /></Screen>;
   }
 
   return (

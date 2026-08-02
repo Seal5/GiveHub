@@ -24,10 +24,10 @@ type Activity = {
 };
 
 const friends: Friend[] = [
-  { initials: "SK", name: "Sarah", location: "Tawa", colour: "#2A8D58" },
-  { initials: "TH", name: "Tom", location: "Oriental Bay", colour: "#BB704B" },
-  { initials: "BC", name: "Ben", location: "Oriental Bay", colour: "#467A58" },
-  { initials: "DW", name: "Daniel", location: "Karori", colour: "#7A6852" },
+  { initials: "SK", name: "Sarah", location: "Parkdale", colour: "#2A8D58" },
+  { initials: "TH", name: "Tom", location: "The Beaches", colour: "#BB704B" },
+  { initials: "BC", name: "Ben", location: "North York", colour: "#467A58" },
+  { initials: "DW", name: "Daniel", location: "East York", colour: "#7A6852" },
 ];
 
 const activities: Activity[] = [
@@ -35,10 +35,10 @@ const activities: Activity[] = [
     initials: "SK",
     name: "Sarah Kim",
     action: "signed up for",
-    opportunity: "Kahurangi River Riparian Planting",
+    opportunity: "Credit River Native Planting",
     status: "Signed up",
     time: "2h ago",
-    location: "Tawa",
+    location: "Mississauga",
     date: "5 Jul",
     colour: "#2A8D58",
     imageId: "hutt-planting",
@@ -47,10 +47,10 @@ const activities: Activity[] = [
     initials: "BC",
     name: "Ben Carter",
     action: "signed up for",
-    opportunity: "Oriental Bay Beach Clean",
+    opportunity: "Woodbine Beach Cleanup",
     status: "Signed up",
     time: "3h ago",
-    location: "Oriental Bay",
+    location: "The Beaches",
     date: "12 Jul",
     colour: "#467A58",
     imageId: "beach-clean",
@@ -59,10 +59,10 @@ const activities: Activity[] = [
     initials: "DW",
     name: "Daniel Wu",
     action: "completed",
-    opportunity: "Zealandia Predator Trap Check",
+    opportunity: "Don River Water Quality Monitoring",
     status: "Completed",
     time: "Yesterday",
-    location: "Karori",
+    location: "East York",
     date: "8 Jul",
     colour: "#7A6852",
     imageId: "stream-watch",

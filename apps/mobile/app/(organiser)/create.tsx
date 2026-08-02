@@ -210,7 +210,7 @@ export default function CreateOpportunityScreen() {
       {preview.impact ? <Card className="my-6 border-0 bg-secondary dark:bg-dark-secondary"><Eyebrow>Your impact</Eyebrow><Text className="font-display text-xl text-foreground dark:text-dark-foreground">{preview.impact}</Text></Card> : null}
       <Card className="mb-5">
         <Text className="font-strong text-base text-foreground dark:text-dark-foreground">Schedule and fit</Text>
-        <Body className="mt-2">{starts.toLocaleDateString("en-NZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</Body>
+        <Body className="mt-2">{starts.toLocaleDateString("en-CA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</Body>
         <Body>{preview.startTime}–{preview.endTime} · {preview.recurrence.replace("_", " ")} · {preview.effort}</Body>
         <Body className="mt-2">{eventLocation?.label} · {cause} · {preview.minimumAge ? `minimum age ${preview.minimumAge}` : "all ages"}</Body>
       </Card>

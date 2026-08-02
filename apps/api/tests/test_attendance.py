@@ -5,7 +5,9 @@ from givehub.seed import DEMO_ORGANISER_ID, DEMO_VOLUNTEER_ID
 
 def confirmed_application(client: TestClient, identity_override, signed_waiver) -> tuple[str, str]:
     """Applies as the volunteer and confirms as the organiser, returning both ids."""
-    opportunity_id = client.get("/v1/opportunities").json()[0]["id"]
+    opportunity_id = client.get(
+        "/v1/opportunities", params={"application_mode": "internal"}
+    ).json()[0]["id"]
     applied = client.post(
         f"/v1/opportunities/{opportunity_id}/applications",
         json={
@@ -82,7 +84,9 @@ def test_no_show_clears_hours(client: TestClient, identity_override, signed_waiv
 def test_unconfirmed_volunteers_cannot_be_marked_off(
     client: TestClient, identity_override, signed_waiver
 ) -> None:
-    opportunity_id = client.get("/v1/opportunities").json()[0]["id"]
+    opportunity_id = client.get(
+        "/v1/opportunities", params={"application_mode": "internal"}
+    ).json()[0]["id"]
     applied = client.post(
         f"/v1/opportunities/{opportunity_id}/applications",
         json={
@@ -121,9 +125,9 @@ def test_impact_counts_only_attended_events(
     assert after["events_attended"] == 1
     assert after["total_hours"] == 2.5
     assert after["organisations_supported"] == 1
-    assert after["causes"][0]["slug"] == "cleanup"
+    assert after["causes"][0]["slug"] == "monitoring"
     assert after["recent"][0]["hours"] == 2.5
-    assert after["recent"][0]["organisation_name"] == "Kaitiaki Coastal Network"
+    assert after["recent"][0]["organisation_name"] == "Toronto Community Action Network"
 
 
 def test_impact_requires_a_volunteer_profile(client: TestClient, identity_override) -> None:

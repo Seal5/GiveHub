@@ -1,9 +1,9 @@
 import type { ApplicationStatus } from "./types";
 
 export const formatEventDate = (value: string) =>
-  new Intl.DateTimeFormat("en-NZ", {
+  new Intl.DateTimeFormat("en-CA", {
     weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit",
-    timeZone: "Pacific/Auckland",
+    timeZone: "America/Toronto",
   }).format(new Date(value));
 
 export const statusLabel: Record<ApplicationStatus, string> = {
@@ -14,4 +14,3 @@ export const statusLabel: Record<ApplicationStatus, string> = {
   declined: "Not selected",
   withdrawn: "Withdrawn",
 };
-

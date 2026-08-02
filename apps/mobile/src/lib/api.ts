@@ -80,9 +80,9 @@ const demoWaiver: Waiver = {
     "1. Voluntary participation. You are taking part of your own free will and are not an employee of the host organisation or of GiveHub.",
     "2. Health and fitness. You confirm you are reasonably fit for the tasks described, and will tell the host about any medical condition, allergy, or access need.",
     "3. Instructions and safety. You agree to follow the host's briefing, wear any protective equipment provided, and stop any task you believe is unsafe.",
-    "4. Assumption of risk. You accept the ordinary risks of volunteering. Nothing here removes rights under the Accident Compensation Act 2001 or other New Zealand law that cannot be excluded.",
+    "4. Assumption of risk. You accept the ordinary risks of volunteering. Nothing here removes rights under applicable Ontario or Canadian law that cannot be excluded.",
     "5. Under 18s. If you are under 18, a parent or guardian must consent on your behalf.",
-    "6. Personal information. Your application details are shared with the host under the Privacy Act 2020.",
+    "6. Personal information. Your application details are shared with the host under applicable Canadian privacy laws.",
   ].join("\n"),
 };
 
@@ -383,8 +383,8 @@ export const api = {
     if (demoMode) {
       const created: Opportunity = {
         ...opportunities[0]!, ...input, id: `opportunity-${Date.now()}`, status: "draft", version: 1,
-        organisation_name: "Kaitiaki Coastal Network", causes: [causes[3]!],
-        location_label: String(input.location_label ?? "Wellington Central, Wellington"), address_line: String(input.address_line ?? "Wellington Central"), locality: String(input.locality ?? "Wellington Central"), city: String(input.city ?? "Wellington"), postcode: (input.postcode as string | null) ?? null, country_code: "NZ", latitude: Number(input.latitude ?? -41.2866), longitude: Number(input.longitude ?? 174.7756), location_visibility: "public",
+        organisation_name: "Toronto Community Action Network", causes: [causes[3]!],
+        location_label: String(input.location_label ?? "Downtown Toronto, Ontario"), address_line: String(input.address_line ?? "Downtown Toronto"), locality: String(input.locality ?? "Downtown Toronto"), city: String(input.city ?? "Toronto"), postcode: (input.postcode as string | null) ?? null, country_code: "CA", latitude: Number(input.latitude ?? 43.6532), longitude: Number(input.longitude ?? -79.3832), location_visibility: "public",
         confirmed_count: 0, distance_km: 0, is_saved: false,
       } as Opportunity;
       demoOpportunities = [created, ...demoOpportunities];

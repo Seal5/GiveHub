@@ -542,6 +542,10 @@ export type OpportunityCreate = {
      */
     screening_steps?: string;
     /**
+     * Source Checked At
+     */
+    source_checked_at?: string | null;
+    /**
      * Source Updated At
      */
     source_updated_at?: string | null;
@@ -737,6 +741,10 @@ export type OpportunityOut = {
      */
     screening_steps: string;
     /**
+     * Source Checked At
+     */
+    source_checked_at: string | null;
+    /**
      * Source Updated At
      */
     source_updated_at: string | null;
@@ -913,6 +921,10 @@ export type OpportunityUpdate = {
      * Screening Steps
      */
     screening_steps?: string | null;
+    /**
+     * Source Checked At
+     */
+    source_checked_at?: string | null;
     /**
      * Source Updated At
      */
