@@ -1,5 +1,7 @@
+import base64
 import csv
 import io
+import json
 import re
 import uuid
 from datetime import UTC, datetime
@@ -217,9 +219,7 @@ def autocomplete_location(
     settings: Settings = Depends(get_settings),
 ) -> list[LocationSuggestion]:
     if not settings.google_places_api_key:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, "Location search is not configured"
-        )
+        return photon_location_suggestions(q)
     try:
         response = httpx.post(
             "https://places.googleapis.com/v1/places:autocomplete",
@@ -227,7 +227,16 @@ def autocomplete_location(
                 "X-Goog-Api-Key": settings.google_places_api_key,
                 "X-Goog-FieldMask": "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
             },
-            json={"input": q, "includedRegionCodes": ["nz"]},
+            json={
+                "input": q,
+                "includedRegionCodes": ["ca"],
+                "locationRestriction": {
+                    "rectangle": {
+                        "low": {"latitude": 43.40, "longitude": -79.95},
+                        "high": {"latitude": 44.10, "longitude": -78.90},
+                    }
+                },
+            },
             timeout=8,
         )
         response.raise_for_status()
@@ -246,6 +255,99 @@ def autocomplete_location(
     ]
 
 
+def photon_location_suggestions(q: str) -> list[LocationSuggestion]:
+    """Search Greater Toronto Area addresses using Photon's free OpenStreetMap service."""
+    try:
+        response = httpx.get(
+            "https://photon.komoot.io/api/",
+            params={
+                "q": q,
+                "countrycode": "CA",
+                "bbox": "-79.95,43.40,-78.90,44.10",
+                "limit": 6,
+                "lang": "en",
+            },
+            headers={"User-Agent": "GiveHub/1.0 (address search)"},
+            timeout=8,
+        )
+        response.raise_for_status()
+        features = response.json().get("features", [])
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Location search is unavailable") from exc
+
+    results: list[LocationSuggestion] = []
+    for feature in features[:6]:
+        properties = feature.get("properties", {})
+        coordinates = feature.get("geometry", {}).get("coordinates", [])
+        if len(coordinates) < 2 or not (properties.get("name") or properties.get("street")):
+            continue
+        payload = {
+            "name": properties.get("name", ""),
+            "street": properties.get("street", ""),
+            "housenumber": properties.get("housenumber", ""),
+            "district": properties.get("district", ""),
+            "locality": properties.get("locality", ""),
+            "city": properties.get("city", ""),
+            "postcode": properties.get("postcode"),
+            "countrycode": properties.get("countrycode", "CA"),
+            "longitude": coordinates[0],
+            "latitude": coordinates[1],
+        }
+        encoded = (
+            base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode())
+            .decode()
+            .rstrip("=")
+        )
+        results.append(
+            LocationSuggestion(place_id=f"photon-{encoded}", label=photon_location_label(payload))
+        )
+    return results
+
+
+def photon_location_label(payload: dict[str, Any]) -> str:
+    street = " ".join(
+        str(part) for part in (payload.get("housenumber"), payload.get("street")) if part
+    )
+    name = str(payload.get("name", ""))
+    address = street or name
+    if name and street and name.casefold() not in street.casefold():
+        address = f"{name}, {street}"
+    area = payload.get("locality") or payload.get("district") or payload.get("city")
+    city = payload.get("city")
+    parts = [address, area]
+    if city and city != area:
+        parts.append(city)
+    if payload.get("postcode"):
+        parts.append(str(payload["postcode"]))
+    return ", ".join(str(part) for part in parts if part)
+
+
+def resolve_photon_location(place_id: str) -> LocationResult:
+    try:
+        encoded = place_id.removeprefix("photon-")
+        encoded += "=" * (-len(encoded) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(encoded).decode())
+        latitude = float(payload["latitude"])
+        longitude = float(payload["longitude"])
+    except (KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Location not found") from exc
+    label = photon_location_label(payload)
+    street = " ".join(
+        str(part) for part in (payload.get("housenumber"), payload.get("street")) if part
+    )
+    return LocationResult(
+        place_id=place_id,
+        label=label,
+        address_line=street or str(payload.get("name", label)),
+        locality=str(payload.get("locality") or payload.get("district") or ""),
+        city=str(payload.get("city") or ""),
+        postcode=str(payload["postcode"]) if payload.get("postcode") else None,
+        country_code=str(payload.get("countrycode") or "CA").upper(),
+        latitude=latitude,
+        longitude=longitude,
+    )
+
+
 def address_component(payload: dict[str, Any], *component_types: str) -> str:
     for component in payload.get("addressComponents", []):
         if any(component_type in component.get("types", []) for component_type in component_types):
@@ -259,6 +361,8 @@ def resolve_location(
     _identity: Identity = Depends(current_identity),
     settings: Settings = Depends(get_settings),
 ) -> LocationResult:
+    if place_id.startswith("photon-"):
+        return resolve_photon_location(place_id)
     if not settings.google_places_api_key:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE, "Location search is not configured"
@@ -296,7 +400,7 @@ def resolve_location(
         locality=locality,
         city=city,
         postcode=address_component(payload, "postal_code") or None,
-        country_code=(address_component(payload, "country") and "NZ") or "NZ",
+        country_code=(address_component(payload, "country") and "CA") or "CA",
         latitude=float(coordinates["latitude"]),
         longitude=float(coordinates["longitude"]),
     )
@@ -616,7 +720,9 @@ def apply(
                 signed_name=payload.waiver.signed_name.strip(),
                 is_minor=payload.waiver.is_minor,
                 guardian_name=payload.waiver.guardian_name,
-                guardian_email=str(payload.waiver.guardian_email) if payload.waiver.guardian_email else None,
+                guardian_email=str(payload.waiver.guardian_email)
+                if payload.waiver.guardian_email
+                else None,
                 guardian_relationship=payload.waiver.guardian_relationship,
                 signed_ip=request.client.host if request.client else None,
             )
@@ -1017,7 +1123,9 @@ def attendance_sheet(
             application_id=application.id,
             volunteer_name=application.volunteer.display_name,
             volunteer_email=application.volunteer.email,
-            status=application.attendance.status if application.attendance else AttendanceStatus.expected,
+            status=application.attendance.status
+            if application.attendance
+            else AttendanceStatus.expected,
             hours=application.attendance.hours if application.attendance else 0.0,
             notes=application.attendance.notes if application.attendance else "",
         )
@@ -1049,12 +1157,14 @@ def record_attendance(
     if not application or application.opportunity.organisation.owner_id != organiser.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Application not found")
     if application.status != ApplicationStatus.confirmed:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "Only confirmed volunteers can be marked off"
-        )
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only confirmed volunteers can be marked off")
     hours = payload.hours
     if hours is None:
-        hours = event_hours(application.opportunity) if payload.status == AttendanceStatus.attended else 0.0
+        hours = (
+            event_hours(application.opportunity)
+            if payload.status == AttendanceStatus.attended
+            else 0.0
+        )
     if payload.status != AttendanceStatus.attended:
         # Hours only mean something for someone who actually turned up.
         hours = 0.0
