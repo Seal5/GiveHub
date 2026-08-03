@@ -4,15 +4,44 @@ GiveHub is a Greater Toronto Area volunteer discovery and coordination MVP. It h
 
 ## Current status
 
-As of 2 August 2026:
+As of 3 August 2026:
 
-- The application code is merged into the repository's default `initial-skeleton` branch and CI is passing.
+- The repository uses `initial-skeleton` as its default branch, with API and mobile checks running in GitHub Actions for every feature branch and pull request.
 - A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0010_volunteer_personalization`; hosted environments must run the latest Alembic migrations during release.
 - The source-refresh pipeline is installed as a nightly GitHub Actions workflow. New scraped records enter a review queue instead of being published automatically; the first hosted refresh produced 33 pending candidates.
 - A public static demo is available at [alvaropran.github.io/givehub-demo](https://alvaropran.github.io/givehub-demo/). It runs in explicit demo mode, so its accounts and changes remain in that browser and do not use the hosted database.
 - The FastAPI service is not publicly hosted yet. Until it is deployed and the web build is pointed at its URL, the public demo is not a shared production application.
 
 The database is intentionally not exposed directly to clients. In connected mode, the Expo app talks to FastAPI, and FastAPI applies authorization and domain rules before reading or writing PostgreSQL.
+
+## Ten-minute demo walkthrough
+
+For a recorded presentation, use the persistent local-development mode. It demonstrates the real API, database-backed applications, organiser pipeline, moderation, and source-review tools. The public GitHub Pages build is a useful backup, but it runs entirely in demo mode and does not share changes with other browsers or devices.
+
+Manual recording with QuickTime, OBS, Loom, or the operating system's screen recorder is recommended because it keeps narration and pacing natural. Rehearse the route once, close unrelated tabs and notifications, use a phone-sized browser window, and begin with the local API and Expo web app already running.
+
+| Time | Demonstration | Main point |
+| --- | --- | --- |
+| 0:00-0:45 | Open GiveHub and explain the volunteer and organiser entry points. | GiveHub combines opportunity discovery with organiser coordination. |
+| 0:45-1:45 | Create a volunteer account and complete or skip personalization. Choose causes, availability, frequency, time commitment, access, training, screening, and transportation preferences. | Onboarding is optional and personalizes recommendations without blocking sign-up. |
+| 1:45-2:45 | Show Home and Discover, then open Search and demonstrate location, date, cause, duration, accessibility, eligibility, training, screening, and application-mode filters. | Volunteers can find opportunities that fit their interests and constraints. |
+| 2:45-4:00 | Open an opportunity and point out schedule, tasks, transport, qualifications, accessibility, source, verification, and freshness. Save it and show native sharing. | Listings expose the practical and trust information needed before applying. |
+| 4:00-5:30 | Apply to an internal opportunity. Show the personal note, experience, availability dropdown, recipient notice, and waiver. Briefly contrast an external-application listing. | GiveHub supports both hosted and organisation-controlled applications without collecting external form responses. |
+| 5:30-6:30 | Open Activities to show status tracking, editing, and withdrawal. Briefly show Saved, Impact, and the social prototype. | Volunteers retain control after applying and can see their participation history. |
+| 6:30-7:15 | Sign out and sign in as an organiser. Show the dashboard, posting funnel, opportunities, and action queue. | Organisers get one operational view of listings and applicants. |
+| 7:15-8:15 | Create or edit an opportunity and identify required versus optional fields, address autocomplete, capacity, application mode, screening, training, and draft/publish controls. | Hosts can publish complete, structured opportunities without every field creating friction. |
+| 8:15-9:00 | Open the applicant pipeline, change an application status, show CSV export, attendance, and contributed hours. | The workflow continues from application through confirmation and recorded impact. |
+| 9:00-9:40 | Show reported-listing moderation, imported-source review, duplicate warnings, and source-health history. | External data is reviewed and monitored instead of being published blindly. |
+| 9:40-10:00 | Close on the hybrid architecture and current deployment boundary. | The MVP is tested and database-ready; public FastAPI hosting and a production pilot remain next steps. |
+
+### Demo preparation checklist
+
+1. Use `EXPO_PUBLIC_DEMO_MODE=false`, `EXPO_PUBLIC_LOCAL_AUTH=true`, and `EXPO_PUBLIC_API_URL=http://127.0.0.1:8000`.
+2. Start FastAPI and Expo before recording, then verify `/ready` and load the Home screen once.
+3. Keep one internal and one external opportunity in mind so the application-mode contrast is quick.
+4. Submit the volunteer application before switching roles so it appears in the organiser pipeline.
+5. Treat the social tab as a clearly labelled prototype; shared social networking is not yet implemented.
+6. Keep the public static demo open in a separate tab only as a fallback.
 
 ## MSE 401 MVP promise
 
