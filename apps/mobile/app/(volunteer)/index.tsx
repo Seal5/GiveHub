@@ -24,7 +24,7 @@ export default function VolunteerHome() {
         </Pressable>
       </View>
 
-      <Text className="mt-7 font-sans text-sm text-muted-foreground dark:text-dark-muted-foreground">Kia ora, {firstName}</Text>
+      <Text className="mt-7 font-sans text-sm text-muted-foreground dark:text-dark-muted-foreground">Welcome back, {firstName}</Text>
       <Text accessibilityRole="header" className="mt-1 font-display text-[34px] leading-[36px] tracking-[-1.2px] text-foreground dark:text-dark-foreground">
         Where will your hands{`\n`}make a difference?
       </Text>

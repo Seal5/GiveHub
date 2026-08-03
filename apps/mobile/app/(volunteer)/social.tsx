@@ -91,7 +91,10 @@ function Avatar({
 
 function FriendCard({ friend }: { friend: Friend }) {
   return (
-    <View className="mr-3 w-36 items-center rounded-feature border border-border bg-card px-3 py-5 dark:border-dark-border dark:bg-dark-card">
+    <View
+      className="mr-3 w-36 items-center rounded-feature border border-border bg-card px-3 py-5 dark:border-dark-border dark:bg-dark-card"
+      style={{ height: 160 }}
+    >
       <Avatar initials={friend.initials} colour={friend.colour} size={64} />
       <Text className="mt-3 font-strong text-sm text-foreground dark:text-dark-foreground">
         {friend.name}
@@ -189,6 +192,7 @@ export default function SocialScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerClassName="pr-5"
         className="-mr-5"
+        style={{ flexGrow: 0, height: 160 }}
       >
         {friends.map((friend) => (
           <FriendCard key={friend.initials} friend={friend} />
