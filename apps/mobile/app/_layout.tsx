@@ -21,11 +21,15 @@ function NavigationGuard() {
   const router = useRouter();
   useEffect(() => {
     if (loading) return;
-    const group = segments[0];
+    const group = segments[0] as string | undefined;
     // The share route resolves its own destination once auth state settles.
     if (group === "o") return;
     if (!profile) {
       if (group === "(volunteer)" || group === "(organiser)") router.replace("/welcome");
+      return;
+    }
+    if (profile.role === "volunteer" && !profile.onboarding_completed) {
+      if (group !== "personalize") router.replace("/personalize" as Parameters<typeof router.replace>[0]);
       return;
     }
     const pending = takePendingRoute();

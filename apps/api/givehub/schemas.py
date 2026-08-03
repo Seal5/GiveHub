@@ -51,6 +51,18 @@ class ProfileUpdate(BaseModel):
     search_longitude: float | None = Field(default=None, ge=-180, le=180)
     search_radius_km: int = Field(default=25, ge=1, le=100)
     theme: str = Field(default="system", pattern="^(system|light|dark)$")
+    onboarding_completed: bool = False
+    preferred_cause_slugs: list[str] = Field(default_factory=list, max_length=10)
+    preferred_availability: list[str] = Field(default_factory=list, max_length=6)
+    preferred_recurrences: list[str] = Field(default_factory=list, max_length=3)
+    max_time_commitment_minutes: int | None = Field(default=None, ge=30, le=10080)
+    accessible_only: bool = False
+    age_group: str | None = Field(default=None, pattern="^(under_16|16_17|18_plus)$")
+    training_preference: str = Field(default="any", pattern="^(any|avoid|open)$")
+    screening_preference: str = Field(default="any", pattern="^(any|avoid|open)$")
+    transportation_preference: str = Field(
+        default="any", pattern="^(any|transit|walk_bike|drive)$"
+    )
 
     @model_validator(mode="after")
     def coordinates_are_complete(self) -> ProfileUpdate:
@@ -58,6 +70,18 @@ class ProfileUpdate(BaseModel):
             raise ValueError("Latitude and longitude must be supplied together")
         if self.search_latitude is not None and not self.search_location_label:
             raise ValueError("A location label is required with coordinates")
+        allowed_availability = {
+            "weekday_morning",
+            "weekday_afternoon",
+            "weekday_evening",
+            "weekend_morning",
+            "weekend_afternoon",
+            "weekend_evening",
+        }
+        if not set(self.preferred_availability).issubset(allowed_availability):
+            raise ValueError("Choose a supported availability window")
+        if not set(self.preferred_recurrences).issubset({"one_off", "weekly", "monthly"}):
+            raise ValueError("Choose a supported frequency")
         return self
 
 
@@ -71,6 +95,16 @@ class ProfileOut(ORMModel):
     search_longitude: float | None
     search_radius_km: int
     theme: str
+    onboarding_completed: bool
+    preferred_cause_slugs: list[str]
+    preferred_availability: list[str]
+    preferred_recurrences: list[str]
+    max_time_commitment_minutes: int | None
+    accessible_only: bool
+    age_group: str | None
+    training_preference: str
+    screening_preference: str
+    transportation_preference: str
     organisation_name: str | None = None
 
 

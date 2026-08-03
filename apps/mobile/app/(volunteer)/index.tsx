@@ -10,7 +10,7 @@ import { EventCard } from "@/components/EventCard";
 export default function VolunteerHome() {
   const { profile, token } = useAuth();
   const colours = useThemeColours();
-  const query = useQuery({ queryKey: ["opportunities", "home", profile?.search_latitude, profile?.search_longitude, profile?.search_radius_km], queryFn: () => api.opportunities({}, token) });
+  const query = useQuery({ queryKey: ["opportunities", "home", profile?.search_latitude, profile?.search_longitude, profile?.search_radius_km, profile?.preferred_cause_slugs], queryFn: () => api.opportunities({ personalized: true }, token) });
   const locationLabel = profile?.search_location_label ?? "Set location";
   const firstName = profile?.display_name.split(" ")[0] ?? "there";
   if (query.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;

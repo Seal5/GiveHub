@@ -5,6 +5,7 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
@@ -109,6 +110,16 @@ class Profile(TimestampMixin, Base):
     search_longitude: Mapped[float | None] = mapped_column(Float)
     search_radius_km: Mapped[int] = mapped_column(Integer, default=25)
     theme: Mapped[str] = mapped_column(String(16), default="system")
+    onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    preferred_cause_slugs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    preferred_availability: Mapped[list[str]] = mapped_column(JSON, default=list)
+    preferred_recurrences: Mapped[list[str]] = mapped_column(JSON, default=list)
+    max_time_commitment_minutes: Mapped[int | None] = mapped_column(Integer)
+    accessible_only: Mapped[bool] = mapped_column(Boolean, default=False)
+    age_group: Mapped[str | None] = mapped_column(String(24))
+    training_preference: Mapped[str] = mapped_column(String(16), default="any")
+    screening_preference: Mapped[str] = mapped_column(String(16), default="any")
+    transportation_preference: Mapped[str] = mapped_column(String(24), default="any")
 
     suburb: Mapped[Suburb | None] = relationship()
     organisation: Mapped[Organisation | None] = relationship(back_populates="owner", uselist=False)

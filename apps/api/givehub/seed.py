@@ -99,6 +99,7 @@ def seed_reference_data(db: Session) -> None:
         search_latitude=43.6532,
         search_longitude=-79.3832,
         search_radius_km=50,
+        onboarding_completed=True,
     )
     organisation = Organisation(
         owner=organiser,
@@ -115,6 +116,14 @@ def seed_reference_data(db: Session) -> None:
         search_latitude=43.6532,
         search_longitude=-79.3832,
         search_radius_km=50,
+        onboarding_completed=True,
+        preferred_cause_slugs=["cleanup", "community"],
+        preferred_availability=["weekend_morning", "weekend_afternoon"],
+        preferred_recurrences=["one_off", "weekly"],
+        max_time_commitment_minutes=240,
+        training_preference="open",
+        screening_preference="any",
+        transportation_preference="transit",
     )
     db.add_all([organiser, organisation, volunteer])
     db.flush()

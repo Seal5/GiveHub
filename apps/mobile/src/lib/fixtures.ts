@@ -192,6 +192,16 @@ export const profileFor = (role: "volunteer" | "organiser"): Profile => ({
   id: role === "volunteer" ? "00000000-0000-4000-8000-000000000020" : "00000000-0000-4000-8000-000000000010",
   role, display_name: role === "volunteer" ? "Mia Thompson" : "Toronto Community Action Network",
   email: `${role}@example.com`, search_location_label: "Downtown Toronto, Ontario", search_latitude: 43.6532, search_longitude: -79.3832, search_radius_km: 50, theme: "system",
+  onboarding_completed: true,
+  preferred_cause_slugs: role === "volunteer" ? ["cleanup", "community"] : [],
+  preferred_availability: role === "volunteer" ? ["weekend_morning", "weekend_afternoon"] : [],
+  preferred_recurrences: role === "volunteer" ? ["one_off", "weekly"] : [],
+  max_time_commitment_minutes: role === "volunteer" ? 240 : null,
+  accessible_only: false,
+  age_group: role === "volunteer" ? "18_plus" : null,
+  training_preference: role === "volunteer" ? "open" : "any",
+  screening_preference: "any",
+  transportation_preference: role === "volunteer" ? "transit" : "any",
   organisation_name: role === "organiser" ? "Toronto Community Action Network" : null,
 });
 export const applications: Application[] = [
