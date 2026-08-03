@@ -4,15 +4,44 @@ GiveHub is a Greater Toronto Area volunteer discovery and coordination MVP. It h
 
 ## Current status
 
-As of 2 August 2026:
+As of 3 August 2026:
 
-- The application code is merged into the repository's default `initial-skeleton` branch and CI is passing.
+- The application through volunteer personalization is merged into the repository's default `initial-skeleton` branch. API and mobile checks run in GitHub Actions for every feature branch and pull request.
 - A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0010_volunteer_personalization`; hosted environments must run the latest Alembic migrations during release.
 - The source-refresh pipeline is installed as a nightly GitHub Actions workflow. New scraped records enter a review queue instead of being published automatically; the first hosted refresh produced 33 pending candidates.
 - A public static demo is available at [alvaropran.github.io/givehub-demo](https://alvaropran.github.io/givehub-demo/). It runs in explicit demo mode, so its accounts and changes remain in that browser and do not use the hosted database.
 - The FastAPI service is not publicly hosted yet. Until it is deployed and the web build is pointed at its URL, the public demo is not a shared production application.
 
 The database is intentionally not exposed directly to clients. In connected mode, the Expo app talks to FastAPI, and FastAPI applies authorization and domain rules before reading or writing PostgreSQL.
+
+## Ten-minute demo walkthrough
+
+For a recorded presentation, use the persistent local-development mode. It demonstrates the real API, database-backed applications, organiser pipeline, moderation, and source-review tools. The public GitHub Pages build is a useful backup, but it runs entirely in demo mode and does not share changes with other browsers or devices.
+
+Manual recording with QuickTime, OBS, Loom, or the operating system's screen recorder is recommended because it keeps narration and pacing natural. Rehearse the route once, close unrelated tabs and notifications, use a phone-sized browser window, and begin with the local API and Expo web app already running.
+
+| Time | Demonstration | Main point |
+| --- | --- | --- |
+| 0:00-0:45 | Open GiveHub and explain the volunteer and organiser entry points. | GiveHub combines opportunity discovery with organiser coordination. |
+| 0:45-1:45 | Create a volunteer account and complete or skip personalization. Choose causes, availability, frequency, time commitment, access, training, screening, and transportation preferences. | Onboarding is optional and personalizes recommendations without blocking sign-up. |
+| 1:45-2:45 | Show Home and Discover, then open Search and demonstrate location, date, cause, duration, accessibility, eligibility, training, screening, and application-mode filters. | Volunteers can find opportunities that fit their interests and constraints. |
+| 2:45-4:00 | Open an opportunity and point out schedule, tasks, transport, qualifications, accessibility, source, verification, and freshness. Save it and show native sharing. | Listings expose the practical and trust information needed before applying. |
+| 4:00-5:30 | Apply to an internal opportunity. Show the personal note, experience, availability dropdown, recipient notice, and waiver. Briefly contrast an external-application listing. | GiveHub supports both hosted and organisation-controlled applications without collecting external form responses. |
+| 5:30-6:30 | Open Activities to show status tracking, editing, and withdrawal. Briefly show Saved, Impact, and the social prototype. | Volunteers retain control after applying and can see their participation history. |
+| 6:30-7:15 | Sign out and sign in as an organiser. Show the dashboard, posting funnel, opportunities, and action queue. | Organisers get one operational view of listings and applicants. |
+| 7:15-8:15 | Create or edit an opportunity and identify required versus optional fields, address autocomplete, capacity, application mode, screening, training, and draft/publish controls. | Hosts can publish complete, structured opportunities without every field creating friction. |
+| 8:15-9:00 | Open the applicant pipeline, change an application status, show CSV export, attendance, and contributed hours. | The workflow continues from application through confirmation and recorded impact. |
+| 9:00-9:40 | Show reported-listing moderation, imported-source review, duplicate warnings, and source-health history. | External data is reviewed and monitored instead of being published blindly. |
+| 9:40-10:00 | Close on the hybrid architecture and current deployment boundary. | The MVP is tested and database-ready; public FastAPI hosting and a production pilot remain next steps. |
+
+### Demo preparation checklist
+
+1. Use `EXPO_PUBLIC_DEMO_MODE=false`, `EXPO_PUBLIC_LOCAL_AUTH=true`, and `EXPO_PUBLIC_API_URL=http://127.0.0.1:8000`.
+2. Start FastAPI and Expo before recording, then verify `/ready` and load the Home screen once.
+3. Keep one internal and one external opportunity in mind so the application-mode contrast is quick.
+4. Submit the volunteer application before switching roles so it appears in the organiser pipeline.
+5. Treat the social tab as a clearly labelled prototype; shared social networking is not yet implemented.
+6. Keep the public static demo open in a separate tab only as a fallback.
 
 ## MSE 401 MVP promise
 
@@ -25,41 +54,70 @@ The prototype presentation committed to a tested hybrid discovery MVP, not a rep
 5. **Give volunteers control** with application status tracking and withdrawal.
 6. **Improve trust** with source links, last-checked dates, verification state, and a review queue for scraped records.
 
-Fair ranking across large and small organisations, production pilot outreach, and a hosted end-to-end deployment remain open MVP work.
+Deterministic fairness-aware host rotation is implemented so comparable results are not dominated by one organisation. Pilot measurement and tuning, production outreach, and a hosted end-to-end deployment remain open MVP work.
 
 ## Implemented capabilities
 
+### Authentication and onboarding
+
+- Separate volunteer and organiser registration and sign-in flows with role-aware routing.
+- Supabase email/password authentication in connected mode, including email verification, password reset, and password update screens.
+- Profile creation after verification using authenticated account metadata when a profile does not yet exist.
+- Explicit demo, local-development, and connected-authentication modes; the app never silently falls back to fixtures.
+- A skippable volunteer personalization step immediately after sign-up, with answers editable later from Preferences.
+- Persisted theme, GTA search location, travel radius, causes, availability, recurrence, duration, accessibility, age fit, training, screening, and transportation preferences.
+
 ### Volunteers
 
-- Role-specific onboarding and account flows.
-- A skippable sign-up personalization step for causes, availability, frequency, time commitment, accessibility, age fit, training, screening, and transportation.
 - GTA address search through the free Photon service, with optional Google Places support, plus foreground device location.
 - Configurable 5-100 km travel radius.
 - Search and filtering by location, date, cause, time commitment, accessibility, age/eligibility, training, screening, and internal or external application mode.
+- Personalized Home and Discover ordering that treats preferences as ranking signals rather than hard filters, preserving useful nearby alternatives.
+- Fairness-aware rotation among similarly relevant opportunities from different organisations.
 - Opportunity details containing schedules, tasks, transportation, qualifications, safety information, source, freshness, and verification.
-- Saved opportunities and native sharing.
+- Saved opportunities, public share pages, deep links, Open Graph previews, and native device sharing where supported.
 - Internal applications with personal notes, relevant experience, availability, waiver acceptance, status tracking, editing, and withdrawal.
 - External applications that clearly identify and open the organisation-controlled destination without storing external form responses.
-- Private listing reports for outdated, cancelled, broken, duplicate, inappropriate, or safety-related opportunities.
+- Clear pre-application notices identifying whether GiveHub or the host organisation receives the submitted information.
+- Private listing reports for outdated, cancelled, broken, duplicate, inappropriate, or safety-related opportunities, with one active report per volunteer and listing.
 - Activities, attendance history, contributed hours, and impact summaries.
+- A demo social feed showing friends' upcoming events and recent activity; shared social data, comments, and messaging are not implemented.
 
 ### Organisers
 
-- Opportunity creation and editing with required/optional field labels and GTA address autocomplete.
-- Draft and published listing states, capacity, waitlists, accessibility, screening, training, and application-mode controls.
-- Applicant pipeline, status updates, applicant filtering, CSV export, and optional email notifications.
+- Opportunity creation and editing with required/optional labels, GTA address autocomplete, image-upload support, previewing, and optimistic version checks.
+- Draft, published, and unpublished listing states with capacity, waitlists, accessibility, eligibility, transport, safety, screening, training, waivers, causes, recurrence, and internal/external application controls.
+- Applicant pipeline with received, under-review, confirmed, waitlisted, declined, and withdrawn states.
+- Applicant search and availability filtering, individual application review, status updates, and spreadsheet-safe CSV export.
+- Configurable email notifications for new applications, plus volunteer notifications when application status changes.
 - Versioned waiver publishing and guardian-consent support for volunteers under 18.
 - Event attendance and contributed-hours recording.
-- Posting funnel analytics.
-- A private moderation queue with dismiss, resolve, and unpublish actions for reported listings.
+- Per-opportunity and organisation-level funnel analytics for views, application starts, submitted applications, shares, and conversion.
+- A private moderation queue with report details and dismiss, resolve, and unpublish actions.
+- Reviewer-only imported-opportunity and source-health tools in non-production or for configured reviewer email addresses.
 
-### Platform
+### Source ingestion and trust
 
-- Public share pages with Open Graph metadata and app deep links.
-- Source freshness checks, expiry handling, bounded public-source discovery, and a pending review queue.
-- Persisted refresh history with source-level health, stale-listing counts, failure summaries, and guarded manual runs.
-- A social-tab prototype populated with demo activity. Social networking, messaging, and comments do not yet have a shared backend.
-- WCAG-oriented labels, visible states, keyboard-operable web controls, and test coverage for core domain flows.
+- A daily GitHub Actions refresh discovers bounded GTA public-source result pages and checks previously imported listings.
+- Every external listing retains its source name, source URL, verification state, last-updated date, and last-checked date.
+- New discoveries enter a pending candidate queue and are never published automatically.
+- Reviewers can search, edit, reject, or promote candidates, see likely duplicates, and explicitly override duplicate warnings.
+- Promotion creates a safe external-application draft that must still be reviewed and published by an organiser.
+- Protected sources are skipped unless an authorised feed or integration is available.
+- Expired or unavailable one-off listings can be unpublished during freshness checks.
+- Persisted refresh history includes trigger, status, source-level health, stale counts, discovery totals, skipped records, failures, and error summaries.
+- Guarded manual refreshes prevent overlapping jobs, while scheduled runs remain available through GitHub Actions.
+
+### Platform, privacy, and quality
+
+- FastAPI authorization protects volunteer, organiser, owner, and reviewer operations; the database is never exposed directly to the client.
+- External-application responses are never collected or stored by GiveHub.
+- Formula-prefixed applicant values are escaped during CSV export to prevent spreadsheet formula execution.
+- Opportunity event tracking records views, application starts, submissions, and shares for aggregate funnel analytics.
+- Supabase Storage integration issues scoped upload tokens for organiser-owned opportunity images.
+- WCAG-oriented labels, visible focus and error states, keyboard-operable web controls, and minimum 44-pixel interactive targets.
+- Optimistic version fields protect opportunity, application, and moderation updates from silently overwriting newer data.
+- The current automated suite includes 57 API tests and 21 mobile tests, plus linting, strict Python typing, TypeScript checking, migration checks, generated-client verification, and container builds in CI.
 
 ## Repository structure
 
