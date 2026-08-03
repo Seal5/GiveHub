@@ -7,7 +7,7 @@ GiveHub is a Greater Toronto Area volunteer discovery and coordination MVP. It h
 As of 2 August 2026:
 
 - The application code is merged into the repository's default `initial-skeleton` branch and CI is passing.
-- A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0009_source_refresh_runs`; hosted environments must run the latest Alembic migrations during release.
+- A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0010_volunteer_personalization`; hosted environments must run the latest Alembic migrations during release.
 - The source-refresh pipeline is installed as a nightly GitHub Actions workflow. New scraped records enter a review queue instead of being published automatically; the first hosted refresh produced 33 pending candidates.
 - A public static demo is available at [alvaropran.github.io/givehub-demo](https://alvaropran.github.io/givehub-demo/). It runs in explicit demo mode, so its accounts and changes remain in that browser and do not use the hosted database.
 - The FastAPI service is not publicly hosted yet. Until it is deployed and the web build is pointed at its URL, the public demo is not a shared production application.
@@ -32,6 +32,7 @@ Fair ranking across large and small organisations, production pilot outreach, an
 ### Volunteers
 
 - Role-specific onboarding and account flows.
+- A skippable sign-up personalization step for causes, availability, frequency, time commitment, accessibility, age fit, training, screening, and transportation.
 - GTA address search through the free Photon service, with optional Google Places support, plus foreground device location.
 - Configurable 5-100 km travel radius.
 - Search and filtering by location, date, cause, time commitment, accessibility, age/eligibility, training, screening, and internal or external application mode.
@@ -194,7 +195,7 @@ uv run alembic upgrade head
 docker build -f apps/api/Dockerfile -t givehub-api .
 ```
 
-The current suite contains 21 mobile tests and 56 API tests. CI also confirms that the generated OpenAPI client matches the FastAPI schema.
+The current suite contains 21 mobile tests and 57 API tests. CI also confirms that the generated OpenAPI client matches the FastAPI schema.
 
 ## Deferred and remaining work
 

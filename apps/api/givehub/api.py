@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import PurePosixPath
 from typing import Any
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 import httpx
 from fastapi import (
@@ -214,6 +215,16 @@ def profile_out(profile: Profile) -> ProfileOut:
         search_longitude=profile.search_longitude,
         search_radius_km=profile.search_radius_km,
         theme=profile.theme,
+        onboarding_completed=profile.onboarding_completed,
+        preferred_cause_slugs=profile.preferred_cause_slugs or [],
+        preferred_availability=profile.preferred_availability or [],
+        preferred_recurrences=profile.preferred_recurrences or [],
+        max_time_commitment_minutes=profile.max_time_commitment_minutes,
+        accessible_only=profile.accessible_only,
+        age_group=profile.age_group,
+        training_preference=profile.training_preference,
+        screening_preference=profile.screening_preference,
+        transportation_preference=profile.transportation_preference,
         organisation_name=profile.organisation.name if profile.organisation else None,
     )
 
@@ -558,9 +569,63 @@ def update_preferences(
     profile.search_longitude = payload.search_longitude
     profile.search_radius_km = payload.search_radius_km
     profile.theme = payload.theme
+    profile.onboarding_completed = payload.onboarding_completed
+    profile.preferred_cause_slugs = payload.preferred_cause_slugs
+    profile.preferred_availability = payload.preferred_availability
+    profile.preferred_recurrences = payload.preferred_recurrences
+    profile.max_time_commitment_minutes = payload.max_time_commitment_minutes
+    profile.accessible_only = payload.accessible_only
+    profile.age_group = payload.age_group
+    profile.training_preference = payload.training_preference
+    profile.screening_preference = payload.screening_preference
+    profile.transportation_preference = payload.transportation_preference
     db.commit()
     db.refresh(profile)
     return profile_out(profile)
+
+
+def personalization_score(item: OpportunityOut, profile: Profile) -> int:
+    """Score optional volunteer preferences without hiding otherwise useful results."""
+    score = 0
+    cause_slugs = {cause.slug for cause in item.causes}
+    if profile.preferred_cause_slugs and cause_slugs.intersection(profile.preferred_cause_slugs):
+        score += 4
+    if profile.preferred_recurrences and item.recurrence.value in profile.preferred_recurrences:
+        score += 2
+    if (
+        profile.max_time_commitment_minutes is not None
+        and item.time_commitment_minutes <= profile.max_time_commitment_minutes
+    ):
+        score += 2
+    if profile.accessible_only:
+        score += 2 if item.is_accessible else -4
+    if profile.age_group in {"under_16", "16_17"}:
+        age_limit = 15 if profile.age_group == "under_16" else 17
+        score += 2 if item.minimum_age <= age_limit else -4
+    if profile.training_preference == "avoid":
+        score += 1 if not item.training_required else -2
+    elif profile.training_preference == "open" and item.training_required:
+        score += 1
+    if profile.screening_preference == "avoid":
+        score += 1 if not item.screening_required else -2
+    elif profile.screening_preference == "open" and item.screening_required:
+        score += 1
+    if profile.preferred_availability:
+        local_start = _as_utc(item.starts_at).astimezone(ZoneInfo("America/Toronto"))
+        day = "weekend" if local_start.weekday() >= 5 else "weekday"
+        period = "morning" if local_start.hour < 12 else "afternoon" if local_start.hour < 17 else "evening"
+        if f"{day}_{period}" in profile.preferred_availability:
+            score += 3
+    transport_terms = {
+        "transit": ("transit", "subway", "bus", "streetcar", "go station"),
+        "walk_bike": ("walk", "walking", "bike", "cycling", "bicycle"),
+        "drive": ("parking", "car", "drive"),
+    }
+    if profile.transportation_preference in transport_terms:
+        details = item.transportation_info.casefold()
+        if any(term in details for term in transport_terms[profile.transportation_preference]):
+            score += 1
+    return score
 
 
 @router.get("/opportunities", response_model=list[OpportunityOut])
@@ -580,6 +645,7 @@ def list_opportunities(
     screening_required: bool | None = None,
     application_mode: str | None = Query(default=None, pattern="^(internal|external)$"),
     saved: bool = False,
+    personalized: bool = False,
     identity: Identity = Depends(current_identity),
     db: Session = Depends(get_db),
 ) -> list[OpportunityOut]:
@@ -650,13 +716,23 @@ def list_opportunities(
     if origin:
         outputs = [item for item in outputs if (item.distance_km or 0) <= effective_radius]
         outputs.sort(key=lambda item: (item.distance_km or 0, item.starts_at))
+    scores = {item.id: personalization_score(item, viewer) for item in outputs} if personalized else {}
+    if personalized:
+        outputs.sort(
+            key=lambda item: (
+                -scores[item.id],
+                item.distance_km or 0,
+                _as_utc(item.starts_at),
+            )
+        )
     if outputs:
         earliest_start = min(_as_utc(item.starts_at) for item in outputs)
 
-        def fairness_cohort(item: OpportunityOut) -> tuple[int, int]:
+        def fairness_cohort(item: OpportunityOut) -> tuple[int, int, int]:
             distance_band = int((item.distance_km or 0) // 5) if origin else 0
             days_after_first = max(0, (_as_utc(item.starts_at) - earliest_start).days)
-            return distance_band, days_after_first // 7
+            preference_band = -scores[item.id] if personalized else 0
+            return preference_band, distance_band, days_after_first // 7
 
         outputs = fair_organisation_rotation(
             outputs,

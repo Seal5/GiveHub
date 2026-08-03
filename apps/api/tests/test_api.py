@@ -52,6 +52,37 @@ def test_volunteer_can_save_search_location(client: TestClient) -> None:
     assert response.json()["search_radius_km"] == 10
 
 
+def test_volunteer_personalization_is_saved_and_ranks_matches(client: TestClient) -> None:
+    response = client.put(
+        "/v1/profiles/me/preferences",
+        json={
+            "search_location_label": "Downtown Toronto",
+            "search_latitude": 43.6532,
+            "search_longitude": -79.3832,
+            "search_radius_km": 50,
+            "theme": "system",
+            "onboarding_completed": True,
+            "preferred_cause_slugs": ["community"],
+            "preferred_availability": ["weekend_morning"],
+            "preferred_recurrences": ["weekly"],
+            "max_time_commitment_minutes": 240,
+            "accessible_only": False,
+            "age_group": "18_plus",
+            "training_preference": "open",
+            "screening_preference": "any",
+            "transportation_preference": "transit",
+        },
+    )
+    assert response.status_code == 200
+    profile = response.json()
+    assert profile["onboarding_completed"] is True
+    assert profile["preferred_cause_slugs"] == ["community"]
+
+    matches = client.get("/v1/opportunities?personalized=true")
+    assert matches.status_code == 200
+    assert "community" in {cause["slug"] for cause in matches.json()[0]["causes"]}
+
+
 def test_free_location_search_returns_greater_toronto_addresses(
     client: TestClient,
     monkeypatch,

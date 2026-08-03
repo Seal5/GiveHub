@@ -81,7 +81,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       setToken(data.session.access_token);
-      const next = await api.profile(role, data.session.access_token);
+      let next: Profile;
+      try {
+        next = await api.profile(role, data.session.access_token);
+      } catch (profileError) {
+        if (!(profileError instanceof Error) || profileError.message !== "Complete your GiveHub profile first") throw profileError;
+        const metadata = data.user.user_metadata;
+        next = await api.createProfile({
+          role: metadata.role === "organiser" ? "organiser" : "volunteer",
+          display_name: String(metadata.display_name ?? data.user.email?.split("@")[0] ?? "GiveHub member"),
+          email: data.user.email ?? email,
+          organisation_name: metadata.organisation_name ? String(metadata.organisation_name) : undefined,
+        }, data.session.access_token);
+      }
       if (next.role !== role) throw new Error(`This account is registered as a ${next.role}.`);
       setProfile(next);
     },
@@ -89,25 +101,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (demoMode || localAuthMode) {
         const nextToken = `dev:${profileForId(input.role)}`;
         setToken(nextToken);
-        setProfile(
-          localAuthMode
-            ? await api.profile(input.role, nextToken)
-            : await api.createProfile(
-                {
-                  role: input.role,
-                  display_name: input.name,
-                  email: input.email,
-                  organisation_name: input.organisationName,
-                },
-                nextToken,
-              ),
-        );
+        const nextProfile = localAuthMode
+          ? await api.profile(input.role, nextToken)
+          : await api.createProfile(
+              {
+                role: input.role,
+                display_name: input.name,
+                email: input.email,
+                organisation_name: input.organisationName,
+              },
+              nextToken,
+            );
+        setProfile(input.role === "volunteer" ? { ...nextProfile, onboarding_completed: false } : nextProfile);
         if (localAuthMode) await writeLocalAuthRole(input.role);
         return;
       }
       if (apiConfigurationError) throw new Error(apiConfigurationError);
       if (!supabase) throw new Error(missingSupabaseMessage);
-      const { data, error } = await supabase.auth.signUp({ email: input.email, password: input.password });
+      const { data, error } = await supabase.auth.signUp({
+        email: input.email,
+        password: input.password,
+        options: { data: { role: input.role, display_name: input.name, organisation_name: input.organisationName } },
+      });
       if (error) throw error;
       if (!data.session) throw new Error("Check your email to verify your account, then sign in.");
       setToken(data.session.access_token);

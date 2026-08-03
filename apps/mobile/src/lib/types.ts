@@ -1,5 +1,17 @@
 export type Role = "volunteer" | "organiser";
 export type ThemePreference = "system" | "light" | "dark";
+export type PersonalizationPreferences = {
+  onboarding_completed: boolean;
+  preferred_cause_slugs: string[];
+  preferred_availability: string[];
+  preferred_recurrences: Array<"one_off" | "weekly" | "monthly">;
+  max_time_commitment_minutes: number | null;
+  accessible_only: boolean;
+  age_group: "under_16" | "16_17" | "18_plus" | null;
+  training_preference: "any" | "avoid" | "open";
+  screening_preference: "any" | "avoid" | "open";
+  transportation_preference: "any" | "transit" | "walk_bike" | "drive";
+};
 export type ApplicationStatus =
   | "received"
   | "under_review"
@@ -77,7 +89,7 @@ export type LocationPoint = {
   latitude: number;
   longitude: number;
 };
-export type Profile = {
+export type Profile = PersonalizationPreferences & {
   id: string;
   role: Role;
   display_name: string;

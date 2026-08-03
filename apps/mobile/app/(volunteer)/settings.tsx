@@ -24,7 +24,23 @@ export default function SettingsScreen() {
   const save = useMutation({
     mutationFn: () => {
       if (!location) throw new Error("Choose a location or use your current location.");
-      return api.updatePreferences({ search_location_label: location.label, search_latitude: location.latitude, search_longitude: location.longitude, search_radius_km: radius, theme }, token);
+      return api.updatePreferences({
+        search_location_label: location.label,
+        search_latitude: location.latitude,
+        search_longitude: location.longitude,
+        search_radius_km: radius,
+        theme,
+        onboarding_completed: profile?.onboarding_completed ?? true,
+        preferred_cause_slugs: profile?.preferred_cause_slugs ?? [],
+        preferred_availability: profile?.preferred_availability ?? [],
+        preferred_recurrences: profile?.preferred_recurrences ?? [],
+        max_time_commitment_minutes: profile?.max_time_commitment_minutes ?? null,
+        accessible_only: profile?.accessible_only ?? false,
+        age_group: profile?.age_group ?? null,
+        training_preference: profile?.training_preference ?? "any",
+        screening_preference: profile?.screening_preference ?? "any",
+        transportation_preference: profile?.transportation_preference ?? "any",
+      }, token);
     },
     onSuccess: async () => {
       await refreshProfile();
@@ -47,6 +63,12 @@ export default function SettingsScreen() {
         <View className="flex-row flex-wrap gap-y-2">
           {RADIUS_OPTIONS.map((value) => <Chip key={value} label={`${value} km`} selected={radius === value} onPress={() => setRadius(value)} />)}
         </View>
+      </Card>
+
+      <Card className="mb-5">
+        <Text className="mb-1 font-strong text-sm text-foreground dark:text-dark-foreground">Your matches</Text>
+        <Body className="mb-4">Update causes, availability, commitment, and access preferences.</Body>
+        <Button label="Edit matching preferences" variant="secondary" onPress={() => router.push("/personalize?edit=true" as Parameters<typeof router.push>[0])} />
       </Card>
 
       <Card className="mb-5">

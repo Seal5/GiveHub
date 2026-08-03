@@ -57,7 +57,8 @@ export default function AuthScreen() {
           password: data.password,
           organisationName: data.organisationName,
         });
-      router.replace(organiser ? "/(organiser)" : "/(volunteer)");
+      const destination = organiser ? "/(organiser)" : !signIn ? "/personalize" : "/(volunteer)";
+      router.replace(destination as Parameters<typeof router.replace>[0]);
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : "Please try again",

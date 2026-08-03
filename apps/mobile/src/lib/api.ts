@@ -12,6 +12,7 @@ import type {
   NotificationPreferences,
   Opportunity,
   OpportunityEventType,
+  PersonalizationPreferences,
   Profile,
   Role,
   SourceCandidate,
@@ -170,7 +171,7 @@ export const api = {
     token?: string | null,
   ): Promise<Profile> =>
     demoMode
-      ? (demoProfiles[input.role] = { ...profileFor(input.role), display_name: input.display_name, email: input.email, organisation_name: input.organisation_name ?? null })
+      ? (demoProfiles[input.role] = { ...profileFor(input.role), display_name: input.display_name, email: input.email, organisation_name: input.organisation_name ?? null, onboarding_completed: input.role === "organiser" })
       : request("/v1/profiles", { method: "POST", body: JSON.stringify(input), token }),
   causes: async () => (demoMode ? causes : request<typeof causes>("/v1/reference/causes")),
   locationSuggestions: async (q: string, token?: string | null): Promise<{ place_id: string; label: string }[]> =>
@@ -191,6 +192,7 @@ export const api = {
       radius_km?: number; starts_after?: string; starts_before?: string;
       max_time_commitment_minutes?: number; accessible_only?: boolean; max_minimum_age?: number;
       training_required?: boolean; screening_required?: boolean; application_mode?: "internal" | "external";
+      personalized?: boolean;
     } = {},
     token?: string | null,
   ): Promise<Opportunity[]> => {
@@ -199,7 +201,7 @@ export const api = {
       const profile = demoProfiles.volunteer;
       const lat = filters.lat ?? profile.search_latitude; const lng = filters.lng ?? profile.search_longitude;
       const radius = filters.radius_km ?? profile.search_radius_km;
-      return demoOpportunities.map((item) => ({ ...item, distance_km: lat !== null && lng !== null ? distanceKm(lat, lng, item.latitude, item.longitude) : null })).filter((item) =>
+      const results = demoOpportunities.map((item) => ({ ...item, distance_km: lat !== null && lng !== null ? distanceKm(lat, lng, item.latitude, item.longitude) : null })).filter((item) =>
         (!query || [item.title, item.organisation_name, item.description, item.tasks, item.location_label].join(" ").toLowerCase().includes(query)) &&
         (!filters.cause || item.causes.some((cause) => cause.slug === filters.cause)) &&
         (!filters.recurrence || item.recurrence === filters.recurrence) &&
@@ -213,7 +215,10 @@ export const api = {
         (!filters.application_mode || item.application_mode === filters.application_mode) &&
         (!filters.saved || item.is_saved) &&
         (item.distance_km === null || item.distance_km <= radius)
-      ).sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0));
+      );
+      return results.sort((a, b) => filters.personalized
+        ? demoPersonalizationScore(b, profile) - demoPersonalizationScore(a, profile) || (a.distance_km ?? 0) - (b.distance_km ?? 0)
+        : (a.distance_km ?? 0) - (b.distance_km ?? 0));
     }
     const query = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => value !== undefined && value !== "" && query.set(key, String(value)));
@@ -589,6 +594,28 @@ export const api = {
     }
     return request(`/v1/organiser/applications/${id}`, { method: "PATCH", body: JSON.stringify({ status, version }), token });
   },
-  updatePreferences: async (input: { search_location_label: string | null; search_latitude: number | null; search_longitude: number | null; search_radius_km: number; theme: ThemePreference }, token?: string | null): Promise<Profile> =>
+  updatePreferences: async (input: PersonalizationPreferences & { search_location_label: string | null; search_latitude: number | null; search_longitude: number | null; search_radius_km: number; theme: ThemePreference }, token?: string | null): Promise<Profile> =>
     demoMode ? (demoProfiles.volunteer = { ...demoProfiles.volunteer, ...input }) : request("/v1/profiles/me/preferences", { method: "PUT", body: JSON.stringify(input), token }),
+};
+
+const demoPersonalizationScore = (item: Opportunity, profile: Profile) => {
+  let score = 0;
+  if (profile.preferred_cause_slugs.some((slug) => item.causes.some((cause) => cause.slug === slug))) score += 4;
+  if (profile.preferred_recurrences.includes(item.recurrence)) score += 2;
+  if (profile.max_time_commitment_minutes !== null && item.time_commitment_minutes <= profile.max_time_commitment_minutes) score += 2;
+  if (profile.accessible_only) score += item.is_accessible ? 2 : -4;
+  const ageLimit = profile.age_group === "under_16" ? 15 : profile.age_group === "16_17" ? 17 : null;
+  if (ageLimit !== null) score += item.minimum_age <= ageLimit ? 2 : -4;
+  if (profile.training_preference === "avoid") score += item.training_required ? -2 : 1;
+  if (profile.training_preference === "open" && item.training_required) score += 1;
+  if (profile.screening_preference === "avoid") score += item.screening_required ? -2 : 1;
+  if (profile.screening_preference === "open" && item.screening_required) score += 1;
+  if (profile.preferred_availability.length) {
+    const starts = new Date(item.starts_at);
+    const day = starts.getDay() === 0 || starts.getDay() === 6 ? "weekend" : "weekday";
+    const hour = starts.getHours();
+    const period = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
+    if (profile.preferred_availability.includes(`${day}_${period}`)) score += 3;
+  }
+  return score;
 };

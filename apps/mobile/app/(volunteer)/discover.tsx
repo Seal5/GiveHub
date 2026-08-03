@@ -19,7 +19,7 @@ export default function DiscoverScreen() {
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const cardHeight = windowHeight - TAB_BAR_HEIGHT - insets.top;
-  const query = useQuery({ queryKey: ["opportunities", "discover"], queryFn: () => api.opportunities({}, token) });
+  const query = useQuery({ queryKey: ["opportunities", "discover"], queryFn: () => api.opportunities({ personalized: true }, token) });
   const save = useMutation({
     mutationFn: ({ id, value }: { id: string; value: boolean }) => api.setSaved(id, value, token),
     onSuccess: () => client.invalidateQueries({ queryKey: ["opportunities"] }),

@@ -1083,6 +1083,14 @@ export type ProfileCreate = {
  */
 export type ProfileOut = {
     /**
+     * Accessible Only
+     */
+    accessible_only: boolean;
+    /**
+     * Age Group
+     */
+    age_group: string | null;
+    /**
      * Display Name
      */
     display_name: string;
@@ -1095,10 +1103,34 @@ export type ProfileOut = {
      */
     id: string;
     /**
+     * Max Time Commitment Minutes
+     */
+    max_time_commitment_minutes: number | null;
+    /**
+     * Onboarding Completed
+     */
+    onboarding_completed: boolean;
+    /**
      * Organisation Name
      */
     organisation_name?: string | null;
+    /**
+     * Preferred Availability
+     */
+    preferred_availability: Array<string>;
+    /**
+     * Preferred Cause Slugs
+     */
+    preferred_cause_slugs: Array<string>;
+    /**
+     * Preferred Recurrences
+     */
+    preferred_recurrences: Array<string>;
     role: Role;
+    /**
+     * Screening Preference
+     */
+    screening_preference: string;
     /**
      * Search Latitude
      */
@@ -1119,12 +1151,52 @@ export type ProfileOut = {
      * Theme
      */
     theme: string;
+    /**
+     * Training Preference
+     */
+    training_preference: string;
+    /**
+     * Transportation Preference
+     */
+    transportation_preference: string;
 };
 
 /**
  * ProfileUpdate
  */
 export type ProfileUpdate = {
+    /**
+     * Accessible Only
+     */
+    accessible_only?: boolean;
+    /**
+     * Age Group
+     */
+    age_group?: string | null;
+    /**
+     * Max Time Commitment Minutes
+     */
+    max_time_commitment_minutes?: number | null;
+    /**
+     * Onboarding Completed
+     */
+    onboarding_completed?: boolean;
+    /**
+     * Preferred Availability
+     */
+    preferred_availability?: Array<string>;
+    /**
+     * Preferred Cause Slugs
+     */
+    preferred_cause_slugs?: Array<string>;
+    /**
+     * Preferred Recurrences
+     */
+    preferred_recurrences?: Array<string>;
+    /**
+     * Screening Preference
+     */
+    screening_preference?: string;
     /**
      * Search Latitude
      */
@@ -1145,6 +1217,14 @@ export type ProfileUpdate = {
      * Theme
      */
     theme?: string;
+    /**
+     * Training Preference
+     */
+    training_preference?: string;
+    /**
+     * Transportation Preference
+     */
+    transportation_preference?: string;
 };
 
 /**
@@ -1870,6 +1950,10 @@ export type ListOpportunitiesV1OpportunitiesGetData = {
          * Saved
          */
         saved?: boolean;
+        /**
+         * Personalized
+         */
+        personalized?: boolean;
     };
     url: '/v1/opportunities';
 };
