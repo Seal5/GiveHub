@@ -157,7 +157,7 @@ def to_opportunity_out(
         image_url=item.image_url,
         status=item.status,
         version=item.version,
-        organisation_name=item.organisation.name,
+        organisation_name=item.host_organisation_name or item.organisation.name,
         location_label=item.location_label,
         address_line=item.address_line,
         locality=item.locality,

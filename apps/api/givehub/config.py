@@ -25,12 +25,20 @@ class Settings(BaseSettings):
     source_refresh_postal_code: str = "M5V 2T6"
     source_refresh_radius_km: int = 50
     source_refresh_pages: int = 3
+    source_reviewer_emails: list[str] = []
 
     @field_validator("cors_origins", mode="before")
     @classmethod
     def split_origins(cls, value: object) -> object:
         if isinstance(value, str):
             return [part.strip() for part in value.split(",") if part.strip()]
+        return value
+
+    @field_validator("source_reviewer_emails", mode="before")
+    @classmethod
+    def split_reviewer_emails(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [part.strip().casefold() for part in value.split(",") if part.strip()]
         return value
 
     @property

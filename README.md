@@ -7,7 +7,7 @@ GiveHub is a Greater Toronto Area volunteer discovery and coordination MVP. It h
 As of 2 August 2026:
 
 - The application code is merged into the repository's default `initial-skeleton` branch and CI is passing.
-- A free Supabase PostgreSQL database is running in Canada Central with the latest Alembic migration (`0006_source_refresh`). Its initial dataset contains 30 published opportunities, 17 organisations, and 18 profiles.
+- A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0009_source_refresh_runs`; hosted environments must run the latest Alembic migrations during release.
 - The source-refresh pipeline is installed as a nightly GitHub Actions workflow. New scraped records enter a review queue instead of being published automatically; the first hosted refresh produced 33 pending candidates.
 - A public static demo is available at [alvaropran.github.io/givehub-demo](https://alvaropran.github.io/givehub-demo/). It runs in explicit demo mode, so its accounts and changes remain in that browser and do not use the hosted database.
 - The FastAPI service is not publicly hosted yet. Until it is deployed and the web build is pointed at its URL, the public demo is not a shared production application.
@@ -39,6 +39,7 @@ Fair ranking across large and small organisations, production pilot outreach, an
 - Saved opportunities and native sharing.
 - Internal applications with personal notes, relevant experience, availability, waiver acceptance, status tracking, editing, and withdrawal.
 - External applications that clearly identify and open the organisation-controlled destination without storing external form responses.
+- Private listing reports for outdated, cancelled, broken, duplicate, inappropriate, or safety-related opportunities.
 - Activities, attendance history, contributed hours, and impact summaries.
 
 ### Organisers
@@ -49,11 +50,13 @@ Fair ranking across large and small organisations, production pilot outreach, an
 - Versioned waiver publishing and guardian-consent support for volunteers under 18.
 - Event attendance and contributed-hours recording.
 - Posting funnel analytics.
+- A private moderation queue with dismiss, resolve, and unpublish actions for reported listings.
 
 ### Platform
 
 - Public share pages with Open Graph metadata and app deep links.
 - Source freshness checks, expiry handling, bounded public-source discovery, and a pending review queue.
+- Persisted refresh history with source-level health, stale-listing counts, failure summaries, and guarded manual runs.
 - A social-tab prototype populated with demo activity. Social networking, messaging, and comments do not yet have a shared backend.
 - WCAG-oriented labels, visible states, keyboard-operable web controls, and test coverage for core domain flows.
 
@@ -146,7 +149,8 @@ External opportunities retain their original source and application link. The re
 - discovers GTA opportunities from a bounded number of public result pages;
 - stores incomplete discoveries in `source_candidates` with `pending` review status;
 - skips protected sources such as Volunteer Toronto until an authorised feed is available;
-- reports pending candidates in the GitHub Actions job summary.
+- reports pending candidates in the GitHub Actions job summary;
+- records scheduled and manual run outcomes for the organiser source-health dashboard.
 
 Run it manually from `apps/api`:
 
@@ -190,14 +194,14 @@ uv run alembic upgrade head
 docker build -f apps/api/Dockerfile -t givehub-api .
 ```
 
-The current suite contains 21 mobile tests and 41 API tests. CI also confirms that the generated OpenAPI client matches the FastAPI schema.
+The current suite contains 21 mobile tests and 56 API tests. CI also confirms that the generated OpenAPI client matches the FastAPI schema.
 
 ## Deferred and remaining work
 
 - Publicly deploy FastAPI and rebuild the GitHub Pages app against it.
 - Configure production Supabase Auth, Storage, email, and web CORS values.
-- Add an organiser/admin interface for reviewing and promoting scraped candidates.
-- Implement explicit fairness rotation so smaller organisations are not consistently outranked.
+- Continue tuning the organiser source-review workflow with pilot feedback.
+- Continue measuring fairness-aware discovery rotation with GTA organisations.
 - Conduct and document pilot outreach with GTA organisations.
 - Replace the demo-only social feed with a privacy-reviewed shared activity model, if it remains in scope.
 - Configure production universal links, push notifications, app-store submission, monitoring, and backups.

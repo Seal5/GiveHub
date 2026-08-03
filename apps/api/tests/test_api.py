@@ -11,13 +11,13 @@ def test_health_and_ready(client: TestClient) -> None:
     assert client.get("/ready").status_code == 200
 
 
-def test_opportunities_are_distance_ordered(client: TestClient) -> None:
+def test_opportunities_keep_distance_relevance_bands(client: TestClient) -> None:
     response = client.get("/v1/opportunities")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 30
-    distances = [item["distance_km"] for item in data]
-    assert distances == sorted(distances)
+    distance_bands = [int(item["distance_km"] // 5) for item in data]
+    assert distance_bands == sorted(distance_bands)
     assert any(item["organisation_name"] == "Toronto Community Action Network" for item in data)
 
 
@@ -27,7 +27,8 @@ def test_opportunities_support_coordinate_radius_filtering(client: TestClient) -
     data = response.json()
     assert len(data) >= 3
     assert all(item["distance_km"] <= 10 for item in data)
-    assert data == sorted(data, key=lambda item: item["distance_km"])
+    distance_bands = [int(item["distance_km"] // 5) for item in data]
+    assert distance_bands == sorted(distance_bands)
 
     wider = client.get("/v1/opportunities?lat=43.6532&lng=-79.3832&radius_km=50")
     assert wider.status_code == 200

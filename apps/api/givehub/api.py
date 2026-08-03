@@ -4,7 +4,7 @@ import io
 import json
 import re
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import PurePosixPath
 from typing import Any
 from urllib.parse import quote
@@ -36,6 +36,8 @@ from givehub.models import (
     Attendance,
     AttendanceStatus,
     Cause,
+    ListingReport,
+    ListingReportStatus,
     Opportunity,
     OpportunityEvent,
     OpportunityEventType,
@@ -45,6 +47,8 @@ from givehub.models import (
     Recurrence,
     Role,
     SavedOpportunity,
+    SourceCandidate,
+    SourceRefreshRun,
     Suburb,
     VerificationStatus,
     WaiverAcceptance,
@@ -57,6 +61,7 @@ from givehub.notifications import (
     application_status_changed,
     guardian_consent_copy,
 )
+from givehub.ranking import fair_organisation_rotation
 from givehub.schemas import (
     AnalyticsOut,
     ApplicationCreate,
@@ -70,6 +75,9 @@ from givehub.schemas import (
     ImpactCauseOut,
     ImpactEventOut,
     ImpactOut,
+    ListingReportCreate,
+    ListingReportModerate,
+    ListingReportOut,
     LocationResult,
     LocationSuggestion,
     NotificationPreferencesOut,
@@ -82,6 +90,13 @@ from givehub.schemas import (
     ProfileCreate,
     ProfileOut,
     ProfileUpdate,
+    SourceCandidateDuplicateOut,
+    SourceCandidateOut,
+    SourceCandidatePromote,
+    SourceCandidateUpdate,
+    SourceHealthOut,
+    SourceHealthSourceOut,
+    SourceRefreshRunOut,
     SuburbOut,
     UploadOut,
     UploadRequest,
@@ -100,6 +115,7 @@ from givehub.services import (
     to_application_out,
     to_opportunity_out,
 )
+from givehub.source_refresh import execute_refresh_run, queue_refresh_run
 
 router = APIRouter(prefix="/v1")
 
@@ -200,6 +216,89 @@ def profile_out(profile: Profile) -> ProfileOut:
         theme=profile.theme,
         organisation_name=profile.organisation.name if profile.organisation else None,
     )
+
+
+def require_source_reviewer(
+    db: Session, identity: Identity, settings: Settings
+) -> Profile:
+    profile = require_profile(db, identity.user_id, Role.organiser)
+    if not settings.is_production:
+        return profile
+    email = (identity.email or profile.email).casefold()
+    if email not in settings.source_reviewer_emails:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Source review access is required")
+    return profile
+
+
+def candidate_duplicates(db: Session, candidate: SourceCandidate) -> list[Opportunity]:
+    title = candidate.title.strip().casefold()
+    organisation = candidate.organisation_name.strip().casefold()
+    return list(
+        db.scalars(
+            select(Opportunity)
+            .join(Opportunity.organisation)
+            .where(
+                func.lower(Opportunity.title) == title,
+                or_(
+                    func.lower(Opportunity.host_organisation_name) == organisation,
+                    func.lower(Organisation.name) == organisation,
+                ),
+            )
+            .order_by(Opportunity.updated_at.desc())
+        ).all()
+    )
+
+
+def source_candidate_out(db: Session, candidate: SourceCandidate) -> SourceCandidateOut:
+    return SourceCandidateOut(
+        id=candidate.id,
+        source_name=candidate.source_name,
+        source_url=candidate.source_url,
+        title=candidate.title,
+        organisation_name=candidate.organisation_name,
+        location_label=candidate.location_label,
+        summary=candidate.summary,
+        review_status=candidate.review_status,
+        first_seen_at=candidate.first_seen_at,
+        last_seen_at=candidate.last_seen_at,
+        reviewed_at=candidate.reviewed_at,
+        promoted_opportunity_id=candidate.promoted_opportunity_id,
+        duplicates=[
+            SourceCandidateDuplicateOut(
+                id=item.id,
+                title=item.title,
+                organisation_name=item.host_organisation_name or item.organisation.name,
+                status=item.status,
+            )
+            for item in candidate_duplicates(db, candidate)
+        ],
+    )
+
+
+def listing_report_out(item: ListingReport) -> ListingReportOut:
+    return ListingReportOut(
+        id=item.id,
+        opportunity_id=item.opportunity_id,
+        opportunity_title=item.opportunity.title,
+        organisation_name=(
+            item.opportunity.host_organisation_name or item.opportunity.organisation.name
+        ),
+        reporter_name=item.reporter.display_name,
+        reason=item.reason,
+        details=item.details,
+        status=item.status,
+        created_at=item.created_at,
+        reviewed_at=item.reviewed_at,
+        resolution_note=item.resolution_note,
+    )
+
+
+def report_reviewer_scope(
+    db: Session, identity: Identity, settings: Settings
+) -> tuple[Profile, bool]:
+    reviewer = require_profile(db, identity.user_id, Role.organiser)
+    email = (identity.email or reviewer.email).casefold()
+    return reviewer, not settings.is_production or email in settings.source_reviewer_emails
 
 
 @router.get("/reference/suburbs", response_model=list[SuburbOut])
@@ -551,6 +650,19 @@ def list_opportunities(
     if origin:
         outputs = [item for item in outputs if (item.distance_km or 0) <= effective_radius]
         outputs.sort(key=lambda item: (item.distance_km or 0, item.starts_at))
+    if outputs:
+        earliest_start = min(_as_utc(item.starts_at) for item in outputs)
+
+        def fairness_cohort(item: OpportunityOut) -> tuple[int, int]:
+            distance_band = int((item.distance_km or 0) // 5) if origin else 0
+            days_after_first = max(0, (_as_utc(item.starts_at) - earliest_start).days)
+            return distance_band, days_after_first // 7
+
+        outputs = fair_organisation_rotation(
+            outputs,
+            cohort_key=fairness_cohort,
+            organisation_key=lambda item: item.organisation_name.casefold(),
+        )
     return outputs
 
 
@@ -573,6 +685,60 @@ def get_opportunity(
         else None
     )
     return to_opportunity_out(db, item, origin, saved_opportunity_ids(db, viewer.id))
+
+
+@router.post(
+    "/opportunities/{opportunity_id}/reports",
+    response_model=ListingReportOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def report_opportunity(
+    opportunity_id: uuid.UUID,
+    payload: ListingReportCreate,
+    identity: Identity = Depends(current_identity),
+    db: Session = Depends(get_db),
+) -> ListingReportOut:
+    reporter = require_profile(db, identity.user_id, Role.volunteer)
+    opportunity = db.scalar(
+        opportunity_query().where(
+            Opportunity.id == opportunity_id,
+            Opportunity.status == OpportunityStatus.published,
+        )
+    )
+    if not opportunity:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
+    existing = db.scalar(
+        select(ListingReport).where(
+            ListingReport.opportunity_id == opportunity_id,
+            ListingReport.reporter_id == reporter.id,
+        )
+    )
+    if existing and existing.status == ListingReportStatus.pending:
+        raise HTTPException(status.HTTP_409_CONFLICT, "You already reported this listing")
+    item = existing or ListingReport(
+        opportunity_id=opportunity_id,
+        reporter_id=reporter.id,
+    )
+    item.reason = payload.reason
+    item.details = payload.details.strip()
+    item.status = ListingReportStatus.pending
+    item.reviewed_by = None
+    item.reviewed_at = None
+    item.resolution_note = ""
+    item.created_at = datetime.now(UTC)
+    if not existing:
+        db.add(item)
+    db.commit()
+    loaded = db.scalar(
+        select(ListingReport)
+        .options(
+            selectinload(ListingReport.opportunity).selectinload(Opportunity.organisation),
+            selectinload(ListingReport.reporter),
+        )
+        .where(ListingReport.id == item.id)
+    )
+    assert loaded
+    return listing_report_out(loaded)
 
 
 @router.post(
@@ -959,6 +1125,342 @@ def update_organiser_waiver(
     db.commit()
     db.refresh(published)
     return published
+
+
+@router.get("/organiser/source-health", response_model=SourceHealthOut)
+def source_health(
+    identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> SourceHealthOut:
+    require_source_reviewer(db, identity, settings)
+    now = datetime.now(UTC)
+    next_scheduled = now.replace(hour=10, minute=15, second=0, microsecond=0)
+    if next_scheduled <= now:
+        next_scheduled += timedelta(days=1)
+
+    source_data: dict[str, dict[str, Any]] = {}
+    external = db.scalars(
+        select(Opportunity).where(Opportunity.application_mode == "external")
+    ).all()
+    for item in external:
+        source_name = item.listing_source.split(" · ", 1)[0]
+        row = source_data.setdefault(
+            source_name,
+            {"active_listings": 0, "pending_candidates": 0, "last_checked_at": None, "last_seen_at": None},
+        )
+        if item.status == OpportunityStatus.published:
+            row["active_listings"] += 1
+        if item.source_checked_at and (
+            row["last_checked_at"] is None
+            or _as_utc(item.source_checked_at) > _as_utc(row["last_checked_at"])
+        ):
+            row["last_checked_at"] = item.source_checked_at
+    candidates = db.scalars(select(SourceCandidate)).all()
+    for candidate in candidates:
+        row = source_data.setdefault(
+            candidate.source_name,
+            {"active_listings": 0, "pending_candidates": 0, "last_checked_at": None, "last_seen_at": None},
+        )
+        if candidate.review_status == "pending":
+            row["pending_candidates"] += 1
+        if row["last_seen_at"] is None or _as_utc(candidate.last_seen_at) > _as_utc(row["last_seen_at"]):
+            row["last_seen_at"] = candidate.last_seen_at
+
+    stale_cutoff = now - timedelta(days=2)
+    stale_listings = sum(
+        1
+        for item in external
+        if item.status == OpportunityStatus.published
+        and (not item.source_checked_at or _as_utc(item.source_checked_at) < stale_cutoff)
+    )
+    runs = list(
+        db.scalars(
+            select(SourceRefreshRun).order_by(SourceRefreshRun.created_at.desc()).limit(20)
+        ).all()
+    )
+    return SourceHealthOut(
+        schedule="Nightly at 10:15 UTC",
+        next_scheduled_at=next_scheduled,
+        pending_candidates=sum(1 for item in candidates if item.review_status == "pending"),
+        stale_listings=stale_listings,
+        refresh_in_progress=any(item.status in {"queued", "running"} for item in runs),
+        sources=[
+            SourceHealthSourceOut(name=name, **values)
+            for name, values in sorted(source_data.items())
+        ],
+        recent_runs=[SourceRefreshRunOut.model_validate(item) for item in runs],
+    )
+
+
+@router.post(
+    "/organiser/source-health/refresh",
+    response_model=SourceRefreshRunOut,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def start_source_refresh(
+    background_tasks: BackgroundTasks,
+    identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> SourceRefreshRun:
+    require_source_reviewer(db, identity, settings)
+    try:
+        run = queue_refresh_run(db, trigger="manual")
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    background_tasks.add_task(
+        execute_refresh_run,
+        run.id,
+        postal_code=settings.source_refresh_postal_code,
+        radius_km=settings.source_refresh_radius_km,
+        pages=settings.source_refresh_pages,
+    )
+    return run
+
+
+@router.get("/organiser/listing-reports", response_model=list[ListingReportOut])
+def list_listing_reports(
+    report_status: str = Query(default="pending", pattern="^(pending|dismissed|resolved|all)$"),
+    identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> list[ListingReportOut]:
+    reviewer, can_review_all = report_reviewer_scope(db, identity, settings)
+    statement = (
+        select(ListingReport)
+        .join(ListingReport.opportunity)
+        .options(
+            selectinload(ListingReport.opportunity).selectinload(Opportunity.organisation),
+            selectinload(ListingReport.reporter),
+        )
+        .order_by(ListingReport.created_at.desc())
+    )
+    if report_status != "all":
+        statement = statement.where(ListingReport.status == report_status)
+    if not can_review_all:
+        if not reviewer.organisation:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Organiser access is required")
+        statement = statement.where(Opportunity.organisation_id == reviewer.organisation.id)
+    return [listing_report_out(item) for item in db.scalars(statement).all()]
+
+
+@router.post(
+    "/organiser/listing-reports/{report_id}/moderate",
+    response_model=ListingReportOut,
+)
+def moderate_listing_report(
+    report_id: uuid.UUID,
+    payload: ListingReportModerate,
+    identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> ListingReportOut:
+    reviewer, can_review_all = report_reviewer_scope(db, identity, settings)
+    item = db.scalar(
+        select(ListingReport)
+        .options(
+            selectinload(ListingReport.opportunity).selectinload(Opportunity.organisation),
+            selectinload(ListingReport.reporter),
+        )
+        .where(ListingReport.id == report_id)
+    )
+    if not item:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Listing report not found")
+    owns_listing = bool(
+        reviewer.organisation
+        and item.opportunity.organisation_id == reviewer.organisation.id
+    )
+    if not can_review_all and not owns_listing:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Report review access is required")
+    if item.status != ListingReportStatus.pending:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This report was already reviewed")
+    if payload.action == "unpublish":
+        item.opportunity.status = OpportunityStatus.unpublished
+        item.opportunity.version += 1
+        item.status = ListingReportStatus.resolved
+    elif payload.action == "resolve":
+        item.status = ListingReportStatus.resolved
+    else:
+        item.status = ListingReportStatus.dismissed
+    item.reviewed_by = reviewer.id
+    item.reviewed_at = datetime.now(UTC)
+    item.resolution_note = payload.resolution_note.strip()
+    db.commit()
+    db.refresh(item)
+    return listing_report_out(item)
+
+
+@router.get("/organiser/source-candidates", response_model=list[SourceCandidateOut])
+def list_source_candidates(
+    review_status: str = Query(
+        default="pending", pattern="^(pending|approved|rejected|out_of_area|all)$"
+    ),
+    q: str | None = Query(default=None, max_length=120),
+    identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> list[SourceCandidateOut]:
+    require_source_reviewer(db, identity, settings)
+    statement = select(SourceCandidate).order_by(SourceCandidate.first_seen_at.desc())
+    if review_status != "all":
+        statement = statement.where(SourceCandidate.review_status == review_status)
+    if q:
+        term = f"%{q.strip()}%"
+        statement = statement.where(
+            or_(
+                SourceCandidate.title.ilike(term),
+                SourceCandidate.organisation_name.ilike(term),
+                SourceCandidate.location_label.ilike(term),
+                SourceCandidate.summary.ilike(term),
+                SourceCandidate.source_name.ilike(term),
+            )
+        )
+    return [source_candidate_out(db, item) for item in db.scalars(statement).all()]
+
+
+@router.patch(
+    "/organiser/source-candidates/{candidate_id}", response_model=SourceCandidateOut
+)
+def update_source_candidate(
+    candidate_id: uuid.UUID,
+    payload: SourceCandidateUpdate,
+    identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> SourceCandidateOut:
+    require_source_reviewer(db, identity, settings)
+    candidate = db.get(SourceCandidate, candidate_id)
+    if not candidate:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Source candidate not found")
+    if candidate.review_status == "approved":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Approved candidates cannot be edited")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(candidate, key, value)
+    candidate.review_status = "pending"
+    candidate.reviewed_at = None
+    candidate.reviewed_by = None
+    db.commit()
+    db.refresh(candidate)
+    return source_candidate_out(db, candidate)
+
+
+@router.post(
+    "/organiser/source-candidates/{candidate_id}/reject",
+    response_model=SourceCandidateOut,
+)
+def reject_source_candidate(
+    candidate_id: uuid.UUID,
+    identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> SourceCandidateOut:
+    reviewer = require_source_reviewer(db, identity, settings)
+    candidate = db.get(SourceCandidate, candidate_id)
+    if not candidate:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Source candidate not found")
+    if candidate.review_status == "approved":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Approved candidates cannot be rejected")
+    candidate.review_status = "rejected"
+    candidate.reviewed_at = datetime.now(UTC)
+    candidate.reviewed_by = reviewer.id
+    db.commit()
+    db.refresh(candidate)
+    return source_candidate_out(db, candidate)
+
+
+@router.post(
+    "/organiser/source-candidates/{candidate_id}/promote",
+    response_model=OpportunityOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def promote_source_candidate(
+    candidate_id: uuid.UUID,
+    payload: SourceCandidatePromote,
+    identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> OpportunityOut:
+    reviewer = require_source_reviewer(db, identity, settings)
+    assert reviewer.organisation
+    candidate = db.get(SourceCandidate, candidate_id)
+    if not candidate:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Source candidate not found")
+    if candidate.review_status == "approved" or candidate.promoted_opportunity_id:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Candidate was already promoted")
+    duplicates = candidate_duplicates(db, candidate)
+    if duplicates and not payload.allow_duplicate:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "A matching opportunity already exists; confirm the duplicate override to continue",
+        )
+
+    suburbs = list(db.scalars(select(Suburb).order_by(Suburb.name)).all())
+    location = candidate.location_label.casefold()
+    suburb = next((item for item in suburbs if item.name.casefold() in location), None)
+    suburb = suburb or next(
+        (item for item in suburbs if item.name == "Downtown Toronto"), suburbs[0] if suburbs else None
+    )
+    if not suburb:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Add reference locations before promoting")
+    cause = db.scalar(select(Cause).where(Cause.slug == "community"))
+    cause = cause or db.scalar(select(Cause).order_by(Cause.name))
+    if not cause:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Add reference causes before promoting")
+
+    starts_at = datetime.now(UTC).replace(minute=0, second=0, microsecond=0) + timedelta(days=7)
+    summary = candidate.summary.strip()
+    description = summary if len(summary) >= 20 else (
+        f"Review the original {candidate.source_name} listing before publishing this opportunity."
+    )
+    item = Opportunity(
+        organisation_id=reviewer.organisation.id,
+        suburb_id=suburb.id,
+        host_organisation_name=candidate.organisation_name,
+        title=candidate.title,
+        description=description,
+        impact_statement="Help this organisation deliver its community work.",
+        tasks=summary or "Confirm volunteer tasks with the source organisation.",
+        meeting_point="Confirm the meeting point with the source organisation.",
+        location_label=candidate.location_label,
+        address_line=candidate.location_label,
+        locality=suburb.name,
+        city=suburb.city,
+        country_code="CA",
+        latitude=suburb.latitude,
+        longitude=suburb.longitude,
+        starts_at=starts_at,
+        ends_at=starts_at + timedelta(hours=3),
+        recurrence=Recurrence.one_off,
+        effort="moderate",
+        minimum_age=16,
+        accessibility="Confirm accessibility details with the source organisation.",
+        eligibility_notes="Confirm eligibility with the source organisation.",
+        transportation_info="Confirm transportation information with the source organisation.",
+        qualifications="Confirm required qualifications with the source organisation.",
+        safety_notes="Review the source organisation's safety information.",
+        capacity=20,
+        requires_waiver=False,
+        listing_source=candidate.source_name,
+        listing_source_url=candidate.source_url,
+        listing_verification_status="pending",
+        source_updated_at=candidate.last_seen_at,
+        source_checked_at=datetime.now(UTC),
+        application_mode="external",
+        external_application_url=candidate.source_url,
+        status=OpportunityStatus.draft,
+        causes=[cause],
+    )
+    db.add(item)
+    db.flush()
+    candidate.review_status = "approved"
+    candidate.reviewed_at = datetime.now(UTC)
+    candidate.reviewed_by = reviewer.id
+    candidate.promoted_opportunity_id = item.id
+    db.commit()
+    loaded = db.scalar(opportunity_query().where(Opportunity.id == item.id))
+    assert loaded
+    return to_opportunity_out(db, loaded)
 
 
 @router.post(

@@ -6,12 +6,17 @@ import type {
   AttendanceSheet,
   AttendanceStatus,
   Impact,
+  ListingReport,
+  ListingReportReason,
   LocationPoint,
   NotificationPreferences,
   Opportunity,
   OpportunityEventType,
   Profile,
   Role,
+  SourceCandidate,
+  SourceHealth,
+  SourceRefreshRun,
   ThemePreference,
   Waiver,
   WaiverAcceptanceInput,
@@ -34,6 +39,25 @@ export const apiConfigurationError = !demoMode && !apiConfigured
 let demoApplications = [...applications];
 let demoOpportunities = [...opportunities];
 let demoNotificationPreferences: NotificationPreferences = { notify_new_applications: true };
+let demoSourceCandidates: SourceCandidate[] = [
+  {
+    id: "candidate-1",
+    source_name: "Volunteer Toronto",
+    source_url: "https://www.volunteertoronto.ca/",
+    title: "Community food bank support",
+    organisation_name: "Toronto Neighbourhood Pantry",
+    location_label: "Scarborough, Toronto",
+    summary: "Sort donations and prepare grocery hampers for local families.",
+    review_status: "pending",
+    first_seen_at: new Date(Date.now() - 86400000).toISOString(),
+    last_seen_at: new Date().toISOString(),
+    reviewed_at: null,
+    promoted_opportunity_id: null,
+    duplicates: [],
+  },
+];
+let demoListingReports: ListingReport[] = [];
+let demoRefreshRuns: SourceRefreshRun[] = [];
 const demoAnalytics: Analytics = {
   views: 48,
   application_starts: 14,
@@ -203,6 +227,24 @@ export const api = {
     }
     return request(`/v1/opportunities/${id}`, { token });
   },
+  reportOpportunity: async (
+    id: string,
+    input: { reason: ListingReportReason; details: string },
+    token?: string | null,
+  ): Promise<ListingReport> => {
+    if (!demoMode) return request(`/v1/opportunities/${id}/reports`, { method: "POST", body: JSON.stringify(input), token });
+    if (demoListingReports.some((item) => item.opportunity_id === id && item.status === "pending")) throw new Error("You already reported this listing");
+    const opportunity = demoOpportunities.find((item) => item.id === id);
+    if (!opportunity) throw new Error("Opportunity not found");
+    const report: ListingReport = {
+      id: `report-${Date.now()}`, opportunity_id: id, opportunity_title: opportunity.title,
+      organisation_name: opportunity.organisation_name, reporter_name: demoProfiles.volunteer.display_name,
+      reason: input.reason, details: input.details, status: "pending", created_at: new Date().toISOString(),
+      reviewed_at: null, resolution_note: "",
+    };
+    demoListingReports = [report, ...demoListingReports.filter((item) => item.opportunity_id !== id)];
+    return report;
+  },
   trackOpportunityEvent: async (
     id: string,
     eventType: OpportunityEventType,
@@ -350,6 +392,89 @@ export const api = {
   },
   organiserOpportunities: async (token?: string | null): Promise<Opportunity[]> =>
     demoMode ? demoOpportunities : request("/v1/organiser/opportunities", { token }),
+  sourceHealth: async (token?: string | null): Promise<SourceHealth> => {
+    if (!demoMode) return request("/v1/organiser/source-health", { token });
+    return {
+      schedule: "Nightly at 10:15 UTC",
+      next_scheduled_at: new Date(Date.now() + 86400000).toISOString(),
+      pending_candidates: demoSourceCandidates.filter((item) => item.review_status === "pending").length,
+      stale_listings: 0,
+      refresh_in_progress: demoRefreshRuns.some((item) => ["queued", "running"].includes(item.status)),
+      sources: [{ name: "Volunteer Success", active_listings: demoOpportunities.filter((item) => item.application_mode === "external").length, pending_candidates: demoSourceCandidates.length, last_checked_at: new Date().toISOString(), last_seen_at: new Date().toISOString() }],
+      recent_runs: demoRefreshRuns,
+    };
+  },
+  startSourceRefresh: async (token?: string | null): Promise<SourceRefreshRun> => {
+    if (!demoMode) return request("/v1/organiser/source-health/refresh", { method: "POST", token });
+    const run: SourceRefreshRun = { id: `refresh-${Date.now()}`, trigger: "manual", status: "succeeded", started_at: new Date().toISOString(), completed_at: new Date().toISOString(), discovered: 1, candidates_added: 1, candidates_updated: 0, checked: demoOpportunities.length, expired: 0, unavailable: 0, skipped_protected: 0, out_of_area: 0, failed: 0, error_summary: "" };
+    demoRefreshRuns = [run, ...demoRefreshRuns];
+    return run;
+  },
+  listingReports: async (reportStatus = "pending", token?: string | null): Promise<ListingReport[]> =>
+    demoMode
+      ? demoListingReports.filter((item) => reportStatus === "all" || item.status === reportStatus)
+      : request(`/v1/organiser/listing-reports?report_status=${encodeURIComponent(reportStatus)}`, { token }),
+  moderateListingReport: async (
+    id: string,
+    input: { action: "dismiss" | "resolve" | "unpublish"; resolution_note: string },
+    token?: string | null,
+  ): Promise<ListingReport> => {
+    if (!demoMode) return request(`/v1/organiser/listing-reports/${id}/moderate`, { method: "POST", body: JSON.stringify(input), token });
+    const found = demoListingReports.find((item) => item.id === id);
+    if (!found) throw new Error("Listing report not found");
+    const updated = { ...found, status: input.action === "dismiss" ? "dismissed" as const : "resolved" as const, resolution_note: input.resolution_note, reviewed_at: new Date().toISOString() };
+    demoListingReports = demoListingReports.map((item) => item.id === id ? updated : item);
+    if (input.action === "unpublish") demoOpportunities = demoOpportunities.map((item) => item.id === found.opportunity_id ? { ...item, status: "unpublished" as const } : item);
+    return updated;
+  },
+  sourceCandidates: async (
+    filters: { review_status?: string; q?: string } = {},
+    token?: string | null,
+  ): Promise<SourceCandidate[]> => {
+    if (!demoMode) return request(`/v1/organiser/source-candidates${queryString(filters)}`, { token });
+    const q = filters.q?.toLowerCase();
+    return demoSourceCandidates.filter((item) =>
+      (!filters.review_status || filters.review_status === "all" || item.review_status === filters.review_status) &&
+      (!q || [item.title, item.organisation_name, item.location_label, item.summary].join(" ").toLowerCase().includes(q))
+    );
+  },
+  updateSourceCandidate: async (
+    id: string,
+    input: Pick<SourceCandidate, "title" | "organisation_name" | "location_label" | "summary">,
+    token?: string | null,
+  ): Promise<SourceCandidate> => {
+    if (!demoMode) return request(`/v1/organiser/source-candidates/${id}`, { method: "PATCH", body: JSON.stringify(input), token });
+    const found = demoSourceCandidates.find((item) => item.id === id);
+    if (!found) throw new Error("Candidate not found");
+    const updated = { ...found, ...input, review_status: "pending" as const, reviewed_at: null };
+    demoSourceCandidates = demoSourceCandidates.map((item) => item.id === id ? updated : item);
+    return updated;
+  },
+  rejectSourceCandidate: async (id: string, token?: string | null): Promise<SourceCandidate> => {
+    if (!demoMode) return request(`/v1/organiser/source-candidates/${id}/reject`, { method: "POST", token });
+    const found = demoSourceCandidates.find((item) => item.id === id);
+    if (!found) throw new Error("Candidate not found");
+    const updated = { ...found, review_status: "rejected" as const, reviewed_at: new Date().toISOString() };
+    demoSourceCandidates = demoSourceCandidates.map((item) => item.id === id ? updated : item);
+    return updated;
+  },
+  promoteSourceCandidate: async (id: string, allowDuplicate: boolean, token?: string | null): Promise<Opportunity> => {
+    if (!demoMode) return request(`/v1/organiser/source-candidates/${id}/promote`, { method: "POST", body: JSON.stringify({ allow_duplicate: allowDuplicate }), token });
+    const candidate = demoSourceCandidates.find((item) => item.id === id);
+    if (!candidate) throw new Error("Candidate not found");
+    if (candidate.duplicates.length && !allowDuplicate) throw new Error("A matching opportunity already exists");
+    const draft = await api.createOpportunity({
+      title: candidate.title,
+      description: candidate.summary || "Details imported from the source listing.",
+      listing_source: candidate.source_name,
+      listing_source_url: candidate.source_url,
+      listing_verification_status: "pending",
+      application_mode: "external",
+      external_application_url: candidate.source_url,
+    }, token);
+    demoSourceCandidates = demoSourceCandidates.map((item) => item.id === id ? { ...item, review_status: "approved", reviewed_at: new Date().toISOString(), promoted_opportunity_id: draft.id } : item);
+    return draft;
+  },
   organiserAnalytics: async (token?: string | null): Promise<Analytics> =>
     demoMode ? { ...demoAnalytics } : request("/v1/organiser/analytics", { token }),
   notificationPreferences: async (token?: string | null): Promise<NotificationPreferences> =>

@@ -12,6 +12,9 @@ export default function OrganiserLayout() {
       <Tabs.Screen name="waiver" options={{ href: null }} />
       <Tabs.Screen name="application/[id]" options={{ href: null }} />
       <Tabs.Screen name="attendance/[id]" options={{ href: null }} />
+      <Tabs.Screen name="source-review" options={{ href: null }} />
+      <Tabs.Screen name="listing-reports" options={{ href: null }} />
+      <Tabs.Screen name="source-health" options={{ href: null }} />
     </Tabs>
   );
 }

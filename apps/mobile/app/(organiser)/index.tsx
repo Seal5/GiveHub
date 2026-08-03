@@ -27,15 +27,16 @@ export default function OrganiserOverview() {
   const colours = useThemeColours();
   const events = useQuery({ queryKey: ["organiser", "events"], queryFn: () => api.organiserOpportunities(token) });
   const analytics = useQuery({ queryKey: ["organiser", "analytics"], queryFn: () => api.organiserAnalytics(token) });
-  if (events.isLoading || analytics.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
+  const reports = useQuery({ queryKey: ["listing-reports", "pending"], queryFn: () => api.listingReports("pending", token) });
+  if (events.isLoading || analytics.isLoading || reports.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
   const organisation = profile?.organisation_name ?? "Your organisation";
-  const refresh = () => { void events.refetch(); void analytics.refetch(); };
+  const refresh = () => { void events.refetch(); void analytics.refetch(); void reports.refetch(); };
 
-  if (events.isError || analytics.isError) {
+  if (events.isError || analytics.isError || reports.isError) {
     return (
       <Screen className="px-5 pb-6 pt-3">
         <BrandMark />
-        <View className="mt-8"><ErrorState error={events.error ?? analytics.error} onRetry={refresh} /></View>
+        <View className="mt-8"><ErrorState error={events.error ?? analytics.error ?? reports.error} onRetry={refresh} /></View>
       </Screen>
     );
   }
@@ -72,6 +73,42 @@ export default function OrganiserOverview() {
             <View className="flex-1">
               <Text className="font-strong text-sm text-foreground dark:text-dark-foreground">{analytics.data?.applications_submitted ?? 0} volunteer applications</Text>
               <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{events.data?.[0]?.title ?? "Your latest opportunity"} · filter or export the applicant list</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colours.primary} />
+          </View>
+        </Card>
+      </Pressable>
+      <Pressable onPress={() => router.push("/(organiser)/source-review")} accessibilityRole="button" accessibilityLabel="Review imported opportunities">
+        <Card className="mt-3 p-4">
+          <View className="flex-row items-center gap-3">
+            <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary dark:bg-dark-secondary"><Ionicons name="cloud-download-outline" size={20} color={colours.primary} /></View>
+            <View className="flex-1">
+              <Text className="font-strong text-sm text-foreground dark:text-dark-foreground">Review imported opportunities</Text>
+              <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">Check sources, remove duplicates, and finish listings before publishing</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colours.primary} />
+          </View>
+        </Card>
+      </Pressable>
+      <Pressable onPress={() => router.push("/(organiser)/source-health")} accessibilityRole="button" accessibilityLabel="Open source refresh health">
+        <Card className="mt-3 p-4">
+          <View className="flex-row items-center gap-3">
+            <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary dark:bg-dark-secondary"><Ionicons name="pulse-outline" size={20} color={colours.primary} /></View>
+            <View className="flex-1">
+              <Text className="font-strong text-sm text-foreground dark:text-dark-foreground">Source refresh health</Text>
+              <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">See nightly refreshes, source freshness, failures, and new candidates</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colours.primary} />
+          </View>
+        </Card>
+      </Pressable>
+      <Pressable onPress={() => router.push("/(organiser)/listing-reports")} accessibilityRole="button" accessibilityLabel="Review reported listings">
+        <Card className="mt-3 p-4">
+          <View className="flex-row items-center gap-3">
+            <View className="h-11 w-11 items-center justify-center rounded-xl bg-secondary dark:bg-dark-secondary"><Ionicons name="flag-outline" size={20} color={colours.primary} /></View>
+            <View className="flex-1">
+              <Text className="font-strong text-sm text-foreground dark:text-dark-foreground">{reports.data?.length ?? 0} reported listings</Text>
+              <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">Check incorrect, broken, cancelled, or unsafe opportunities</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colours.primary} />
           </View>
