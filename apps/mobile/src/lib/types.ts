@@ -157,3 +157,64 @@ export type Application = {
   waiver: WaiverAcceptance | null;
 };
 export type NotificationPreferences = { notify_new_applications: boolean };
+export type SourceCandidateDuplicate = {
+  id: string;
+  title: string;
+  organisation_name: string;
+  status: Opportunity["status"];
+};
+export type SourceCandidate = {
+  id: string;
+  source_name: string;
+  source_url: string;
+  title: string;
+  organisation_name: string;
+  location_label: string;
+  summary: string;
+  review_status: "pending" | "approved" | "rejected" | "out_of_area";
+  first_seen_at: string;
+  last_seen_at: string;
+  reviewed_at: string | null;
+  promoted_opportunity_id: string | null;
+  duplicates: SourceCandidateDuplicate[];
+};
+export type ListingReportReason = "outdated" | "cancelled" | "broken_link" | "safety_accessibility" | "duplicate" | "spam" | "other";
+export type ListingReport = {
+  id: string;
+  opportunity_id: string;
+  opportunity_title: string;
+  organisation_name: string;
+  reporter_name: string;
+  reason: ListingReportReason;
+  details: string;
+  status: "pending" | "dismissed" | "resolved";
+  created_at: string;
+  reviewed_at: string | null;
+  resolution_note: string;
+};
+export type SourceRefreshRun = {
+  id: string;
+  trigger: string;
+  status: "queued" | "running" | "succeeded" | "partial" | "failed";
+  started_at: string | null;
+  completed_at: string | null;
+  discovered: number;
+  candidates_added: number;
+  candidates_updated: number;
+  checked: number;
+  expired: number;
+  unavailable: number;
+  skipped_protected: number;
+  out_of_area: number;
+  failed: number;
+  error_summary: string;
+};
+export type SourceHealth = {
+  schedule: string;
+  next_scheduled_at: string;
+  pending_candidates: number;
+  stale_listings: number;
+  refresh_in_progress: boolean;
+  sources: { name: string; active_listings: number; pending_candidates: number; last_checked_at: string | null; last_seen_at: string | null }[];
+  recent_runs: SourceRefreshRun[];
+};

@@ -127,6 +127,12 @@ export default function OpportunityDetail() {
           className="mt-3"
           onPress={() => { void shareOpportunity(item, token); }}
         />
+        <Button
+          label="Report incorrect or unsafe information"
+          variant="secondary"
+          className="mt-3"
+          onPress={() => router.push(`/(volunteer)/report/${item.id}`)}
+        />
       </View>
     </Screen>
   );

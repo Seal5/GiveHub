@@ -337,6 +337,86 @@ export type ImpactOut = {
 };
 
 /**
+ * ListingReportCreate
+ */
+export type ListingReportCreate = {
+    /**
+     * Details
+     */
+    details?: string;
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
+ * ListingReportModerate
+ */
+export type ListingReportModerate = {
+    /**
+     * Action
+     */
+    action: string;
+    /**
+     * Resolution Note
+     */
+    resolution_note?: string;
+};
+
+/**
+ * ListingReportOut
+ */
+export type ListingReportOut = {
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Details
+     */
+    details: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Opportunity Id
+     */
+    opportunity_id: string;
+    /**
+     * Opportunity Title
+     */
+    opportunity_title: string;
+    /**
+     * Organisation Name
+     */
+    organisation_name: string;
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * Reporter Name
+     */
+    reporter_name: string;
+    /**
+     * Resolution Note
+     */
+    resolution_note: string;
+    /**
+     * Reviewed At
+     */
+    reviewed_at: string | null;
+    status: ListingReportStatus;
+};
+
+/**
+ * ListingReportStatus
+ */
+export type ListingReportStatus = 'pending' | 'dismissed' | 'resolved';
+
+/**
  * LocationResult
  */
 export type LocationResult = {
@@ -1078,6 +1158,241 @@ export type Recurrence = 'one_off' | 'weekly' | 'monthly';
 export type Role = 'volunteer' | 'organiser';
 
 /**
+ * SourceCandidateDuplicateOut
+ */
+export type SourceCandidateDuplicateOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Organisation Name
+     */
+    organisation_name: string;
+    status: OpportunityStatus;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+/**
+ * SourceCandidateOut
+ */
+export type SourceCandidateOut = {
+    /**
+     * Duplicates
+     */
+    duplicates?: Array<SourceCandidateDuplicateOut>;
+    /**
+     * First Seen At
+     */
+    first_seen_at: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Last Seen At
+     */
+    last_seen_at: string;
+    /**
+     * Location Label
+     */
+    location_label: string;
+    /**
+     * Organisation Name
+     */
+    organisation_name: string;
+    /**
+     * Promoted Opportunity Id
+     */
+    promoted_opportunity_id: string | null;
+    /**
+     * Review Status
+     */
+    review_status: string;
+    /**
+     * Reviewed At
+     */
+    reviewed_at: string | null;
+    /**
+     * Source Name
+     */
+    source_name: string;
+    /**
+     * Source Url
+     */
+    source_url: string;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+/**
+ * SourceCandidatePromote
+ */
+export type SourceCandidatePromote = {
+    /**
+     * Allow Duplicate
+     */
+    allow_duplicate?: boolean;
+};
+
+/**
+ * SourceCandidateUpdate
+ */
+export type SourceCandidateUpdate = {
+    /**
+     * Location Label
+     */
+    location_label?: string | null;
+    /**
+     * Organisation Name
+     */
+    organisation_name?: string | null;
+    /**
+     * Summary
+     */
+    summary?: string | null;
+    /**
+     * Title
+     */
+    title?: string | null;
+};
+
+/**
+ * SourceHealthOut
+ */
+export type SourceHealthOut = {
+    /**
+     * Next Scheduled At
+     */
+    next_scheduled_at: string;
+    /**
+     * Pending Candidates
+     */
+    pending_candidates: number;
+    /**
+     * Recent Runs
+     */
+    recent_runs: Array<SourceRefreshRunOut>;
+    /**
+     * Refresh In Progress
+     */
+    refresh_in_progress: boolean;
+    /**
+     * Schedule
+     */
+    schedule: string;
+    /**
+     * Sources
+     */
+    sources: Array<SourceHealthSourceOut>;
+    /**
+     * Stale Listings
+     */
+    stale_listings: number;
+};
+
+/**
+ * SourceHealthSourceOut
+ */
+export type SourceHealthSourceOut = {
+    /**
+     * Active Listings
+     */
+    active_listings: number;
+    /**
+     * Last Checked At
+     */
+    last_checked_at: string | null;
+    /**
+     * Last Seen At
+     */
+    last_seen_at: string | null;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Pending Candidates
+     */
+    pending_candidates: number;
+};
+
+/**
+ * SourceRefreshRunOut
+ */
+export type SourceRefreshRunOut = {
+    /**
+     * Candidates Added
+     */
+    candidates_added: number;
+    /**
+     * Candidates Updated
+     */
+    candidates_updated: number;
+    /**
+     * Checked
+     */
+    checked: number;
+    /**
+     * Completed At
+     */
+    completed_at: string | null;
+    /**
+     * Discovered
+     */
+    discovered: number;
+    /**
+     * Error Summary
+     */
+    error_summary: string;
+    /**
+     * Expired
+     */
+    expired: number;
+    /**
+     * Failed
+     */
+    failed: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Out Of Area
+     */
+    out_of_area: number;
+    /**
+     * Skipped Protected
+     */
+    skipped_protected: number;
+    /**
+     * Started At
+     */
+    started_at: string | null;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Unavailable
+     */
+    unavailable: number;
+};
+
+/**
  * StatusHistoryOut
  */
 export type StatusHistoryOut = {
@@ -1669,6 +1984,36 @@ export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponse
 
 export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponse = RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponses[keyof RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponses];
 
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostData = {
+    body: ListingReportCreate;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: never;
+    url: '/v1/opportunities/{opportunity_id}/reports';
+};
+
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostError = ReportOpportunityV1OpportunitiesOpportunityIdReportsPostErrors[keyof ReportOpportunityV1OpportunitiesOpportunityIdReportsPostErrors];
+
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ListingReportOut;
+};
+
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponse = ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponses[keyof ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponses];
+
 export type UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteData = {
     body?: never;
     path: {
@@ -1836,6 +2181,68 @@ export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutRes
 };
 
 export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponse = RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses[keyof RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses];
+
+export type ListListingReportsV1OrganiserListingReportsGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Report Status
+         */
+        report_status?: string;
+    };
+    url: '/v1/organiser/listing-reports';
+};
+
+export type ListListingReportsV1OrganiserListingReportsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListListingReportsV1OrganiserListingReportsGetError = ListListingReportsV1OrganiserListingReportsGetErrors[keyof ListListingReportsV1OrganiserListingReportsGetErrors];
+
+export type ListListingReportsV1OrganiserListingReportsGetResponses = {
+    /**
+     * Response List Listing Reports V1 Organiser Listing Reports Get
+     *
+     * Successful Response
+     */
+    200: Array<ListingReportOut>;
+};
+
+export type ListListingReportsV1OrganiserListingReportsGetResponse = ListListingReportsV1OrganiserListingReportsGetResponses[keyof ListListingReportsV1OrganiserListingReportsGetResponses];
+
+export type ModerateListingReportV1OrganiserListingReportsReportIdModeratePostData = {
+    body: ListingReportModerate;
+    path: {
+        /**
+         * Report Id
+         */
+        report_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/listing-reports/{report_id}/moderate';
+};
+
+export type ModerateListingReportV1OrganiserListingReportsReportIdModeratePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ModerateListingReportV1OrganiserListingReportsReportIdModeratePostError = ModerateListingReportV1OrganiserListingReportsReportIdModeratePostErrors[keyof ModerateListingReportV1OrganiserListingReportsReportIdModeratePostErrors];
+
+export type ModerateListingReportV1OrganiserListingReportsReportIdModeratePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ListingReportOut;
+};
+
+export type ModerateListingReportV1OrganiserListingReportsReportIdModeratePostResponse = ModerateListingReportV1OrganiserListingReportsReportIdModeratePostResponses[keyof ModerateListingReportV1OrganiserListingReportsReportIdModeratePostResponses];
 
 export type GetNotificationPreferencesV1OrganiserNotificationPreferencesGetData = {
     body?: never;
@@ -2184,6 +2591,164 @@ export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPo
 };
 
 export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponse = UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses[keyof UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses];
+
+export type ListSourceCandidatesV1OrganiserSourceCandidatesGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Review Status
+         */
+        review_status?: string;
+        /**
+         * Q
+         */
+        q?: string | null;
+    };
+    url: '/v1/organiser/source-candidates';
+};
+
+export type ListSourceCandidatesV1OrganiserSourceCandidatesGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListSourceCandidatesV1OrganiserSourceCandidatesGetError = ListSourceCandidatesV1OrganiserSourceCandidatesGetErrors[keyof ListSourceCandidatesV1OrganiserSourceCandidatesGetErrors];
+
+export type ListSourceCandidatesV1OrganiserSourceCandidatesGetResponses = {
+    /**
+     * Response List Source Candidates V1 Organiser Source Candidates Get
+     *
+     * Successful Response
+     */
+    200: Array<SourceCandidateOut>;
+};
+
+export type ListSourceCandidatesV1OrganiserSourceCandidatesGetResponse = ListSourceCandidatesV1OrganiserSourceCandidatesGetResponses[keyof ListSourceCandidatesV1OrganiserSourceCandidatesGetResponses];
+
+export type UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchData = {
+    body: SourceCandidateUpdate;
+    path: {
+        /**
+         * Candidate Id
+         */
+        candidate_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/source-candidates/{candidate_id}';
+};
+
+export type UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchError = UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchErrors[keyof UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchErrors];
+
+export type UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: SourceCandidateOut;
+};
+
+export type UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchResponse = UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchResponses[keyof UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchResponses];
+
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostData = {
+    body: SourceCandidatePromote;
+    path: {
+        /**
+         * Candidate Id
+         */
+        candidate_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/source-candidates/{candidate_id}/promote';
+};
+
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostError = PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostErrors[keyof PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostErrors];
+
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponses = {
+    /**
+     * Successful Response
+     */
+    201: OpportunityOut;
+};
+
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponse = PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponses[keyof PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponses];
+
+export type RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostData = {
+    body?: never;
+    path: {
+        /**
+         * Candidate Id
+         */
+        candidate_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/source-candidates/{candidate_id}/reject';
+};
+
+export type RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostError = RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostErrors[keyof RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostErrors];
+
+export type RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: SourceCandidateOut;
+};
+
+export type RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostResponse = RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostResponses[keyof RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostResponses];
+
+export type SourceHealthV1OrganiserSourceHealthGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/source-health';
+};
+
+export type SourceHealthV1OrganiserSourceHealthGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: SourceHealthOut;
+};
+
+export type SourceHealthV1OrganiserSourceHealthGetResponse = SourceHealthV1OrganiserSourceHealthGetResponses[keyof SourceHealthV1OrganiserSourceHealthGetResponses];
+
+export type StartSourceRefreshV1OrganiserSourceHealthRefreshPostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/source-health/refresh';
+};
+
+export type StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponses = {
+    /**
+     * Successful Response
+     */
+    202: SourceRefreshRunOut;
+};
+
+export type StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponse = StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponses[keyof StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponses];
 
 export type GetOrganiserWaiverV1OrganiserWaiverGetData = {
     body?: never;

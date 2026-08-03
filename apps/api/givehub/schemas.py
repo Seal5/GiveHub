@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 from givehub.models import (
     ApplicationStatus,
     AttendanceStatus,
+    ListingReportStatus,
     OpportunityEventType,
     OpportunityStatus,
     Recurrence,
@@ -234,6 +235,102 @@ class OpportunityOut(ORMModel):
     causes: list[CauseOut]
     distance_km: float | None = None
     is_saved: bool = False
+
+
+class SourceCandidateDuplicateOut(BaseModel):
+    id: uuid.UUID
+    title: str
+    organisation_name: str
+    status: OpportunityStatus
+
+
+class SourceCandidateOut(ORMModel):
+    id: uuid.UUID
+    source_name: str
+    source_url: str
+    title: str
+    organisation_name: str
+    location_label: str
+    summary: str
+    review_status: str
+    first_seen_at: datetime
+    last_seen_at: datetime
+    reviewed_at: datetime | None
+    promoted_opportunity_id: uuid.UUID | None
+    duplicates: list[SourceCandidateDuplicateOut] = Field(default_factory=list)
+
+
+class SourceCandidateUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=4, max_length=180)
+    organisation_name: str | None = Field(default=None, min_length=2, max_length=180)
+    location_label: str | None = Field(default=None, min_length=2, max_length=240)
+    summary: str | None = Field(default=None, max_length=4000)
+
+
+class SourceCandidatePromote(BaseModel):
+    allow_duplicate: bool = False
+
+
+class ListingReportCreate(BaseModel):
+    reason: str = Field(
+        pattern="^(outdated|cancelled|broken_link|safety_accessibility|duplicate|spam|other)$"
+    )
+    details: str = Field(default="", max_length=2000)
+
+
+class ListingReportModerate(BaseModel):
+    action: str = Field(pattern="^(dismiss|resolve|unpublish)$")
+    resolution_note: str = Field(default="", max_length=1000)
+
+
+class ListingReportOut(ORMModel):
+    id: uuid.UUID
+    opportunity_id: uuid.UUID
+    opportunity_title: str
+    organisation_name: str
+    reporter_name: str
+    reason: str
+    details: str
+    status: ListingReportStatus
+    created_at: datetime
+    reviewed_at: datetime | None
+    resolution_note: str
+
+
+class SourceRefreshRunOut(ORMModel):
+    id: uuid.UUID
+    trigger: str
+    status: str
+    started_at: datetime | None
+    completed_at: datetime | None
+    discovered: int
+    candidates_added: int
+    candidates_updated: int
+    checked: int
+    expired: int
+    unavailable: int
+    skipped_protected: int
+    out_of_area: int
+    failed: int
+    error_summary: str
+
+
+class SourceHealthSourceOut(BaseModel):
+    name: str
+    active_listings: int
+    pending_candidates: int
+    last_checked_at: datetime | None
+    last_seen_at: datetime | None
+
+
+class SourceHealthOut(BaseModel):
+    schedule: str
+    next_scheduled_at: datetime
+    pending_candidates: int
+    stale_listings: int
+    refresh_in_progress: bool
+    sources: list[SourceHealthSourceOut]
+    recent_runs: list[SourceRefreshRunOut]
 
 
 class WaiverOut(ORMModel):

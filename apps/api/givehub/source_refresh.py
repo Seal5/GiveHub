@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime, timedelta
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import httpx
@@ -15,7 +15,13 @@ from sqlalchemy.orm import Session
 
 from givehub.config import get_settings
 from givehub.database import SessionLocal
-from givehub.models import Opportunity, OpportunityStatus, Recurrence, SourceCandidate
+from givehub.models import (
+    Opportunity,
+    OpportunityStatus,
+    Recurrence,
+    SourceCandidate,
+    SourceRefreshRun,
+)
 
 VOLUNTEER_SUCCESS = "https://volunteersuccess.com"
 USER_AGENT = "GiveHub/0.1 source refresh (public volunteer listing index)"
@@ -63,6 +69,7 @@ class RefreshReport:
     skipped_protected: int = 0
     out_of_area: int = 0
     failed: int = 0
+    errors: list[str] = field(default_factory=list)
 
 
 def canonical_url(value: str) -> str:
@@ -219,6 +226,7 @@ def refresh_existing_sources(
             response = client.get(listing.listing_source_url)
         except httpx.HTTPError:
             report.failed += 1
+            report.errors.append(f"{host}: source check failed")
             continue
         if 200 <= response.status_code < 400:
             listing.source_checked_at = checked_at
@@ -257,6 +265,7 @@ def run_refresh(
         )
     except httpx.HTTPError:
         report.failed += 1
+        report.errors.append("Volunteer Success discovery request failed")
     else:
         report.discovered = len(discovered)
         report.candidates_added, report.candidates_updated = upsert_candidates(
@@ -266,6 +275,89 @@ def run_refresh(
         )
     db.commit()
     return report
+
+
+def queue_refresh_run(db: Session, *, trigger: str) -> SourceRefreshRun:
+    now = datetime.now(UTC)
+    active_runs = db.scalars(
+        select(SourceRefreshRun).where(SourceRefreshRun.status.in_(["queued", "running"]))
+    ).all()
+    active = None
+    cleared_stale = False
+    for candidate in active_runs:
+        created_at = candidate.created_at
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=UTC)
+        if created_at < now.replace(microsecond=0) - timedelta(hours=2):
+            candidate.status = "failed"
+            candidate.failed = max(candidate.failed, 1)
+            candidate.completed_at = now
+            candidate.error_summary = "Refresh did not complete within two hours"
+            cleared_stale = True
+        else:
+            active = candidate
+    if cleared_stale:
+        db.commit()
+    if active:
+        raise ValueError("A source refresh is already in progress")
+    run = SourceRefreshRun(trigger=trigger, status="queued")
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+    return run
+
+
+def execute_refresh_run(
+    run_id: object,
+    *,
+    postal_code: str,
+    radius_km: int,
+    pages: int,
+    client: httpx.Client | None = None,
+) -> RefreshReport | None:
+    owns_client = client is None
+    refresh_client = client or httpx.Client(
+        follow_redirects=True,
+        timeout=20,
+        headers={"User-Agent": USER_AGENT},
+    )
+    try:
+        with SessionLocal() as db:
+            run = db.get(SourceRefreshRun, run_id)
+            if not run:
+                return None
+            run.status = "running"
+            run.started_at = datetime.now(UTC)
+            db.commit()
+            try:
+                report = run_refresh(
+                    db,
+                    client=refresh_client,
+                    postal_code=postal_code,
+                    radius_km=radius_km,
+                    pages=max(1, min(pages, 10)),
+                )
+            except Exception as exc:
+                db.rollback()
+                run = db.get(SourceRefreshRun, run_id)
+                assert run
+                run.status = "failed"
+                run.failed = 1
+                run.error_summary = f"{type(exc).__name__}: refresh could not complete"[:1000]
+                run.completed_at = datetime.now(UTC)
+                db.commit()
+                return None
+            for key, value in asdict(report).items():
+                if key != "errors":
+                    setattr(run, key, value)
+            run.error_summary = "\n".join(report.errors)[:4000]
+            run.status = "partial" if report.failed else "succeeded"
+            run.completed_at = datetime.now(UTC)
+            db.commit()
+            return report
+    finally:
+        if owns_client:
+            refresh_client.close()
 
 
 def pending_review_items(db: Session, *, limit: int = 50) -> list[dict[str, str]]:
@@ -301,19 +393,19 @@ def main() -> None:
         with SessionLocal() as db:
             print(json.dumps(pending_review_items(db), sort_keys=True))
         return
-    with httpx.Client(
-        follow_redirects=True,
-        timeout=20,
-        headers={"User-Agent": USER_AGENT},
-    ) as client:
-        with SessionLocal() as db:
-            report = run_refresh(
-                db,
-                client=client,
-                postal_code=settings.source_refresh_postal_code,
-                radius_km=settings.source_refresh_radius_km,
-                pages=max(1, min(args.pages, 10)),
-            )
+    with SessionLocal() as db:
+        try:
+            run = queue_refresh_run(db, trigger="scheduled")
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+    report = execute_refresh_run(
+        run.id,
+        postal_code=settings.source_refresh_postal_code,
+        radius_km=settings.source_refresh_radius_km,
+        pages=args.pages,
+    )
+    if report is None:
+        raise SystemExit("Source refresh failed; inspect source_refresh_runs for details")
     print(json.dumps(asdict(report), sort_keys=True))
 
 

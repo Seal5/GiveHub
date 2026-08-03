@@ -155,13 +155,18 @@ export default function CreateOpportunityScreen() {
         qualifications: values.qualifications.trim() || "No prior qualifications required.",
         safety_notes: values.safety.trim() || "Follow the host’s safety briefing.", capacity: Number(values.capacity),
         requires_waiver: applicationMode === "internal" && requiresWaiver,
-        listing_source: "GiveHub organiser", listing_verification_status: "verified",
-        source_updated_at: new Date().toISOString(), application_mode: applicationMode,
+        listing_source: existing?.listing_source ?? "GiveHub organiser",
+        listing_source_url: existing?.listing_source_url ?? null,
+        listing_verification_status: existing?.status === "draft" && existing.listing_source_url ? "verified" : existing?.listing_verification_status ?? "verified",
+        source_updated_at: existing?.source_updated_at ?? new Date().toISOString(),
+        source_checked_at: existing?.status === "draft" && existing.listing_source_url ? new Date().toISOString() : existing?.source_checked_at ?? null,
+        application_mode: applicationMode,
         external_application_url: applicationMode === "external" ? values.externalUrl : null,
         cause_ids: [values.causeId],
       };
       if (existing) {
-        return api.updateOpportunity(existing.id, { ...payload, version: existing.version }, token);
+        const updated = await api.updateOpportunity(existing.id, { ...payload, version: existing.version }, token);
+        return existing.status === "draft" ? api.publishOpportunity(updated.id, token) : updated;
       }
       let event = await api.createOpportunity({
         ...payload,
@@ -188,7 +193,7 @@ export default function CreateOpportunityScreen() {
   if (editingId && events.isLoading) return <Screen><LoadingState /></Screen>;
   if (editingId && events.isError) return <Screen><ErrorState error={events.error} onRetry={() => events.refetch()} /></Screen>;
   if (editingId && events.data && !existing) return <Screen><ErrorState title="Opportunity unavailable" /></Screen>;
-  if (complete) return <Screen><Eyebrow>{existing ? "Updated" : "Published"}</Eyebrow><Display>{existing ? "Your changes are live." : "Your opportunity is ready to find its people."}</Display><Body className="mb-7 mt-4">Volunteers now see the schedule, fit information, and application process you reviewed.</Body><Button label="Back to overview" onPress={() => router.replace("/(organiser)")} /></Screen>;
+  if (complete) return <Screen><Eyebrow>{existing?.status === "draft" ? "Published" : existing ? "Updated" : "Published"}</Eyebrow><Display>{existing?.status === "draft" ? "Your opportunity is ready to find its people." : existing ? "Your changes are live." : "Your opportunity is ready to find its people."}</Display><Body className="mb-7 mt-4">Volunteers now see the schedule, fit information, and application process you reviewed.</Body><Button label="Back to overview" onPress={() => router.replace("/(organiser)")} /></Screen>;
 
   const field = (name: keyof Values, label: string, placeholder: string, multiline = false, required = false) => (
     <Controller control={form.control} name={name} render={({ field: input }) => (
@@ -204,7 +209,7 @@ export default function CreateOpportunityScreen() {
     const ends = parseEventDateTime(preview.eventDate, preview.endTime)!;
     const cause = causes.data?.find((item) => item.id === preview.causeId)?.name ?? "Selected cause";
     return <Screen>
-      <Eyebrow>Review before {existing ? "saving" : "publishing"}</Eyebrow>
+      <Eyebrow>Review before {existing && existing.status !== "draft" ? "saving" : "publishing"}</Eyebrow>
       <Display>{preview.title}</Display>
       <Body className="mt-3">{preview.description}</Body>
       {preview.impact ? <Card className="my-6 border-0 bg-secondary dark:bg-dark-secondary"><Eyebrow>Your impact</Eyebrow><Text className="font-display text-xl text-foreground dark:text-dark-foreground">{preview.impact}</Text></Card> : null}
@@ -217,7 +222,7 @@ export default function CreateOpportunityScreen() {
       <Card className="mb-5"><Text className="font-strong text-base text-foreground dark:text-dark-foreground">Volunteer information</Text><Body className="mt-2">Tasks: {preview.tasks}</Body>{preview.accessibility ? <Body className="mt-2">Access: {preview.accessibility}</Body> : null}{preview.safety ? <Body className="mt-2">Safety: {preview.safety}</Body> : null}{preview.training ? <Body className="mt-2">Training: {preview.training}</Body> : null}{preview.screening ? <Body className="mt-2">Screening: {preview.screening}</Body> : null}</Card>
       <Card className="mb-5"><Text className="font-strong text-base text-foreground dark:text-dark-foreground">Application process</Text><Body className="mt-2">{applicationMode === "internal" ? "Applications are stored by GiveHub and shared with your organisation." : `Applicants continue to ${preview.externalUrl}; GiveHub stores no form answers.`}</Body></Card>
       {mutation.error ? <Text accessibilityRole="alert" className="mb-3 font-sans text-sm text-destructive dark:text-dark-destructive">{mutation.error.message}</Text> : null}
-      <Button label={existing ? "Save changes" : "Publish opportunity"} loading={mutation.isPending} onPress={() => mutation.mutate(preview)} />
+      <Button label={existing && existing.status !== "draft" ? "Save changes" : "Publish opportunity"} loading={mutation.isPending} onPress={() => mutation.mutate(preview)} />
       <Button label="Back to editing" variant="secondary" className="mt-3" onPress={() => setPreview(null)} />
     </Screen>;
   }

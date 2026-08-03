@@ -73,6 +73,12 @@ class OpportunityEventType(str, enum.Enum):
     shared = "shared"
 
 
+class ListingReportStatus(str, enum.Enum):
+    pending = "pending"
+    dismissed = "dismissed"
+    resolved = "resolved"
+
+
 opportunity_causes = Table(
     "opportunity_causes",
     Base.metadata,
@@ -190,6 +196,7 @@ class Opportunity(TimestampMixin, Base):
     capacity: Mapped[int] = mapped_column(Integer, default=20)
     requires_waiver: Mapped[bool] = mapped_column(Boolean, default=True)
     listing_source: Mapped[str] = mapped_column(String(180), default="GiveHub organiser")
+    host_organisation_name: Mapped[str | None] = mapped_column(String(180))
     listing_source_url: Mapped[str | None] = mapped_column(String(1000))
     listing_verification_status: Mapped[str] = mapped_column(String(24), default="verified")
     source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -211,6 +218,9 @@ class Opportunity(TimestampMixin, Base):
     events: Mapped[list[OpportunityEvent]] = relationship(
         back_populates="opportunity", cascade="all, delete-orphan"
     )
+    reports: Mapped[list[ListingReport]] = relationship(
+        back_populates="opportunity", cascade="all, delete-orphan"
+    )
 
 
 class SourceCandidate(TimestampMixin, Base):
@@ -226,8 +236,35 @@ class SourceCandidate(TimestampMixin, Base):
     location_label: Mapped[str] = mapped_column(String(240), default="Greater Toronto Area")
     summary: Mapped[str] = mapped_column(Text, default="")
     review_status: Mapped[str] = mapped_column(String(24), default="pending", index=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("profiles.id"))
+    promoted_opportunity_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("opportunities.id"), unique=True
+    )
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+
+class SourceRefreshRun(TimestampMixin, Base):
+    """Persisted operational history for scheduled and reviewer-triggered refreshes."""
+
+    __tablename__ = "source_refresh_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    trigger: Mapped[str] = mapped_column(String(24), default="scheduled")
+    status: Mapped[str] = mapped_column(String(24), default="queued", index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    discovered: Mapped[int] = mapped_column(Integer, default=0)
+    candidates_added: Mapped[int] = mapped_column(Integer, default=0)
+    candidates_updated: Mapped[int] = mapped_column(Integer, default=0)
+    checked: Mapped[int] = mapped_column(Integer, default=0)
+    expired: Mapped[int] = mapped_column(Integer, default=0)
+    unavailable: Mapped[int] = mapped_column(Integer, default=0)
+    skipped_protected: Mapped[int] = mapped_column(Integer, default=0)
+    out_of_area: Mapped[int] = mapped_column(Integer, default=0)
+    failed: Mapped[int] = mapped_column(Integer, default=0)
+    error_summary: Mapped[str] = mapped_column(Text, default="")
 
 
 class SavedOpportunity(TimestampMixin, Base):
@@ -374,3 +411,34 @@ class OpportunityEvent(Base):
 
     opportunity: Mapped[Opportunity] = relationship(back_populates="events")
     profile: Mapped[Profile] = relationship()
+
+
+class ListingReport(TimestampMixin, Base):
+    """A private volunteer report reviewed by an organiser or source reviewer."""
+
+    __tablename__ = "listing_reports"
+    __table_args__ = (
+        UniqueConstraint("opportunity_id", "reporter_id", name="uq_listing_reporter_opportunity"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("opportunities.id", ondelete="CASCADE"), index=True
+    )
+    reporter_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("profiles.id", ondelete="CASCADE"), index=True
+    )
+    reason: Mapped[str] = mapped_column(String(40))
+    details: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[ListingReportStatus] = mapped_column(
+        Enum(ListingReportStatus, native_enum=False),
+        default=ListingReportStatus.pending,
+        index=True,
+    )
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("profiles.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolution_note: Mapped[str] = mapped_column(Text, default="")
+
+    opportunity: Mapped[Opportunity] = relationship(back_populates="reports")
+    reporter: Mapped[Profile] = relationship(foreign_keys=[reporter_id])
+    reviewer: Mapped[Profile | None] = relationship(foreign_keys=[reviewed_by])
