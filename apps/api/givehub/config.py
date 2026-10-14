@@ -1,11 +1,15 @@
+import json
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-REPOSITORY_ENV = Path(__file__).resolve().parents[3] / ".env"
-API_ENV = Path(__file__).resolve().parents[1] / ".env"
+API_ROOT = Path(__file__).resolve().parents[1]
+# A container installs the package at /app/givehub rather than apps/api/givehub.
+REPOSITORY_ENV = (API_ROOT.parent.parent if API_ROOT.parent.name == "apps" else API_ROOT) / ".env"
+API_ENV = API_ROOT / ".env"
 
 
 class Settings(BaseSettings):
@@ -20,17 +24,20 @@ class Settings(BaseSettings):
     supabase_storage_bucket: str = "opportunity-images"
     google_places_api_key: str = ""
     resend_api_key: str = ""
-    email_from: str = "GiveHub <notifications@givehub.nz>"
-    cors_origins: list[str] = ["http://localhost:8081"]
+    email_from: str = "GiveHub <notifications@example.com>"
+    public_web_url: str = ""
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:8081"]
     source_refresh_postal_code: str = "M5V 2T6"
     source_refresh_radius_km: int = 50
     source_refresh_pages: int = 3
-    source_reviewer_emails: list[str] = []
+    source_reviewer_emails: Annotated[list[str], NoDecode] = []
 
     @field_validator("cors_origins", mode="before")
     @classmethod
     def split_origins(cls, value: object) -> object:
         if isinstance(value, str):
+            if value.strip().startswith("["):
+                return json.loads(value)
             return [part.strip() for part in value.split(",") if part.strip()]
         return value
 
@@ -38,6 +45,8 @@ class Settings(BaseSettings):
     @classmethod
     def split_reviewer_emails(cls, value: object) -> object:
         if isinstance(value, str):
+            if value.strip().startswith("["):
+                return [part.casefold() for part in json.loads(value)]
             return [part.strip().casefold() for part in value.split(",") if part.strip()]
         return value
 

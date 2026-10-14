@@ -45,7 +45,7 @@ export default function VolunteerHome() {
             <Body className="mt-2 text-foreground/70 dark:text-dark-foreground/75">
               {query.isError
                 ? "We couldn’t reach GiveHub just now. Pull down to refresh."
-                : `${query.data?.length ?? 0} activities match your causes, free time, and ${profile?.search_radius_km ?? 25} km travel radius.`}
+                : `${query.data?.length ?? 0} nearby activities, ordered using your preferences. Alternatives stay visible within your ${profile?.search_radius_km ?? 25} km travel radius.`}
             </Body>
             <Pressable onPress={() => router.push("/(volunteer)/discover")} className="mt-3 min-h-11 flex-row items-center">
               <Text className="font-strong text-sm text-primary dark:text-dark-primary">See your matches</Text>

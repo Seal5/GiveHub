@@ -38,6 +38,7 @@ export type AttendanceRow = {
   notes: string;
 };
 export type AttendanceSheet = {
+  session_date?: string | null;
   opportunity_id: string;
   opportunity_title: string;
   default_hours: number;
@@ -100,8 +101,13 @@ export type Profile = PersonalizationPreferences & {
   search_radius_km: number;
   theme: ThemePreference;
   organisation_name: string | null;
+  organisation_verification_status?: "pending" | "approved" | "rejected" | null;
+  can_review_sources?: boolean;
+  deletion_requested_at?: string | null;
 };
 export type Opportunity = {
+  unconfirmed_fields?: string[];
+  match_reasons?: string[];
   id: string;
   title: string;
   description: string;

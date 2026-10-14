@@ -179,7 +179,7 @@ export default function SocialScreen() {
   return (
     <Screen className="pb-5 pt-5">
       <Display>Social</Display>
-      <Body className="mt-2 text-base">See what your friends are up to.</Body>
+      <Body className="mt-2 text-base">Prototype preview · these are sample people and activities, not your friends’ data.</Body>
 
       <Text className="mb-4 mt-8 font-strong text-xs uppercase tracking-[1.5px] text-primary dark:text-dark-primary">
         Going this week

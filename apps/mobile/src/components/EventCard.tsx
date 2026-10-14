@@ -37,6 +37,7 @@ export function EventCard({ item, compact = false }: { item: Opportunity; compac
       <View className="p-4">
         <Text className="font-display text-lg leading-6 tracking-[-0.4px] text-foreground dark:text-dark-foreground">{item.title}</Text>
         <Text className="mt-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">{item.organisation_name}</Text>
+        {item.match_reasons?.length ? <Text className="mt-2 font-sans text-xs text-primary dark:text-dark-primary">{item.match_reasons.slice(0, 2).join(" · ")}</Text> : null}
         <View className="mt-3 flex-row items-center justify-between">
           <Text className="flex-1 font-sans text-xs text-muted-foreground dark:text-dark-muted-foreground">
             {formatEventDate(item.starts_at)} · {item.location_label}

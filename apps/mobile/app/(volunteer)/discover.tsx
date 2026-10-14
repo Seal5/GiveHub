@@ -52,6 +52,7 @@ export default function DiscoverScreen() {
             </View>
             <Text accessibilityRole="header" className="font-display text-[38px] leading-[42px] tracking-[-1.3px] text-white">{item.title}</Text>
             <Text className="mt-3 font-sans text-sm leading-5 text-white/75">{item.impact_statement}</Text>
+            <Text className="mt-3 font-sans text-xs text-white/90">{item.match_reasons?.length ? item.match_reasons.slice(0, 2).join(" · ") : "Nearby alternative · your preferences reorder results without hiding other options"}</Text>
             <Text className="mt-4 font-strong text-sm text-white">{formatEventDate(item.starts_at)} · {item.location_label}</Text>
             <View className="mt-6 flex-row gap-3">
               <Pressable

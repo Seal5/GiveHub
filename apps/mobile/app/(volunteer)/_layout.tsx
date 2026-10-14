@@ -11,6 +11,7 @@ export default function VolunteerLayout() {
       <Tabs.Screen name="activities" options={{ title: "Activities", tabBarIcon: tabIcon("calendar-outline") }} />
       <Tabs.Screen name="impact" options={{ title: "Impact", tabBarIcon: tabIcon("ribbon-outline") }} />
       <Tabs.Screen name="saved" options={{ title: "Saved", tabBarIcon: tabIcon("bookmark-outline") }} />
+      <Tabs.Screen name="privacy" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
       <Tabs.Screen name="opportunity/[id]" options={{ href: null }} />

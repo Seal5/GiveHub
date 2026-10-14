@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -5,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { AttendanceRow, AttendanceStatus } from "@/lib/types";
 import { useAuth } from "@/providers/AuthProvider";
-import { Body, Card, Display, EmptyState, ErrorState, Eyebrow, IconButton, LoadingState, Screen, useThemeColours } from "@/components/ui";
+import { Body, Card, Display, EmptyState, ErrorState, Eyebrow, Field, Button, IconButton, LoadingState, Screen, useThemeColours } from "@/components/ui";
 
 const MARKS: { status: AttendanceStatus; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { status: "attended", label: "Here", icon: "checkmark-circle" },
@@ -72,10 +73,13 @@ export default function AttendanceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const client = useQueryClient();
-  const sheet = useQuery({ queryKey: ["attendance", id], queryFn: () => api.attendanceSheet(id, token), enabled: Boolean(id) });
+  const [dateInput, setDateInput] = useState("");
+  const [sessionDate, setSessionDate] = useState<string | undefined>();
+  const [dateError, setDateError] = useState("");
+  const sheet = useQuery({ queryKey: ["attendance", id, sessionDate], queryFn: () => api.attendanceSheet(id, token, sessionDate), enabled: Boolean(id) });
   const mark = useMutation({
     mutationFn: ({ applicationId, status }: { applicationId: string; status: AttendanceStatus }) =>
-      api.recordAttendance(applicationId, { status }, token),
+      api.recordAttendance(applicationId, { status, session_date: sessionDate }, token),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ["attendance", id] });
       client.invalidateQueries({ queryKey: ["impact"] });
@@ -83,7 +87,7 @@ export default function AttendanceScreen() {
   });
 
   if (sheet.isLoading) return <Screen scroll={false}><LoadingState /></Screen>;
-  if (sheet.isError) return <Screen><ErrorState error={sheet.error} onRetry={() => sheet.refetch()} /></Screen>;
+  if (sheet.isError) return <Screen><ErrorState error={sheet.error} onRetry={() => sheet.refetch()} /><Button className="mt-4" label="Return to first session" variant="secondary" onPress={() => setSessionDate(undefined)} /></Screen>;
 
   const data = sheet.data;
 
@@ -97,6 +101,11 @@ export default function AttendanceScreen() {
         so only mark people who actually turned up.
       </Body>
 
+      <Card className="mb-6">
+        <Body className="mb-3">Session: {data?.session_date ?? "First scheduled event"}. Recurring attendance is recorded separately for each date.</Body>
+        <Field label="Choose session date" placeholder="YYYY-MM-DD" value={dateInput} onChangeText={setDateInput} error={dateError} />
+        <Button label="Open this session" variant="secondary" onPress={() => { if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) { setDateError("Use YYYY-MM-DD"); return; } setDateError(""); setSessionDate(dateInput); }} />
+      </Card>
       <Card className="mb-6">
         <View className="flex-row justify-between">
           <Stat value={String(data?.attended ?? 0)} label="Attended" />

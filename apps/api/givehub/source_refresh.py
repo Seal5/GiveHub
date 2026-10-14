@@ -20,6 +20,7 @@ from givehub.models import (
     OpportunityStatus,
     Recurrence,
     SourceCandidate,
+    SourcePolicy,
     SourceRefreshRun,
 )
 
@@ -219,7 +220,9 @@ def refresh_existing_sources(
 
         assert listing.listing_source_url is not None
         host = urlsplit(listing.listing_source_url).netloc.lower()
-        if host not in CHECKABLE_HOSTS:
+        policy = db.get(SourcePolicy, host)
+        permitted = policy.enabled if policy else not get_settings().is_production
+        if host not in CHECKABLE_HOSTS or not permitted:
             report.skipped_protected += 1
             continue
         try:
@@ -228,9 +231,9 @@ def refresh_existing_sources(
             report.failed += 1
             report.errors.append(f"{host}: source check failed")
             continue
-        if 200 <= response.status_code < 400:
+        if 200 <= response.status_code < 300:
             listing.source_checked_at = checked_at
-            listing.listing_verification_status = "verified"
+            # Reachability is not human verification. Preserve the review state.
             report.checked += 1
         elif response.status_code in {404, 410}:
             listing.source_checked_at = checked_at
@@ -255,6 +258,10 @@ def run_refresh(
 ) -> RefreshReport:
     checked_at = checked_at or datetime.now(UTC)
     report = refresh_existing_sources(db, client, checked_at=checked_at)
+    policy = db.get(SourcePolicy, "volunteersuccess.com")
+    if (policy and not policy.enabled) or (not policy and get_settings().is_production):
+        report.skipped_protected += 1
+        return report
     report.out_of_area = mark_out_of_area_candidates(db)
     try:
         discovered = discover_volunteer_success(
@@ -317,7 +324,7 @@ def execute_refresh_run(
 ) -> RefreshReport | None:
     owns_client = client is None
     refresh_client = client or httpx.Client(
-        follow_redirects=True,
+        follow_redirects=False,
         timeout=20,
         headers={"User-Agent": USER_AGENT},
     )

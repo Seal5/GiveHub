@@ -32,12 +32,14 @@ def _page(
     heading: str,
     body: str,
     meta_line: str = "",
+    web_link: str = "",
 ) -> str:
     safe_title = escape(title)
     safe_description = escape(description)
     image_tag = f'<meta property="og:image" content="{escape(image_url)}" />' if image_url else ""
     hero = f'<img class="hero" src="{escape(image_url)}" alt="" />' if image_url else ""
     meta_html = f'<p class="meta">{escape(meta_line)}</p>' if meta_line else ""
+    web_cta = f'<a class="cta" href="{escape(web_link)}">Continue in your browser</a>' if web_link else ""
     return f"""<!doctype html>
 <html lang="en-CA">
 <head>
@@ -81,6 +83,7 @@ def _page(
       </div>
     </article>
     <a class="cta" href="{escape(deep_link)}">Open in GiveHub</a>
+    {web_cta}
     <p class="note">Don’t have GiveHub yet? Install the app, then open this link again.</p>
   </main>
 </body>
@@ -101,7 +104,8 @@ def opportunity_share_page(
             title=item.title,
             description=item.impact_statement,
             image_url=item.image_url,
-            deep_link=f"{APP_SCHEME}://opportunity/{item.id}",
+            deep_link=f"{APP_SCHEME}://o/{item.id}",
+            web_link=f"{_settings.public_web_url.rstrip('/')}/o/{item.id}" if _settings.public_web_url else "",
             heading=item.title,
             body=item.impact_statement,
             meta_line=f"{item.organisation.name} · {format_starts_at(item.starts_at)} · {item.location_label}",

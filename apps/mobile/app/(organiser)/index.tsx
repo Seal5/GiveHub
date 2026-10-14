@@ -2,7 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, demoMode } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import { Body, BrandMark, Button, Card, ErrorState, LoadingState, Screen, useThemeColours } from "@/components/ui";
 import { formatEventDate } from "@/lib/format";
@@ -78,6 +78,7 @@ export default function OrganiserOverview() {
           </View>
         </Card>
       </Pressable>
+      {profile?.can_review_sources || demoMode ? <><Button className="mt-4" label="Reviewer workspace" variant="secondary" onPress={() => router.push("/(organiser)/governance")} />
       <Pressable onPress={() => router.push("/(organiser)/source-review")} accessibilityRole="button" accessibilityLabel="Review imported opportunities">
         <Card className="mt-3 p-4">
           <View className="flex-row items-center gap-3">
@@ -102,6 +103,7 @@ export default function OrganiserOverview() {
           </View>
         </Card>
       </Pressable>
+      </> : null}
       <Pressable onPress={() => router.push("/(organiser)/listing-reports")} accessibilityRole="button" accessibilityLabel="Review reported listings">
         <Card className="mt-3 p-4">
           <View className="flex-row items-center gap-3">

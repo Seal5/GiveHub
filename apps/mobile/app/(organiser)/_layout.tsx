@@ -9,6 +9,8 @@ export default function OrganiserLayout() {
       <Tabs.Screen name="pipeline" options={{ title: "Pipeline", tabBarIcon: tabIcon("people-outline") }} />
       <Tabs.Screen name="create" options={{ title: "Post", tabBarIcon: tabIcon("add-circle-outline") }} />
       <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: tabIcon("menu-outline") }} />
+      <Tabs.Screen name="governance" options={{ href: null }} />
+      <Tabs.Screen name="privacy" options={{ href: null }} />
       <Tabs.Screen name="waiver" options={{ href: null }} />
       <Tabs.Screen name="application/[id]" options={{ href: null }} />
       <Tabs.Screen name="attendance/[id]" options={{ href: null }} />

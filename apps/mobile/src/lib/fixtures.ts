@@ -15,6 +15,8 @@ export const causes: Cause[] = [
 ];
 const future = (days: number) => new Date(Date.now() + days * 86400000).toISOString();
 const requirementDefaults = {
+  match_reasons: [] as string[],
+  unconfirmed_fields: [] as string[],
   is_accessible: true,
   eligibility_notes: "Open to volunteers who meet the listed minimum age.",
   time_commitment_minutes: 180,

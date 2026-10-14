@@ -81,7 +81,7 @@ export default function AuthScreen() {
         </View>
         <View className="mt-6">
           <Eyebrow>
-            {organiser ? "For verified hosts" : "For local volunteers"}
+            {organiser ? "For volunteer organizers" : "For local volunteers"}
           </Eyebrow>
         </View>
         <Display className="text-[30px] leading-8">
@@ -167,7 +167,7 @@ export default function AuthScreen() {
           <View className="mb-5 rounded-card bg-secondary p-4 dark:bg-dark-secondary">
             <Text className="font-sans text-sm leading-5 text-foreground/75 dark:text-dark-foreground/75">
               {organiser
-                ? "Organiser accounts are auto-approved during the beta; verification status is retained for launch."
+                ? "New organizations need GiveHub approval before publishing. You can prepare drafts while your account is reviewed."
                 : "You control what hosts see in each application."}
             </Text>
           </View>

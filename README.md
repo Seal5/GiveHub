@@ -2,12 +2,16 @@
 
 GiveHub is a Greater Toronto Area volunteer discovery and coordination MVP. It helps people find, assess, and sign up for local opportunities while allowing organisations to publish listings and manage applicants. The product follows the hybrid model presented in MSE 401: aggregate public and organiser listings, standardise their details, personalise discovery, and support either GiveHub-hosted applications or verified external forms.
 
+## Pilot-readiness refinements
+
+The `fix/pilot-readiness` branch adds browser-compatible authentication storage, public demo sharing, a wider desktop organizer applicant workspace, pending host approval and reviewer decisions, source permission controls, import confirmation gates, recommendation explanations, recurring session attendance, personal data export/removal requests, and configurable retention. See [the implementation and deployment guide](docs/pilot-readiness.md) and [report correction text](docs/report-corrections.md). Production services and external validation still need configuration and team review.
+
 ## Current status
 
 As of 3 August 2026:
 
 - The application through volunteer personalization is merged into the repository's default `initial-skeleton` branch. API and mobile checks run in GitHub Actions for every feature branch and pull request.
-- A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0010_volunteer_personalization`; hosted environments must run the latest Alembic migrations during release.
+- A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0012_attendance_sessions`; hosted environments must run the latest Alembic migrations during release.
 - The source-refresh pipeline is installed as a nightly GitHub Actions workflow. New scraped records enter a review queue instead of being published automatically; the first hosted refresh produced 33 pending candidates.
 - A public static demo is available at [alvaropran.github.io/givehub-demo](https://alvaropran.github.io/givehub-demo/). It runs in explicit demo mode, so its accounts and changes remain in that browser and do not use the hosted database.
 - The FastAPI service is not publicly hosted yet. Until it is deployed and the web build is pointed at its URL, the public demo is not a shared production application.
@@ -117,7 +121,7 @@ Deterministic fairness-aware host rotation is implemented so comparable results 
 - Supabase Storage integration issues scoped upload tokens for organiser-owned opportunity images.
 - WCAG-oriented labels, visible focus and error states, keyboard-operable web controls, and minimum 44-pixel interactive targets.
 - Optimistic version fields protect opportunity, application, and moderation updates from silently overwriting newer data.
-- The current automated suite includes 57 API tests and 21 mobile tests, plus linting, strict Python typing, TypeScript checking, migration checks, generated-client verification, and container builds in CI.
+- The current automated suite includes 69 API tests and 28 mobile tests, plus linting, strict Python typing, TypeScript checking, migration checks, generated-client verification, and container builds in CI.
 
 ## Repository structure
 
@@ -158,7 +162,7 @@ All domain reads and writes go through FastAPI. The mobile Supabase client is us
 1. Copy `.env.example` to `.env` and `apps/mobile/.env.example` to `apps/mobile/.env`.
 2. Add the same Supabase project URL and publishable key to both files. Keep the Supabase secret key in the API `.env` only.
 3. Run `corepack enable` and `pnpm install` from the repository root.
-4. Run `uv sync --group dev` from `apps/api`.
+4. Run `uv sync --locked --group dev` from `apps/api`.
 5. Start PostgreSQL and FastAPI with `docker compose up db api`.
 6. Start Expo with `pnpm --filter @givehub/mobile start`.
 
@@ -253,7 +257,7 @@ uv run alembic upgrade head
 docker build -f apps/api/Dockerfile -t givehub-api .
 ```
 
-The current suite contains 21 mobile tests and 57 API tests. CI also confirms that the generated OpenAPI client matches the FastAPI schema.
+The current suite contains 28 mobile tests and 69 API tests. CI also confirms that the generated OpenAPI client matches the FastAPI schema.
 
 ## Deferred and remaining work
 
@@ -270,4 +274,6 @@ GiveHub does not provide legal advice. The default waiver is a starting point th
 
 ## Universal links
 
-Shared links use `EXPO_PUBLIC_SHARE_BASE_URL`, falling back to `EXPO_PUBLIC_API_URL`. The example `https://givehub.nz` value is a placeholder and is not the current public deployment domain. For production, point the variable at the selected app/marketing domain, route `/o/*` to FastAPI, match the domain in `app.json`, and serve the required Apple and Android association files from `/.well-known/`.
+`PUBLIC_WEB_URL` on the API provides a browser fallback on public share pages; use the web app origin that serves its `/o/<id>` route. Native links enter through `givehub://o/<id>` so signed-out visitors keep their destination.
+
+Shared links use `EXPO_PUBLIC_SHARE_BASE_URL`, falling back to `EXPO_PUBLIC_API_URL`. The example `https://givehub.nz` value is a placeholder and is not the current public deployment domain. For production, point `EXPO_PUBLIC_SHARE_BASE_URL` at the API share-page domain and `PUBLIC_WEB_URL` at the separately hosted browser app. Match the selected universal-link domain in `app.json` and serve the required Apple and Android association files from `/.well-known/`.

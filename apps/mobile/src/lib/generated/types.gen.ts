@@ -159,6 +159,10 @@ export type AttendanceRowOut = {
      * Notes
      */
     notes: string;
+    /**
+     * Session Date
+     */
+    session_date?: string | null;
     status: AttendanceStatus;
     /**
      * Volunteer Email
@@ -203,6 +207,10 @@ export type AttendanceSheetOut = {
      */
     rows: Array<AttendanceRowOut>;
     /**
+     * Session Date
+     */
+    session_date?: string | null;
+    /**
      * Total Hours
      */
     total_hours: number;
@@ -225,6 +233,10 @@ export type AttendanceUpdate = {
      * Notes
      */
     notes?: string;
+    /**
+     * Session Date
+     */
+    session_date?: string | null;
     status: AttendanceStatus;
 };
 
@@ -784,6 +796,10 @@ export type OpportunityOut = {
      */
     longitude: number;
     /**
+     * Match Reasons
+     */
+    match_reasons?: Array<string>;
+    /**
      * Meeting Point
      */
     meeting_point: string;
@@ -858,6 +874,10 @@ export type OpportunityOut = {
      */
     transportation_info: string;
     /**
+     * Unconfirmed Fields
+     */
+    unconfirmed_fields?: Array<string>;
+    /**
      * Updated At
      */
     updated_at: string;
@@ -900,6 +920,10 @@ export type OpportunityUpdate = {
      * City
      */
     city?: string | null;
+    /**
+     * Confirm Import Details
+     */
+    confirm_import_details?: boolean;
     /**
      * Country Code
      */
@@ -1044,6 +1068,20 @@ export type OpportunityUpdate = {
 };
 
 /**
+ * OrganisationReview
+ */
+export type OrganisationReview = {
+    /**
+     * Note
+     */
+    note: string;
+    /**
+     * Status
+     */
+    status: string;
+};
+
+/**
  * PipelineOut
  */
 export type PipelineOut = {
@@ -1079,6 +1117,16 @@ export type ProfileCreate = {
 };
 
 /**
+ * ProfileDetailsUpdate
+ */
+export type ProfileDetailsUpdate = {
+    /**
+     * Display Name
+     */
+    display_name: string;
+};
+
+/**
  * ProfileOut
  */
 export type ProfileOut = {
@@ -1090,6 +1138,14 @@ export type ProfileOut = {
      * Age Group
      */
     age_group: string | null;
+    /**
+     * Can Review Sources
+     */
+    can_review_sources?: boolean;
+    /**
+     * Deletion Requested At
+     */
+    deletion_requested_at?: string | null;
     /**
      * Display Name
      */
@@ -1114,6 +1170,10 @@ export type ProfileOut = {
      * Organisation Name
      */
     organisation_name?: string | null;
+    /**
+     * Organisation Verification Status
+     */
+    organisation_verification_status?: string | null;
     /**
      * Preferred Availability
      */
@@ -1404,6 +1464,20 @@ export type SourceHealthSourceOut = {
      * Pending Candidates
      */
     pending_candidates: number;
+};
+
+/**
+ * SourcePolicyUpdate
+ */
+export type SourcePolicyUpdate = {
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+    /**
+     * Permission Reference
+     */
+    permission_reference: string;
 };
 
 /**
@@ -2521,7 +2595,12 @@ export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetDat
          */
         opportunity_id: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Session Date
+         */
+        session_date?: string | null;
+    };
     url: '/v1/organiser/opportunities/{opportunity_id}/attendance';
 };
 
@@ -2916,6 +2995,91 @@ export type GetMeV1ProfilesMeGetResponses = {
 
 export type GetMeV1ProfilesMeGetResponse = GetMeV1ProfilesMeGetResponses[keyof GetMeV1ProfilesMeGetResponses];
 
+export type UpdateProfileDetailsV1ProfilesMePatchData = {
+    body: ProfileDetailsUpdate;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles/me';
+};
+
+export type UpdateProfileDetailsV1ProfilesMePatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateProfileDetailsV1ProfilesMePatchError = UpdateProfileDetailsV1ProfilesMePatchErrors[keyof UpdateProfileDetailsV1ProfilesMePatchErrors];
+
+export type UpdateProfileDetailsV1ProfilesMePatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProfileOut;
+};
+
+export type UpdateProfileDetailsV1ProfilesMePatchResponse = UpdateProfileDetailsV1ProfilesMePatchResponses[keyof UpdateProfileDetailsV1ProfilesMePatchResponses];
+
+export type ExportMyDataV1ProfilesMeDataGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles/me/data';
+};
+
+export type ExportMyDataV1ProfilesMeDataGetResponses = {
+    /**
+     * Response Export My Data V1 Profiles Me Data Get
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ExportMyDataV1ProfilesMeDataGetResponse = ExportMyDataV1ProfilesMeDataGetResponses[keyof ExportMyDataV1ProfilesMeDataGetResponses];
+
+export type CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles/me/deletion-request';
+};
+
+export type CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponses = {
+    /**
+     * Response Cancel Account Deletion V1 Profiles Me Deletion Request Delete
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponse = CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponses[keyof CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponses];
+
+export type RequestAccountDeletionV1ProfilesMeDeletionRequestPostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles/me/deletion-request';
+};
+
+export type RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponses = {
+    /**
+     * Response Request Account Deletion V1 Profiles Me Deletion Request Post
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponse = RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponses[keyof RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponses];
+
 export type UpdatePreferencesV1ProfilesMePreferencesPutData = {
     body: ProfileUpdate;
     path?: never;
@@ -2976,6 +3140,168 @@ export type ListSuburbsV1ReferenceSuburbsGetResponses = {
 };
 
 export type ListSuburbsV1ReferenceSuburbsGetResponse = ListSuburbsV1ReferenceSuburbsGetResponses[keyof ListSuburbsV1ReferenceSuburbsGetResponses];
+
+export type DeletionRequestsV1ReviewDeletionRequestsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/review/deletion-requests';
+};
+
+export type DeletionRequestsV1ReviewDeletionRequestsGetResponses = {
+    /**
+     * Response Deletion Requests V1 Review Deletion Requests Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type DeletionRequestsV1ReviewDeletionRequestsGetResponse = DeletionRequestsV1ReviewDeletionRequestsGetResponses[keyof DeletionRequestsV1ReviewDeletionRequestsGetResponses];
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostData = {
+    body?: never;
+    path: {
+        /**
+         * Profile Id
+         */
+        profile_id: string;
+    };
+    query?: never;
+    url: '/v1/review/deletion-requests/{profile_id}/complete';
+};
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostError = CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostErrors[keyof CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostErrors];
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponses = {
+    /**
+     * Response Complete Account Deletion V1 Review Deletion Requests  Profile Id  Complete Post
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponse = CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponses[keyof CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponses];
+
+export type OrganisationsForReviewV1ReviewOrganisationsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/review/organisations';
+};
+
+export type OrganisationsForReviewV1ReviewOrganisationsGetResponses = {
+    /**
+     * Response Organisations For Review V1 Review Organisations Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type OrganisationsForReviewV1ReviewOrganisationsGetResponse = OrganisationsForReviewV1ReviewOrganisationsGetResponses[keyof OrganisationsForReviewV1ReviewOrganisationsGetResponses];
+
+export type ReviewOrganisationV1ReviewOrganisationsOrganisationIdPutData = {
+    body: OrganisationReview;
+    path: {
+        /**
+         * Organisation Id
+         */
+        organisation_id: string;
+    };
+    query?: never;
+    url: '/v1/review/organisations/{organisation_id}';
+};
+
+export type ReviewOrganisationV1ReviewOrganisationsOrganisationIdPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReviewOrganisationV1ReviewOrganisationsOrganisationIdPutError = ReviewOrganisationV1ReviewOrganisationsOrganisationIdPutErrors[keyof ReviewOrganisationV1ReviewOrganisationsOrganisationIdPutErrors];
+
+export type ReviewOrganisationV1ReviewOrganisationsOrganisationIdPutResponses = {
+    /**
+     * Response Review Organisation V1 Review Organisations  Organisation Id  Put
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type ReviewOrganisationV1ReviewOrganisationsOrganisationIdPutResponse = ReviewOrganisationV1ReviewOrganisationsOrganisationIdPutResponses[keyof ReviewOrganisationV1ReviewOrganisationsOrganisationIdPutResponses];
+
+export type SourcePoliciesV1ReviewSourcePoliciesGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/review/source-policies';
+};
+
+export type SourcePoliciesV1ReviewSourcePoliciesGetResponses = {
+    /**
+     * Response Source Policies V1 Review Source Policies Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type SourcePoliciesV1ReviewSourcePoliciesGetResponse = SourcePoliciesV1ReviewSourcePoliciesGetResponses[keyof SourcePoliciesV1ReviewSourcePoliciesGetResponses];
+
+export type UpdateSourcePolicyV1ReviewSourcePoliciesHostPutData = {
+    body: SourcePolicyUpdate;
+    path: {
+        /**
+         * Host
+         */
+        host: string;
+    };
+    query?: never;
+    url: '/v1/review/source-policies/{host}';
+};
+
+export type UpdateSourcePolicyV1ReviewSourcePoliciesHostPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateSourcePolicyV1ReviewSourcePoliciesHostPutError = UpdateSourcePolicyV1ReviewSourcePoliciesHostPutErrors[keyof UpdateSourcePolicyV1ReviewSourcePoliciesHostPutErrors];
+
+export type UpdateSourcePolicyV1ReviewSourcePoliciesHostPutResponses = {
+    /**
+     * Response Update Source Policy V1 Review Source Policies  Host  Put
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type UpdateSourcePolicyV1ReviewSourcePoliciesHostPutResponse = UpdateSourcePolicyV1ReviewSourcePoliciesHostPutResponses[keyof UpdateSourcePolicyV1ReviewSourcePoliciesHostPutResponses];
 
 export type MyImpactV1VolunteersMeImpactGetData = {
     body?: never;

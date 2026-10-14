@@ -11,6 +11,8 @@ from sqlalchemy import text
 from givehub.api import router
 from givehub.config import get_settings
 from givehub.database import Base, SessionLocal, engine
+from givehub.governance import router as governance_router
+from givehub.lifecycle import router as lifecycle_router
 from givehub.schemas import ErrorDetail, ErrorEnvelope
 from givehub.seed import seed_reference_data
 from givehub.sharing import router as sharing_router
@@ -43,6 +45,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+app.include_router(governance_router)
+app.include_router(lifecycle_router)
 app.include_router(sharing_router)
 
 

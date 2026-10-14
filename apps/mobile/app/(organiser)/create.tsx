@@ -57,27 +57,28 @@ function defaultValues(): Values {
 function valuesFor(item: Opportunity): Values {
   const starts = new Date(item.starts_at);
   const ends = new Date(item.ends_at);
+  const needsReview = Boolean(item.unconfirmed_fields?.length);
   return {
     title: item.title,
     description: item.description,
     impact: item.impact_statement,
     tasks: item.tasks,
-    meeting: item.meeting_point,
-    capacity: String(item.capacity),
-    eventDate: dateInput(starts),
-    startTime: timeInput(starts),
-    endTime: timeInput(ends),
+    meeting: needsReview ? "" : item.meeting_point,
+    capacity: needsReview ? "" : String(item.capacity),
+    eventDate: needsReview ? "" : dateInput(starts),
+    startTime: needsReview ? "" : timeInput(starts),
+    endTime: needsReview ? "" : timeInput(ends),
     causeId: item.causes[0]?.id ?? "",
     recurrence: item.recurrence,
     effort: item.effort as Values["effort"],
-    minimumAge: String(item.minimum_age),
-    eligibility: item.eligibility_notes,
+    minimumAge: needsReview ? "" : String(item.minimum_age),
+    eligibility: needsReview ? "" : item.eligibility_notes,
     training: item.training_commitment,
     screening: item.screening_steps,
     transport: item.transportation_info,
     qualifications: item.qualifications,
     accessibility: item.accessibility,
-    safety: item.safety_notes,
+    safety: needsReview ? "" : item.safety_notes,
     externalUrl: item.external_application_url ?? "",
   };
 }
@@ -85,9 +86,11 @@ function valuesFor(item: Opportunity): Values {
 export default function CreateOpportunityScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const editingId = typeof id === "string" ? id : undefined;
-  const { token } = useAuth();
+  const { token, profile } = useAuth();
+  const canPublish = profile?.organisation_verification_status === "approved" || demoMode;
   const client = useQueryClient();
   const [complete, setComplete] = useState(false);
+  const [importConfirmed, setImportConfirmed] = useState(false);
   const [preview, setPreview] = useState<Values | null>(null);
   const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [eventLocation, setEventLocation] = useState<LocationPoint | null>(null);
@@ -112,7 +115,7 @@ export default function CreateOpportunityScreen() {
   useEffect(() => {
     if (!existing) return;
     form.reset(valuesFor(existing));
-    setEventLocation({
+    setEventLocation(existing.unconfirmed_fields?.length ? null : {
       label: existing.location_label, address_line: existing.address_line,
       locality: existing.locality, city: existing.city, postcode: existing.postcode,
       country_code: existing.country_code, latitude: existing.latitude, longitude: existing.longitude,
@@ -126,6 +129,7 @@ export default function CreateOpportunityScreen() {
 
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
+      if (existing?.unconfirmed_fields?.length && (!importConfirmed || !values.eligibility.trim() || !values.safety.trim() || values.minimumAge === "")) throw new Error("Confirm the source details and enter eligibility, minimum age and safety information.");
       if (!eventLocation) throw new Error("Choose the opportunity location before continuing.");
       const scheduleProblem = scheduleError(values.eventDate, values.startTime, values.endTime, !existing);
       if (scheduleProblem) throw new Error(scheduleProblem);
@@ -157,7 +161,8 @@ export default function CreateOpportunityScreen() {
         requires_waiver: applicationMode === "internal" && requiresWaiver,
         listing_source: existing?.listing_source ?? "GiveHub organiser",
         listing_source_url: existing?.listing_source_url ?? null,
-        listing_verification_status: existing?.status === "draft" && existing.listing_source_url ? "verified" : existing?.listing_verification_status ?? "verified",
+        listing_verification_status: existing?.listing_verification_status ?? "verified",
+        confirm_import_details: Boolean(existing?.unconfirmed_fields?.length && importConfirmed),
         source_updated_at: existing?.source_updated_at ?? new Date().toISOString(),
         source_checked_at: existing?.status === "draft" && existing.listing_source_url ? new Date().toISOString() : existing?.source_checked_at ?? null,
         application_mode: applicationMode,
@@ -166,7 +171,7 @@ export default function CreateOpportunityScreen() {
       };
       if (existing) {
         const updated = await api.updateOpportunity(existing.id, { ...payload, version: existing.version }, token);
-        return existing.status === "draft" ? api.publishOpportunity(updated.id, token) : updated;
+        return existing.status === "draft" && canPublish ? api.publishOpportunity(updated.id, token) : updated;
       }
       let event = await api.createOpportunity({
         ...payload,
@@ -182,7 +187,7 @@ export default function CreateOpportunityScreen() {
         if (error) throw error;
         event = await api.updateOpportunity(event.id, { image_url: upload.public_url, version: event.version }, token);
       }
-      return api.publishOpportunity(event.id, token);
+      return canPublish ? api.publishOpportunity(event.id, token) : event;
     },
     onSuccess: () => {
       setComplete(true);
@@ -193,6 +198,7 @@ export default function CreateOpportunityScreen() {
   if (editingId && events.isLoading) return <Screen><LoadingState /></Screen>;
   if (editingId && events.isError) return <Screen><ErrorState error={events.error} onRetry={() => events.refetch()} /></Screen>;
   if (editingId && events.data && !existing) return <Screen><ErrorState title="Opportunity unavailable" /></Screen>;
+  if (complete && !canPublish) return <Screen><Eyebrow>Draft saved</Eyebrow><Display>Your draft is ready for host approval.</Display><Body className="mt-3 mb-5">Your organization is pending review. Refresh approval status in Profile before publishing this draft.</Body><Button label="Back to overview" onPress={() => router.replace("/(organiser)")} /></Screen>;
   if (complete) return <Screen><Eyebrow>{existing?.status === "draft" ? "Published" : existing ? "Updated" : "Published"}</Eyebrow><Display>{existing?.status === "draft" ? "Your opportunity is ready to find its people." : existing ? "Your changes are live." : "Your opportunity is ready to find its people."}</Display><Body className="mb-7 mt-4">Volunteers now see the schedule, fit information, and application process you reviewed.</Body><Button label="Back to overview" onPress={() => router.replace("/(organiser)")} /></Screen>;
 
   const field = (name: keyof Values, label: string, placeholder: string, multiline = false, required = false) => (
@@ -222,7 +228,8 @@ export default function CreateOpportunityScreen() {
       <Card className="mb-5"><Text className="font-strong text-base text-foreground dark:text-dark-foreground">Volunteer information</Text><Body className="mt-2">Tasks: {preview.tasks}</Body>{preview.accessibility ? <Body className="mt-2">Access: {preview.accessibility}</Body> : null}{preview.safety ? <Body className="mt-2">Safety: {preview.safety}</Body> : null}{preview.training ? <Body className="mt-2">Training: {preview.training}</Body> : null}{preview.screening ? <Body className="mt-2">Screening: {preview.screening}</Body> : null}</Card>
       <Card className="mb-5"><Text className="font-strong text-base text-foreground dark:text-dark-foreground">Application process</Text><Body className="mt-2">{applicationMode === "internal" ? "Applications are stored by GiveHub and shared with your organisation." : `Applicants continue to ${preview.externalUrl}; GiveHub stores no form answers.`}</Body></Card>
       {mutation.error ? <Text accessibilityRole="alert" className="mb-3 font-sans text-sm text-destructive dark:text-dark-destructive">{mutation.error.message}</Text> : null}
-      <Button label={existing && existing.status !== "draft" ? "Save changes" : "Publish opportunity"} loading={mutation.isPending} onPress={() => mutation.mutate(preview)} />
+      {existing?.unconfirmed_fields?.length ? <Card className="mb-4"><Body>Confirm that schedule, location, capacity, age requirements, safety and the application destination match the original source.</Body><Chip label={importConfirmed ? "Source details confirmed" : "I checked these details against the source"} selected={importConfirmed} onPress={() => setImportConfirmed(!importConfirmed)} /></Card> : null}
+      <Button label={!canPublish ? "Save draft" : existing && existing.status !== "draft" ? "Save changes" : "Publish opportunity"} loading={mutation.isPending} onPress={() => mutation.mutate(preview)} />
       <Button label="Back to editing" variant="secondary" className="mt-3" onPress={() => setPreview(null)} />
     </Screen>;
   }
@@ -242,6 +249,7 @@ export default function CreateOpportunityScreen() {
     <Eyebrow>{existing ? "Edit opportunity" : "Post opportunity"}</Eyebrow>
     <Display>{existing ? "Keep the listing accurate." : "Give people enough detail to say yes."}</Display>
     <Body className="mb-7 mt-3">Set the real schedule and volunteer fit, then review exactly what people will see.</Body>
+    {existing?.unconfirmed_fields?.length ? <Card className="mb-4"><Body>Imported draft: schedule, location, capacity and eligibility are unknown. Enter the real source information; assumed details cannot be published.</Body></Card> : null}
     <Body className="mb-5">Fields marked with * are needed. Everything else is optional and can be added later.</Body>
     {!existing ? <Pressable accessibilityRole="button" accessibilityLabel="Choose opportunity image, optional" onPress={async () => { const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [4, 3], quality: 0.85 }); if (!result.canceled) setImage(result.assets[0] ?? null); }} className="mb-5 h-52 overflow-hidden rounded-card border border-dashed border-primary bg-secondary active:opacity-80 dark:border-dark-primary dark:bg-dark-secondary">{image ? <Image source={{ uri: image.uri }} className="h-full w-full" resizeMode="cover" /> : <Text className="m-auto font-medium text-sm text-primary dark:text-dark-primary">Choose an event image (optional)</Text>}</Pressable> : null}
     {field("title", "Event title", "e.g. Harbour planting morning", false, true)}
