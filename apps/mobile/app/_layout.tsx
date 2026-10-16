@@ -59,12 +59,12 @@ function AppFrame() {
   const { profile } = useAuth();
   const { width } = useWindowDimensions();
   const segments = useSegments();
-  const organizerDesktop = profile?.role === "organiser" && width >= 900 && !segments.includes("attendance" as never);
-  const communityDesktop = width >= 900 && ((segments[0] as string) === "g" || segments.includes("social" as never));
+  const communityScreen = segments.some(segment => ["g", "social", "community", "community-create", "community-edit", "community-event"].includes(segment as string));
+  const organizerDesktop = profile?.role === "organiser" && width >= 900 && !segments.includes("attendance" as never) && !communityScreen;
   return (
     <View
       className="flex-1 overflow-hidden bg-background dark:bg-dark-background"
-      style={Platform.OS === "web" ? { width: "100%", maxWidth: organizerDesktop || communityDesktop ? 1280 : 480, alignSelf: "center" } : undefined}
+      style={Platform.OS === "web" ? { width: "100%", maxWidth: organizerDesktop ? 1280 : 480, alignSelf: "center" } : undefined}
     >
       <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
     </View>

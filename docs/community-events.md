@@ -4,6 +4,8 @@ Community events add invitations and RSVP coordination to GiveHub's existing Exp
 
 This replaces the volunteer Social screen's sample activity with database-backed community events. Volunteer applications, agreements, attendance and impact totals remain separate workflows; an RSVP alone does not award volunteer hours.
 
+Community screens use a single phone-width column, including in wide browser previews. Invitations have a persistent bottom RSVP action that jumps to the response form; the plan and guest list follow the form. Creation/editing uses three short steps (details, style, guests) with bottom navigation. Host guest details and decisions open in a sheet. Cards, type and host counts are sized for phone screens, with horizontal guest filters and no desktop side panes.
+
 ## Included
 
 - Organizer **Events** tab, Home entry points and volunteer **Community** tab.
@@ -47,7 +49,7 @@ With `RESEND_API_KEY` and a verified `EMAIL_FROM` configured, opted-in guests wh
 
 ## Test manually
 
-1. Sign in as an organizer. Open **Events → Create community event**. Set a title, description, future date, location and theme. Add a private guest question. Save the draft and publish it.
+1. Sign in as an organizer. Open **Events → Create community event**. Complete the details, style and guest steps. Set a title, description, future date and location, choose a theme and optionally add a private guest question. Save the draft and publish it.
 2. Copy the invite link and open it in a separate browser session. RSVP Going, optionally with another guest. Save the private edit link. Reload and change the response.
 3. Return to the host workspace. Select the guest, verify their private answer and export the CSV. With approval enabled, confirm the pending guest and check that the hidden location becomes visible to that guest.
 4. Fill the event, RSVP from another guest session and verify waitlisting. Withdraw the confirmed party and check promotion without overbooking.
@@ -73,7 +75,7 @@ pnpm test:mobile
 GIVEHUB_E2E_API_URL=http://127.0.0.1:8787 pnpm test:browser
 ```
 
-The browser test expects a running local-auth web export at `http://localhost:8081` and an isolated development API with seeded identities. Set `GIVEHUB_E2E_WEB_URL` to override the web origin and ensure that origin is allowed by API CORS. Set `CHROME_PATH` if Chrome is elsewhere. It creates a test event, exercises independent host/guest sessions, verifies reload/editing and CSV download, checks a narrow viewport, and cancels its event afterward. Never point development bearer-token tests at production.
+The browser tests expect a running local-auth web export at `http://localhost:8081` and an isolated development API with seeded identities. Set `GIVEHUB_E2E_WEB_URL` to override the web origin and ensure that origin is allowed by API CORS. Set `CHROME_PATH` if Chrome is elsewhere. They run full host/guest flows and discovery layout checks at 360, 390 and 430 pixels with touch/mobile emulation, plus a wide browser preview. Coverage includes the step editor, persistent RSVP button and jump, guest sheet, reload/editing, CSV download, a single card column and horizontal overflow. Created test events are cancelled afterward. Native-device and Safari validation are separate. Never point development bearer-token tests at production.
 
 API regressions cover privacy, ownership, duplicates, private edit keys, required questions, capacity and a real concurrent final-slot race, approval, waitlist promotion, lifecycle integration, unlisted events, calendar metadata, local delivery previews, cancellation and DST validation. Hosted PostgreSQL concurrency, native devices, live provider delivery and deployment/load testing remain unverified.
 

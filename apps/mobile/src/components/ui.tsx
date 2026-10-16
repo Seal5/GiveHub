@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from "react";
+import type { PropsWithChildren, ReactNode, RefObject } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -84,14 +84,15 @@ export function IconButton({ icon, label, onPress, className = "", tone = "card"
   );
 }
 
-type ScreenProps = { scroll?: boolean; className?: string; refreshing?: boolean; onRefresh?: () => void };
-export function Screen({ children, scroll = true, className = "", refreshing, onRefresh }: PropsWithChildren<ScreenProps>) {
+type ScreenProps = { scroll?: boolean; className?: string; refreshing?: boolean; onRefresh?: () => void; footer?: ReactNode; scrollRef?: RefObject<ScrollView | null> };
+export function Screen({ children, scroll = true, className = "", refreshing, onRefresh, footer, scrollRef }: PropsWithChildren<ScreenProps>) {
   const colours = useThemeColours();
   const content = <View className={`flex-1 px-5 pb-8 pt-3 ${className}`}>{children}</View>;
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background dark:bg-dark-background">
       {scroll ? (
         <ScrollView
+          ref={scrollRef}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentContainerClassName="grow"
@@ -100,6 +101,7 @@ export function Screen({ children, scroll = true, className = "", refreshing, on
           {content}
         </ScrollView>
       ) : content}
+      {footer ? <SafeAreaView edges={["bottom"]} className="border-t border-border bg-card dark:border-dark-border dark:bg-dark-card"><View className="px-5 py-3">{footer}</View></SafeAreaView> : null}
     </SafeAreaView>
   );
 }
