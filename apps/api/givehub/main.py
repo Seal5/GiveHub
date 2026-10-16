@@ -9,8 +9,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from givehub.api import router
+from givehub.community import router as community_router
+from givehub.community_seed import seed_community
 from givehub.config import get_settings
-from givehub.database import Base, SessionLocal, engine
+from givehub.database import Base, SessionLocal, engine, get_db
 from givehub.governance import router as governance_router
 from givehub.lifecycle import router as lifecycle_router
 from givehub.schemas import ErrorDetail, ErrorEnvelope
@@ -24,10 +26,11 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    if not settings.is_production:
+    if not settings.is_production and get_db not in _app.dependency_overrides:
         Base.metadata.create_all(engine)
         with SessionLocal() as db:
             seed_reference_data(db)
+            seed_community(db)
     yield
 
 
@@ -48,6 +51,7 @@ app.include_router(router)
 app.include_router(governance_router)
 app.include_router(lifecycle_router)
 app.include_router(sharing_router)
+app.include_router(community_router)
 
 
 @app.middleware("http")

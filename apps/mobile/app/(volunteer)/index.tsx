@@ -55,6 +55,9 @@ export default function VolunteerHome() {
         </View>
       </Card>
 
+      <Pressable accessibilityRole="button" accessibilityLabel="Explore community events" onPress={() => router.push("/(volunteer)/social")} className="mt-5">
+        <Card><Text className="font-strong text-xs uppercase tracking-[1.5px] text-primary dark:text-dark-primary">Meet your people</Text><Text className="mt-2 font-display text-xl text-foreground dark:text-dark-foreground">Good people. Shared purpose.</Text><Body className="mt-2">Suppers, meetups, and little reasons to get together. Explore community events →</Body></Card>
+      </Pressable>
       <View className="mb-4 mt-8 flex-row items-center justify-between">
         <Text className="font-display text-2xl tracking-[-0.7px] text-foreground dark:text-dark-foreground">Coming up</Text>
         <Pressable onPress={() => router.push("/(volunteer)/discover")} className="min-h-11 justify-center px-2"><Text className="font-strong text-sm text-primary dark:text-dark-primary">See all</Text></Pressable>

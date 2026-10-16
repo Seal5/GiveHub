@@ -122,7 +122,7 @@ const distanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
   return 6371.0088 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 };
 
-async function request<T>(path: string, options: Options = {}): Promise<T> {
+export async function request<T>(path: string, options: Options = {}): Promise<T> {
   if (apiConfigurationError) throw new Error(apiConfigurationError);
   if (!apiUrl) throw new Error("GiveHub API is not configured.");
   const response = await fetch(`${apiUrl}${path}`, {
@@ -135,13 +135,13 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new Error(body?.error?.message ?? "GiveHub could not complete that request");
+    throw new Error(body?.error?.message ?? (typeof body?.detail === "string" ? body.detail : body?.detail?.[0]?.msg) ?? "GiveHub could not complete that request");
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
-async function requestText(path: string, options: Options = {}): Promise<string> {
+export async function requestText(path: string, options: Options = {}): Promise<string> {
   if (apiConfigurationError) throw new Error(apiConfigurationError);
   if (!apiUrl) throw new Error("GiveHub API is not configured.");
   const response = await fetch(`${apiUrl}${path}`, {

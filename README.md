@@ -1,6 +1,10 @@
 # GiveHub
 
-GiveHub is a Greater Toronto Area volunteer discovery and coordination MVP. It helps people find, assess, and sign up for local opportunities while allowing organisations to publish listings and manage applicants. The product follows the hybrid model presented in MSE 401: aggregate public and organiser listings, standardise their details, personalise discovery, and support either GiveHub-hosted applications or verified external forms.
+GiveHub is a Greater Toronto Area volunteer discovery and community coordination app. It helps people find and apply to local opportunities, meet their community through shared invitations, and manage RSVPs. Organizations publish listings, coordinate applicants, and host gatherings. The volunteering product follows the hybrid model presented in MSE 401: aggregate public and organiser listings, standardise their details, personalise discovery, and support either GiveHub-hosted applications or verified external forms.
+
+## Community invitations and RSVPs
+
+GiveHub now includes community event creation, themed shareable invitations, guest RSVPs, approval and waitlists, private questions, a host guest workspace, CSV export, announcements and durable reminders. Organizers use **Events**; volunteers use **Community** and **Activities**. Shared links support guests without accounts. See [community event setup and testing](docs/community-events.md).
 
 ## Pilot-readiness refinements
 
@@ -11,7 +15,7 @@ The `fix/pilot-readiness` branch adds browser-compatible authentication storage,
 As of 3 August 2026:
 
 - The application through volunteer personalization is merged into the repository's default `initial-skeleton` branch. API and mobile checks run in GitHub Actions for every feature branch and pull request.
-- A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0012_attendance_sessions`; hosted environments must run the latest Alembic migrations during release.
+- A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0013_community_events`; hosted environments must run the latest Alembic migrations during release.
 - The source-refresh pipeline is installed as a nightly GitHub Actions workflow. New scraped records enter a review queue instead of being published automatically; the first hosted refresh produced 33 pending candidates.
 - A public static demo is available at [alvaropran.github.io/givehub-demo](https://alvaropran.github.io/givehub-demo/). It runs in explicit demo mode, so its accounts and changes remain in that browser and do not use the hosted database.
 - The FastAPI service is not publicly hosted yet. Until it is deployed and the web build is pointed at its URL, the public demo is not a shared production application.
@@ -31,7 +35,7 @@ Manual recording with QuickTime, OBS, Loom, or the operating system's screen rec
 | 1:45-2:45 | Show Home and Discover, then open Search and demonstrate location, date, cause, duration, accessibility, eligibility, training, screening, and application-mode filters. | Volunteers can find opportunities that fit their interests and constraints. |
 | 2:45-4:00 | Open an opportunity and point out schedule, tasks, transport, qualifications, accessibility, source, verification, and freshness. Save it and show native sharing. | Listings expose the practical and trust information needed before applying. |
 | 4:00-5:30 | Apply to an internal opportunity. Show the personal note, experience, availability dropdown, recipient notice, and waiver. Briefly contrast an external-application listing. | GiveHub supports both hosted and organisation-controlled applications without collecting external form responses. |
-| 5:30-6:30 | Open Activities to show status tracking, editing, and withdrawal. Briefly show Saved, Impact, and the social prototype. | Volunteers retain control after applying and can see their participation history. |
+| 5:30-6:30 | Open Activities to show status tracking, editing, and withdrawal. Show Saved, Impact, and Community invitations. | Volunteers retain control after applying and can join community gatherings. |
 | 6:30-7:15 | Sign out and sign in as an organiser. Show the dashboard, posting funnel, opportunities, and action queue. | Organisers get one operational view of listings and applicants. |
 | 7:15-8:15 | Create or edit an opportunity and identify required versus optional fields, address autocomplete, capacity, application mode, screening, training, and draft/publish controls. | Hosts can publish complete, structured opportunities without every field creating friction. |
 | 8:15-9:00 | Open the applicant pipeline, change an application status, show CSV export, attendance, and contributed hours. | The workflow continues from application through confirmation and recorded impact. |
@@ -44,7 +48,7 @@ Manual recording with QuickTime, OBS, Loom, or the operating system's screen rec
 2. Start FastAPI and Expo before recording, then verify `/ready` and load the Home screen once.
 3. Keep one internal and one external opportunity in mind so the application-mode contrast is quick.
 4. Submit the volunteer application before switching roles so it appears in the organiser pipeline.
-5. Treat the social tab as a clearly labelled prototype; shared social networking is not yet implemented.
+5. Open Community for real event invitations and RSVPs. A friends graph is not implemented; RSVPs are independent of volunteer hours.
 6. Keep the public static demo open in a separate tab only as a fallback.
 
 ## MSE 401 MVP promise

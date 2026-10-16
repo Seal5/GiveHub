@@ -9,6 +9,10 @@ export type ClientOptions = {
  */
 export type AnalyticsOut = {
     /**
+     * Views
+     */
+    views: number;
+    /**
      * Application Starts
      */
     application_starts: number;
@@ -24,10 +28,16 @@ export type AnalyticsOut = {
      * View To Application Rate
      */
     view_to_application_rate: number;
+};
+
+/**
+ * AnnouncementInput
+ */
+export type AnnouncementInput = {
     /**
-     * Views
+     * Body
      */
-    views: number;
+    body: string;
 };
 
 /**
@@ -35,17 +45,17 @@ export type AnalyticsOut = {
  */
 export type ApplicationCreate = {
     /**
-     * Availability
+     * Note
      */
-    availability?: string;
+    note: string;
     /**
      * Experience
      */
     experience?: string;
     /**
-     * Note
+     * Availability
      */
-    note: string;
+    availability?: string;
     waiver?: WaiverAcceptanceIn | null;
 };
 
@@ -54,29 +64,9 @@ export type ApplicationCreate = {
  */
 export type ApplicationOut = {
     /**
-     * Availability
-     */
-    availability: string;
-    /**
-     * Experience
-     */
-    experience: string;
-    /**
-     * History
-     */
-    history: Array<StatusHistoryOut>;
-    /**
      * Id
      */
     id: string;
-    /**
-     * Next Step
-     */
-    next_step: string;
-    /**
-     * Note
-     */
-    note: string;
     /**
      * Opportunity Id
      */
@@ -85,15 +75,6 @@ export type ApplicationOut = {
      * Opportunity Title
      */
     opportunity_title: string;
-    status: ApplicationStatus;
-    /**
-     * Version
-     */
-    version: number;
-    /**
-     * Volunteer Email
-     */
-    volunteer_email: string;
     /**
      * Volunteer Id
      */
@@ -102,6 +83,35 @@ export type ApplicationOut = {
      * Volunteer Name
      */
     volunteer_name: string;
+    /**
+     * Volunteer Email
+     */
+    volunteer_email: string;
+    /**
+     * Note
+     */
+    note: string;
+    /**
+     * Experience
+     */
+    experience: string;
+    /**
+     * Availability
+     */
+    availability: string;
+    status: ApplicationStatus;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Next Step
+     */
+    next_step: string;
+    /**
+     * History
+     */
+    history: Array<StatusHistoryOut>;
     waiver?: WaiverAcceptanceOut | null;
 };
 
@@ -126,17 +136,17 @@ export type ApplicationTransition = {
  */
 export type ApplicationUpdate = {
     /**
-     * Availability
+     * Note
      */
-    availability?: string;
+    note: string;
     /**
      * Experience
      */
     experience?: string;
     /**
-     * Note
+     * Availability
      */
-    note: string;
+    availability?: string;
     /**
      * Version
      */
@@ -148,9 +158,22 @@ export type ApplicationUpdate = {
  */
 export type AttendanceRowOut = {
     /**
+     * Session Date
+     */
+    session_date?: string | null;
+    /**
      * Application Id
      */
     application_id: string;
+    /**
+     * Volunteer Name
+     */
+    volunteer_name: string;
+    /**
+     * Volunteer Email
+     */
+    volunteer_email: string;
+    status: AttendanceStatus;
     /**
      * Hours
      */
@@ -159,19 +182,6 @@ export type AttendanceRowOut = {
      * Notes
      */
     notes: string;
-    /**
-     * Session Date
-     */
-    session_date?: string | null;
-    status: AttendanceStatus;
-    /**
-     * Volunteer Email
-     */
-    volunteer_email: string;
-    /**
-     * Volunteer Name
-     */
-    volunteer_name: string;
 };
 
 /**
@@ -179,21 +189,9 @@ export type AttendanceRowOut = {
  */
 export type AttendanceSheetOut = {
     /**
-     * Attended
+     * Session Date
      */
-    attended: number;
-    /**
-     * Default Hours
-     */
-    default_hours: number;
-    /**
-     * Expected
-     */
-    expected: number;
-    /**
-     * No Show
-     */
-    no_show: number;
+    session_date?: string | null;
     /**
      * Opportunity Id
      */
@@ -203,17 +201,29 @@ export type AttendanceSheetOut = {
      */
     opportunity_title: string;
     /**
-     * Rows
+     * Default Hours
      */
-    rows: Array<AttendanceRowOut>;
+    default_hours: number;
     /**
-     * Session Date
+     * Expected
      */
-    session_date?: string | null;
+    expected: number;
+    /**
+     * Attended
+     */
+    attended: number;
+    /**
+     * No Show
+     */
+    no_show: number;
     /**
      * Total Hours
      */
     total_hours: number;
+    /**
+     * Rows
+     */
+    rows: Array<AttendanceRowOut>;
 };
 
 /**
@@ -226,6 +236,11 @@ export type AttendanceStatus = 'expected' | 'attended' | 'no_show' | 'excused';
  */
 export type AttendanceUpdate = {
     /**
+     * Session Date
+     */
+    session_date?: string | null;
+    status: AttendanceStatus;
+    /**
      * Hours
      */
     hours?: number | null;
@@ -233,11 +248,6 @@ export type AttendanceUpdate = {
      * Notes
      */
     notes?: string;
-    /**
-     * Session Date
-     */
-    session_date?: string | null;
-    status: AttendanceStatus;
 };
 
 /**
@@ -249,13 +259,139 @@ export type CauseOut = {
      */
     id: string;
     /**
-     * Name
-     */
-    name: string;
-    /**
      * Slug
      */
     slug: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * CoverInput
+ */
+export type CoverInput = {
+    /**
+     * Data
+     */
+    data: string;
+};
+
+/**
+ * GatheringInput
+ */
+export type GatheringInput = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Description
+     */
+    description?: string;
+    /**
+     * Location
+     */
+    location?: string;
+    /**
+     * Timezone
+     */
+    timezone?: string;
+    /**
+     * Starts Local
+     */
+    starts_local: string;
+    /**
+     * Ends Local
+     */
+    ends_local: string;
+    /**
+     * Theme
+     */
+    theme?: 'citrus' | 'rose' | 'moss' | 'midnight';
+    /**
+     * Cover Url
+     */
+    cover_url?: string;
+    /**
+     * Capacity
+     */
+    capacity?: number | null;
+    /**
+     * Max Plus Ones
+     */
+    max_plus_ones?: number;
+    /**
+     * Approval Required
+     */
+    approval_required?: boolean;
+    /**
+     * Guest List Visible
+     */
+    guest_list_visible?: boolean;
+    /**
+     * Address After Rsvp
+     */
+    address_after_rsvp?: boolean;
+    /**
+     * Listed
+     */
+    listed?: boolean;
+    /**
+     * Reminder Enabled
+     */
+    reminder_enabled?: boolean;
+    /**
+     * Questions
+     */
+    questions?: Array<GuestQuestion>;
+    /**
+     * Version
+     */
+    version?: number | null;
+};
+
+/**
+ * GatheringState
+ */
+export type GatheringState = {
+    /**
+     * Status
+     */
+    status: 'draft' | 'published' | 'cancelled';
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * GuestDecision
+ */
+export type GuestDecision = {
+    /**
+     * Status
+     */
+    status: 'going' | 'waitlisted' | 'declined';
+};
+
+/**
+ * GuestQuestion
+ */
+export type GuestQuestion = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Required
+     */
+    required?: boolean;
 };
 
 /**
@@ -273,17 +409,17 @@ export type HttpValidationError = {
  */
 export type ImpactCauseOut = {
     /**
-     * Events
+     * Slug
      */
-    events: number;
+    slug: string;
     /**
      * Name
      */
     name: string;
     /**
-     * Slug
+     * Events
      */
-    slug: string;
+    events: number;
 };
 
 /**
@@ -291,13 +427,13 @@ export type ImpactCauseOut = {
  */
 export type ImpactEventOut = {
     /**
-     * Hours
-     */
-    hours: number;
-    /**
      * Opportunity Id
      */
     opportunity_id: string;
+    /**
+     * Title
+     */
+    title: string;
     /**
      * Organisation Name
      */
@@ -307,9 +443,9 @@ export type ImpactEventOut = {
      */
     starts_at: string;
     /**
-     * Title
+     * Hours
      */
-    title: string;
+    hours: number;
 };
 
 /**
@@ -319,33 +455,33 @@ export type ImpactEventOut = {
  */
 export type ImpactOut = {
     /**
-     * Causes
+     * Total Hours
      */
-    causes: Array<ImpactCauseOut>;
+    total_hours: number;
     /**
      * Events Attended
      */
     events_attended: number;
     /**
-     * Hours This Year
-     */
-    hours_this_year: number;
-    /**
      * Organisations Supported
      */
     organisations_supported: number;
     /**
-     * Recent
-     */
-    recent: Array<ImpactEventOut>;
-    /**
-     * Total Hours
-     */
-    total_hours: number;
-    /**
      * Upcoming Confirmed
      */
     upcoming_confirmed: number;
+    /**
+     * Hours This Year
+     */
+    hours_this_year: number;
+    /**
+     * Causes
+     */
+    causes: Array<ImpactCauseOut>;
+    /**
+     * Recent
+     */
+    recent: Array<ImpactEventOut>;
 };
 
 /**
@@ -353,13 +489,13 @@ export type ImpactOut = {
  */
 export type ListingReportCreate = {
     /**
-     * Details
-     */
-    details?: string;
-    /**
      * Reason
      */
     reason: string;
+    /**
+     * Details
+     */
+    details?: string;
 };
 
 /**
@@ -381,14 +517,6 @@ export type ListingReportModerate = {
  */
 export type ListingReportOut = {
     /**
-     * Created At
-     */
-    created_at: string;
-    /**
-     * Details
-     */
-    details: string;
-    /**
      * Id
      */
     id: string;
@@ -405,22 +533,30 @@ export type ListingReportOut = {
      */
     organisation_name: string;
     /**
-     * Reason
-     */
-    reason: string;
-    /**
      * Reporter Name
      */
     reporter_name: string;
     /**
-     * Resolution Note
+     * Reason
      */
-    resolution_note: string;
+    reason: string;
+    /**
+     * Details
+     */
+    details: string;
+    status: ListingReportStatus;
+    /**
+     * Created At
+     */
+    created_at: string;
     /**
      * Reviewed At
      */
     reviewed_at: string | null;
-    status: ListingReportStatus;
+    /**
+     * Resolution Note
+     */
+    resolution_note: string;
 };
 
 /**
@@ -433,41 +569,41 @@ export type ListingReportStatus = 'pending' | 'dismissed' | 'resolved';
  */
 export type LocationResult = {
     /**
-     * Address Line
+     * Place Id
      */
-    address_line: string;
-    /**
-     * City
-     */
-    city?: string;
-    /**
-     * Country Code
-     */
-    country_code?: string;
+    place_id: string;
     /**
      * Label
      */
     label: string;
     /**
-     * Latitude
+     * Address Line
      */
-    latitude: number;
+    address_line: string;
     /**
      * Locality
      */
     locality?: string;
     /**
-     * Longitude
+     * City
      */
-    longitude: number;
-    /**
-     * Place Id
-     */
-    place_id: string;
+    city?: string;
     /**
      * Postcode
      */
     postcode?: string | null;
+    /**
+     * Country Code
+     */
+    country_code?: string;
+    /**
+     * Latitude
+     */
+    latitude: number;
+    /**
+     * Longitude
+     */
+    longitude: number;
 };
 
 /**
@@ -475,13 +611,13 @@ export type LocationResult = {
  */
 export type LocationSuggestion = {
     /**
-     * Label
-     */
-    label: string;
-    /**
      * Place Id
      */
     place_id: string;
+    /**
+     * Label
+     */
+    label: string;
 };
 
 /**
@@ -509,69 +645,130 @@ export type NotificationPreferencesUpdate = {
  */
 export type OpportunityCreate = {
     /**
-     * Accessibility
+     * Title
      */
-    accessibility?: string;
-    /**
-     * Address Line
-     */
-    address_line: string;
-    /**
-     * Application Mode
-     */
-    application_mode?: string;
-    /**
-     * Capacity
-     */
-    capacity?: number;
-    /**
-     * Cause Ids
-     */
-    cause_ids: Array<string>;
-    /**
-     * City
-     */
-    city?: string;
-    /**
-     * Country Code
-     */
-    country_code?: string;
+    title: string;
     /**
      * Description
      */
     description: string;
     /**
-     * Effort
+     * Impact Statement
      */
-    effort?: string;
+    impact_statement: string;
     /**
-     * Eligibility Notes
+     * Tasks
      */
-    eligibility_notes?: string;
+    tasks: string;
+    /**
+     * Meeting Point
+     */
+    meeting_point: string;
+    /**
+     * Location Label
+     */
+    location_label: string;
+    /**
+     * Address Line
+     */
+    address_line: string;
+    /**
+     * Locality
+     */
+    locality?: string;
+    /**
+     * City
+     */
+    city?: string;
+    /**
+     * Postcode
+     */
+    postcode?: string | null;
+    /**
+     * Country Code
+     */
+    country_code?: string;
+    /**
+     * Latitude
+     */
+    latitude: number;
+    /**
+     * Longitude
+     */
+    longitude: number;
+    /**
+     * Location Visibility
+     */
+    location_visibility?: string;
+    /**
+     * Starts At
+     */
+    starts_at: string;
     /**
      * Ends At
      */
     ends_at: string;
+    recurrence?: Recurrence;
     /**
-     * External Application Url
+     * Effort
      */
-    external_application_url?: string | null;
+    effort?: string;
     /**
-     * Image Url
+     * Minimum Age
      */
-    image_url?: string | null;
+    minimum_age?: number;
     /**
-     * Impact Statement
+     * Accessibility
      */
-    impact_statement: string;
+    accessibility?: string;
     /**
      * Is Accessible
      */
     is_accessible?: boolean;
     /**
-     * Latitude
+     * Eligibility Notes
      */
-    latitude: number;
+    eligibility_notes?: string;
+    /**
+     * Time Commitment Minutes
+     */
+    time_commitment_minutes?: number;
+    /**
+     * Training Required
+     */
+    training_required?: boolean;
+    /**
+     * Training Commitment
+     */
+    training_commitment?: string;
+    /**
+     * Screening Required
+     */
+    screening_required?: boolean;
+    /**
+     * Screening Steps
+     */
+    screening_steps?: string;
+    /**
+     * Transportation Info
+     */
+    transportation_info?: string;
+    /**
+     * Qualifications
+     */
+    qualifications?: string;
+    /**
+     * Safety Notes
+     */
+    safety_notes?: string;
+    /**
+     * Capacity
+     */
+    capacity?: number;
+    /**
+     * Requires Waiver
+     */
+    requires_waiver?: boolean;
     /**
      * Listing Source
      */
@@ -585,90 +782,29 @@ export type OpportunityCreate = {
      */
     listing_verification_status?: string;
     /**
-     * Locality
+     * Source Updated At
      */
-    locality?: string;
-    /**
-     * Location Label
-     */
-    location_label: string;
-    /**
-     * Location Visibility
-     */
-    location_visibility?: string;
-    /**
-     * Longitude
-     */
-    longitude: number;
-    /**
-     * Meeting Point
-     */
-    meeting_point: string;
-    /**
-     * Minimum Age
-     */
-    minimum_age?: number;
-    /**
-     * Postcode
-     */
-    postcode?: string | null;
-    /**
-     * Qualifications
-     */
-    qualifications?: string;
-    recurrence?: Recurrence;
-    /**
-     * Requires Waiver
-     */
-    requires_waiver?: boolean;
-    /**
-     * Safety Notes
-     */
-    safety_notes?: string;
-    /**
-     * Screening Required
-     */
-    screening_required?: boolean;
-    /**
-     * Screening Steps
-     */
-    screening_steps?: string;
+    source_updated_at?: string | null;
     /**
      * Source Checked At
      */
     source_checked_at?: string | null;
     /**
-     * Source Updated At
+     * Application Mode
      */
-    source_updated_at?: string | null;
+    application_mode?: string;
     /**
-     * Starts At
+     * External Application Url
      */
-    starts_at: string;
+    external_application_url?: string | null;
     /**
-     * Tasks
+     * Cause Ids
      */
-    tasks: string;
+    cause_ids: Array<string>;
     /**
-     * Time Commitment Minutes
+     * Image Url
      */
-    time_commitment_minutes?: number;
-    /**
-     * Title
-     */
-    title: string;
-    /**
-     * Training Commitment
-     */
-    training_commitment?: string;
-    /**
-     * Training Required
-     */
-    training_required?: boolean;
-    /**
-     * Transportation Info
-     */
-    transportation_info?: string;
+    image_url?: string | null;
 };
 
 /**
@@ -688,85 +824,98 @@ export type OpportunityEventType = 'viewed' | 'application_started' | 'applicati
  */
 export type OpportunityOut = {
     /**
-     * Accessibility
+     * Id
      */
-    accessibility: string;
+    id: string;
     /**
-     * Address Line
+     * Title
      */
-    address_line: string;
-    /**
-     * Application Mode
-     */
-    application_mode: string;
-    /**
-     * Capacity
-     */
-    capacity: number;
-    /**
-     * Causes
-     */
-    causes: Array<CauseOut>;
-    /**
-     * City
-     */
-    city: string;
-    /**
-     * Confirmed Count
-     */
-    confirmed_count?: number;
-    /**
-     * Country Code
-     */
-    country_code: string;
+    title: string;
     /**
      * Description
      */
     description: string;
     /**
-     * Distance Km
+     * Impact Statement
      */
-    distance_km?: number | null;
+    impact_statement: string;
+    /**
+     * Tasks
+     */
+    tasks: string;
+    /**
+     * Meeting Point
+     */
+    meeting_point: string;
+    /**
+     * Starts At
+     */
+    starts_at: string;
+    /**
+     * Ends At
+     */
+    ends_at: string;
+    recurrence: Recurrence;
     /**
      * Effort
      */
     effort: string;
     /**
-     * Eligibility Notes
+     * Minimum Age
      */
-    eligibility_notes: string;
+    minimum_age: number;
     /**
-     * Ends At
+     * Accessibility
      */
-    ends_at: string;
-    /**
-     * External Application Url
-     */
-    external_application_url: string | null;
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Image Url
-     */
-    image_url: string | null;
-    /**
-     * Impact Statement
-     */
-    impact_statement: string;
+    accessibility: string;
     /**
      * Is Accessible
      */
     is_accessible: boolean;
     /**
-     * Is Saved
+     * Eligibility Notes
      */
-    is_saved?: boolean;
+    eligibility_notes: string;
     /**
-     * Latitude
+     * Time Commitment Minutes
      */
-    latitude: number;
+    time_commitment_minutes: number;
+    /**
+     * Training Required
+     */
+    training_required: boolean;
+    /**
+     * Training Commitment
+     */
+    training_commitment: string;
+    /**
+     * Screening Required
+     */
+    screening_required: boolean;
+    /**
+     * Screening Steps
+     */
+    screening_steps: string;
+    /**
+     * Transportation Info
+     */
+    transportation_info: string;
+    /**
+     * Qualifications
+     */
+    qualifications: string;
+    /**
+     * Safety Notes
+     */
+    safety_notes: string;
+    /**
+     * Capacity
+     */
+    capacity: number;
+    /**
+     * Requires Waiver
+     */
+    requires_waiver?: boolean;
     /**
      * Listing Source
      */
@@ -780,111 +929,98 @@ export type OpportunityOut = {
      */
     listing_verification_status: string;
     /**
-     * Locality
+     * Source Updated At
      */
-    locality: string;
-    /**
-     * Location Label
-     */
-    location_label: string;
-    /**
-     * Location Visibility
-     */
-    location_visibility: string;
-    /**
-     * Longitude
-     */
-    longitude: number;
-    /**
-     * Match Reasons
-     */
-    match_reasons?: Array<string>;
-    /**
-     * Meeting Point
-     */
-    meeting_point: string;
-    /**
-     * Minimum Age
-     */
-    minimum_age: number;
-    /**
-     * Organisation Name
-     */
-    organisation_name: string;
-    /**
-     * Postcode
-     */
-    postcode: string | null;
-    /**
-     * Qualifications
-     */
-    qualifications: string;
-    recurrence: Recurrence;
-    /**
-     * Requires Waiver
-     */
-    requires_waiver?: boolean;
-    /**
-     * Safety Notes
-     */
-    safety_notes: string;
-    /**
-     * Screening Required
-     */
-    screening_required: boolean;
-    /**
-     * Screening Steps
-     */
-    screening_steps: string;
+    source_updated_at: string | null;
     /**
      * Source Checked At
      */
     source_checked_at: string | null;
     /**
-     * Source Updated At
+     * Application Mode
      */
-    source_updated_at: string | null;
+    application_mode: string;
     /**
-     * Starts At
+     * External Application Url
      */
-    starts_at: string;
-    status: OpportunityStatus;
-    /**
-     * Tasks
-     */
-    tasks: string;
-    /**
-     * Time Commitment Minutes
-     */
-    time_commitment_minutes: number;
-    /**
-     * Title
-     */
-    title: string;
-    /**
-     * Training Commitment
-     */
-    training_commitment: string;
-    /**
-     * Training Required
-     */
-    training_required: boolean;
-    /**
-     * Transportation Info
-     */
-    transportation_info: string;
-    /**
-     * Unconfirmed Fields
-     */
-    unconfirmed_fields?: Array<string>;
+    external_application_url: string | null;
     /**
      * Updated At
      */
     updated_at: string;
     /**
+     * Confirmed Count
+     */
+    confirmed_count?: number;
+    /**
+     * Image Url
+     */
+    image_url: string | null;
+    status: OpportunityStatus;
+    /**
      * Version
      */
     version: number;
+    /**
+     * Organisation Name
+     */
+    organisation_name: string;
+    /**
+     * Location Label
+     */
+    location_label: string;
+    /**
+     * Address Line
+     */
+    address_line: string;
+    /**
+     * Locality
+     */
+    locality: string;
+    /**
+     * City
+     */
+    city: string;
+    /**
+     * Postcode
+     */
+    postcode: string | null;
+    /**
+     * Country Code
+     */
+    country_code: string;
+    /**
+     * Latitude
+     */
+    latitude: number;
+    /**
+     * Longitude
+     */
+    longitude: number;
+    /**
+     * Location Visibility
+     */
+    location_visibility: string;
+    /**
+     * Causes
+     */
+    causes: Array<CauseOut>;
+    /**
+     * Distance Km
+     */
+    distance_km?: number | null;
+    /**
+     * Is Saved
+     */
+    is_saved?: boolean;
+    /**
+     * Unconfirmed Fields
+     */
+    unconfirmed_fields?: Array<string>;
+    /**
+     * Match Reasons
+     */
+    match_reasons?: Array<string>;
 };
 
 /**
@@ -897,73 +1033,130 @@ export type OpportunityStatus = 'draft' | 'published' | 'unpublished';
  */
 export type OpportunityUpdate = {
     /**
-     * Accessibility
+     * Title
      */
-    accessibility?: string | null;
-    /**
-     * Address Line
-     */
-    address_line?: string | null;
-    /**
-     * Application Mode
-     */
-    application_mode?: string | null;
-    /**
-     * Capacity
-     */
-    capacity?: number | null;
-    /**
-     * Cause Ids
-     */
-    cause_ids?: Array<string> | null;
-    /**
-     * City
-     */
-    city?: string | null;
-    /**
-     * Confirm Import Details
-     */
-    confirm_import_details?: boolean;
-    /**
-     * Country Code
-     */
-    country_code?: string | null;
+    title?: string | null;
     /**
      * Description
      */
     description?: string | null;
     /**
-     * Effort
+     * Impact Statement
      */
-    effort?: string | null;
+    impact_statement?: string | null;
     /**
-     * Eligibility Notes
+     * Tasks
      */
-    eligibility_notes?: string | null;
+    tasks?: string | null;
+    /**
+     * Meeting Point
+     */
+    meeting_point?: string | null;
+    /**
+     * Location Label
+     */
+    location_label?: string | null;
+    /**
+     * Address Line
+     */
+    address_line?: string | null;
+    /**
+     * Locality
+     */
+    locality?: string | null;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Postcode
+     */
+    postcode?: string | null;
+    /**
+     * Country Code
+     */
+    country_code?: string | null;
+    /**
+     * Latitude
+     */
+    latitude?: number | null;
+    /**
+     * Longitude
+     */
+    longitude?: number | null;
+    /**
+     * Location Visibility
+     */
+    location_visibility?: string | null;
+    /**
+     * Starts At
+     */
+    starts_at?: string | null;
     /**
      * Ends At
      */
     ends_at?: string | null;
+    recurrence?: Recurrence | null;
     /**
-     * External Application Url
+     * Effort
      */
-    external_application_url?: string | null;
+    effort?: string | null;
     /**
-     * Image Url
+     * Minimum Age
      */
-    image_url?: string | null;
+    minimum_age?: number | null;
     /**
-     * Impact Statement
+     * Accessibility
      */
-    impact_statement?: string | null;
+    accessibility?: string | null;
     /**
      * Is Accessible
      */
     is_accessible?: boolean | null;
     /**
-     * Latitude
+     * Eligibility Notes
      */
-    latitude?: number | null;
+    eligibility_notes?: string | null;
+    /**
+     * Time Commitment Minutes
+     */
+    time_commitment_minutes?: number | null;
+    /**
+     * Training Required
+     */
+    training_required?: boolean | null;
+    /**
+     * Training Commitment
+     */
+    training_commitment?: string | null;
+    /**
+     * Screening Required
+     */
+    screening_required?: boolean | null;
+    /**
+     * Screening Steps
+     */
+    screening_steps?: string | null;
+    /**
+     * Transportation Info
+     */
+    transportation_info?: string | null;
+    /**
+     * Qualifications
+     */
+    qualifications?: string | null;
+    /**
+     * Safety Notes
+     */
+    safety_notes?: string | null;
+    /**
+     * Capacity
+     */
+    capacity?: number | null;
+    /**
+     * Requires Waiver
+     */
+    requires_waiver?: boolean | null;
     /**
      * Listing Source
      */
@@ -977,90 +1170,33 @@ export type OpportunityUpdate = {
      */
     listing_verification_status?: string | null;
     /**
-     * Locality
+     * Source Updated At
      */
-    locality?: string | null;
-    /**
-     * Location Label
-     */
-    location_label?: string | null;
-    /**
-     * Location Visibility
-     */
-    location_visibility?: string | null;
-    /**
-     * Longitude
-     */
-    longitude?: number | null;
-    /**
-     * Meeting Point
-     */
-    meeting_point?: string | null;
-    /**
-     * Minimum Age
-     */
-    minimum_age?: number | null;
-    /**
-     * Postcode
-     */
-    postcode?: string | null;
-    /**
-     * Qualifications
-     */
-    qualifications?: string | null;
-    recurrence?: Recurrence | null;
-    /**
-     * Requires Waiver
-     */
-    requires_waiver?: boolean | null;
-    /**
-     * Safety Notes
-     */
-    safety_notes?: string | null;
-    /**
-     * Screening Required
-     */
-    screening_required?: boolean | null;
-    /**
-     * Screening Steps
-     */
-    screening_steps?: string | null;
+    source_updated_at?: string | null;
     /**
      * Source Checked At
      */
     source_checked_at?: string | null;
     /**
-     * Source Updated At
+     * Application Mode
      */
-    source_updated_at?: string | null;
+    application_mode?: string | null;
     /**
-     * Starts At
+     * External Application Url
      */
-    starts_at?: string | null;
+    external_application_url?: string | null;
     /**
-     * Tasks
+     * Cause Ids
      */
-    tasks?: string | null;
+    cause_ids?: Array<string> | null;
     /**
-     * Time Commitment Minutes
+     * Image Url
      */
-    time_commitment_minutes?: number | null;
+    image_url?: string | null;
     /**
-     * Title
+     * Confirm Import Details
      */
-    title?: string | null;
-    /**
-     * Training Commitment
-     */
-    training_commitment?: string | null;
-    /**
-     * Training Required
-     */
-    training_required?: boolean | null;
-    /**
-     * Transportation Info
-     */
-    transportation_info?: string | null;
+    confirm_import_details?: boolean;
     /**
      * Version
      */
@@ -1072,13 +1208,13 @@ export type OpportunityUpdate = {
  */
 export type OrganisationReview = {
     /**
-     * Note
-     */
-    note: string;
-    /**
      * Status
      */
     status: string;
+    /**
+     * Note
+     */
+    note: string;
 };
 
 /**
@@ -1086,21 +1222,22 @@ export type OrganisationReview = {
  */
 export type PipelineOut = {
     /**
-     * Applications
-     */
-    applications: Array<ApplicationOut>;
-    /**
      * Counts
      */
     counts: {
         [key in ApplicationStatus]?: number;
     };
+    /**
+     * Applications
+     */
+    applications: Array<ApplicationOut>;
 };
 
 /**
  * ProfileCreate
  */
 export type ProfileCreate = {
+    role: Role;
     /**
      * Display Name
      */
@@ -1113,7 +1250,6 @@ export type ProfileCreate = {
      * Organisation Name
      */
     organisation_name?: string | null;
-    role: Role;
 };
 
 /**
@@ -1131,21 +1267,10 @@ export type ProfileDetailsUpdate = {
  */
 export type ProfileOut = {
     /**
-     * Accessible Only
+     * Id
      */
-    accessible_only: boolean;
-    /**
-     * Age Group
-     */
-    age_group: string | null;
-    /**
-     * Can Review Sources
-     */
-    can_review_sources?: boolean;
-    /**
-     * Deletion Requested At
-     */
-    deletion_requested_at?: string | null;
+    id: string;
+    role: Role;
     /**
      * Display Name
      */
@@ -1155,50 +1280,13 @@ export type ProfileOut = {
      */
     email: string;
     /**
-     * Id
+     * Search Location Label
      */
-    id: string;
-    /**
-     * Max Time Commitment Minutes
-     */
-    max_time_commitment_minutes: number | null;
-    /**
-     * Onboarding Completed
-     */
-    onboarding_completed: boolean;
-    /**
-     * Organisation Name
-     */
-    organisation_name?: string | null;
-    /**
-     * Organisation Verification Status
-     */
-    organisation_verification_status?: string | null;
-    /**
-     * Preferred Availability
-     */
-    preferred_availability: Array<string>;
-    /**
-     * Preferred Cause Slugs
-     */
-    preferred_cause_slugs: Array<string>;
-    /**
-     * Preferred Recurrences
-     */
-    preferred_recurrences: Array<string>;
-    role: Role;
-    /**
-     * Screening Preference
-     */
-    screening_preference: string;
+    search_location_label: string | null;
     /**
      * Search Latitude
      */
     search_latitude: number | null;
-    /**
-     * Search Location Label
-     */
-    search_location_label: string | null;
     /**
      * Search Longitude
      */
@@ -1212,13 +1300,61 @@ export type ProfileOut = {
      */
     theme: string;
     /**
+     * Onboarding Completed
+     */
+    onboarding_completed: boolean;
+    /**
+     * Preferred Cause Slugs
+     */
+    preferred_cause_slugs: Array<string>;
+    /**
+     * Preferred Availability
+     */
+    preferred_availability: Array<string>;
+    /**
+     * Preferred Recurrences
+     */
+    preferred_recurrences: Array<string>;
+    /**
+     * Max Time Commitment Minutes
+     */
+    max_time_commitment_minutes: number | null;
+    /**
+     * Accessible Only
+     */
+    accessible_only: boolean;
+    /**
+     * Age Group
+     */
+    age_group: string | null;
+    /**
      * Training Preference
      */
     training_preference: string;
     /**
+     * Screening Preference
+     */
+    screening_preference: string;
+    /**
      * Transportation Preference
      */
     transportation_preference: string;
+    /**
+     * Organisation Name
+     */
+    organisation_name?: string | null;
+    /**
+     * Organisation Verification Status
+     */
+    organisation_verification_status?: string | null;
+    /**
+     * Can Review Sources
+     */
+    can_review_sources?: boolean;
+    /**
+     * Deletion Requested At
+     */
+    deletion_requested_at?: string | null;
 };
 
 /**
@@ -1226,45 +1362,13 @@ export type ProfileOut = {
  */
 export type ProfileUpdate = {
     /**
-     * Accessible Only
+     * Search Location Label
      */
-    accessible_only?: boolean;
-    /**
-     * Age Group
-     */
-    age_group?: string | null;
-    /**
-     * Max Time Commitment Minutes
-     */
-    max_time_commitment_minutes?: number | null;
-    /**
-     * Onboarding Completed
-     */
-    onboarding_completed?: boolean;
-    /**
-     * Preferred Availability
-     */
-    preferred_availability?: Array<string>;
-    /**
-     * Preferred Cause Slugs
-     */
-    preferred_cause_slugs?: Array<string>;
-    /**
-     * Preferred Recurrences
-     */
-    preferred_recurrences?: Array<string>;
-    /**
-     * Screening Preference
-     */
-    screening_preference?: string;
+    search_location_label?: string | null;
     /**
      * Search Latitude
      */
     search_latitude?: number | null;
-    /**
-     * Search Location Label
-     */
-    search_location_label?: string | null;
     /**
      * Search Longitude
      */
@@ -1278,13 +1382,77 @@ export type ProfileUpdate = {
      */
     theme?: string;
     /**
+     * Onboarding Completed
+     */
+    onboarding_completed?: boolean;
+    /**
+     * Preferred Cause Slugs
+     */
+    preferred_cause_slugs?: Array<string>;
+    /**
+     * Preferred Availability
+     */
+    preferred_availability?: Array<string>;
+    /**
+     * Preferred Recurrences
+     */
+    preferred_recurrences?: Array<string>;
+    /**
+     * Max Time Commitment Minutes
+     */
+    max_time_commitment_minutes?: number | null;
+    /**
+     * Accessible Only
+     */
+    accessible_only?: boolean;
+    /**
+     * Age Group
+     */
+    age_group?: string | null;
+    /**
      * Training Preference
      */
     training_preference?: string;
     /**
+     * Screening Preference
+     */
+    screening_preference?: string;
+    /**
      * Transportation Preference
      */
     transportation_preference?: string;
+};
+
+/**
+ * RSVPInput
+ */
+export type RsvpInput = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Choice
+     */
+    choice?: 'going' | 'maybe' | 'declined';
+    /**
+     * Plus Ones
+     */
+    plus_ones?: number;
+    /**
+     * Answers
+     */
+    answers?: {
+        [key: string]: string;
+    };
+    /**
+     * Email Updates
+     */
+    email_updates?: boolean;
 };
 
 /**
@@ -1306,14 +1474,14 @@ export type SourceCandidateDuplicateOut = {
      */
     id: string;
     /**
+     * Title
+     */
+    title: string;
+    /**
      * Organisation Name
      */
     organisation_name: string;
     status: OpportunityStatus;
-    /**
-     * Title
-     */
-    title: string;
 };
 
 /**
@@ -1321,41 +1489,9 @@ export type SourceCandidateDuplicateOut = {
  */
 export type SourceCandidateOut = {
     /**
-     * Duplicates
-     */
-    duplicates?: Array<SourceCandidateDuplicateOut>;
-    /**
-     * First Seen At
-     */
-    first_seen_at: string;
-    /**
      * Id
      */
     id: string;
-    /**
-     * Last Seen At
-     */
-    last_seen_at: string;
-    /**
-     * Location Label
-     */
-    location_label: string;
-    /**
-     * Organisation Name
-     */
-    organisation_name: string;
-    /**
-     * Promoted Opportunity Id
-     */
-    promoted_opportunity_id: string | null;
-    /**
-     * Review Status
-     */
-    review_status: string;
-    /**
-     * Reviewed At
-     */
-    reviewed_at: string | null;
     /**
      * Source Name
      */
@@ -1365,13 +1501,45 @@ export type SourceCandidateOut = {
      */
     source_url: string;
     /**
+     * Title
+     */
+    title: string;
+    /**
+     * Organisation Name
+     */
+    organisation_name: string;
+    /**
+     * Location Label
+     */
+    location_label: string;
+    /**
      * Summary
      */
     summary: string;
     /**
-     * Title
+     * Review Status
      */
-    title: string;
+    review_status: string;
+    /**
+     * First Seen At
+     */
+    first_seen_at: string;
+    /**
+     * Last Seen At
+     */
+    last_seen_at: string;
+    /**
+     * Reviewed At
+     */
+    reviewed_at: string | null;
+    /**
+     * Promoted Opportunity Id
+     */
+    promoted_opportunity_id: string | null;
+    /**
+     * Duplicates
+     */
+    duplicates?: Array<SourceCandidateDuplicateOut>;
 };
 
 /**
@@ -1389,27 +1557,31 @@ export type SourceCandidatePromote = {
  */
 export type SourceCandidateUpdate = {
     /**
-     * Location Label
+     * Title
      */
-    location_label?: string | null;
+    title?: string | null;
     /**
      * Organisation Name
      */
     organisation_name?: string | null;
     /**
+     * Location Label
+     */
+    location_label?: string | null;
+    /**
      * Summary
      */
     summary?: string | null;
-    /**
-     * Title
-     */
-    title?: string | null;
 };
 
 /**
  * SourceHealthOut
  */
 export type SourceHealthOut = {
+    /**
+     * Schedule
+     */
+    schedule: string;
     /**
      * Next Scheduled At
      */
@@ -1419,25 +1591,21 @@ export type SourceHealthOut = {
      */
     pending_candidates: number;
     /**
-     * Recent Runs
+     * Stale Listings
      */
-    recent_runs: Array<SourceRefreshRunOut>;
+    stale_listings: number;
     /**
      * Refresh In Progress
      */
     refresh_in_progress: boolean;
     /**
-     * Schedule
-     */
-    schedule: string;
-    /**
      * Sources
      */
     sources: Array<SourceHealthSourceOut>;
     /**
-     * Stale Listings
+     * Recent Runs
      */
-    stale_listings: number;
+    recent_runs: Array<SourceRefreshRunOut>;
 };
 
 /**
@@ -1445,9 +1613,17 @@ export type SourceHealthOut = {
  */
 export type SourceHealthSourceOut = {
     /**
+     * Name
+     */
+    name: string;
+    /**
      * Active Listings
      */
     active_listings: number;
+    /**
+     * Pending Candidates
+     */
+    pending_candidates: number;
     /**
      * Last Checked At
      */
@@ -1456,14 +1632,6 @@ export type SourceHealthSourceOut = {
      * Last Seen At
      */
     last_seen_at: string | null;
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Pending Candidates
-     */
-    pending_candidates: number;
 };
 
 /**
@@ -1485,6 +1653,30 @@ export type SourcePolicyUpdate = {
  */
 export type SourceRefreshRunOut = {
     /**
+     * Id
+     */
+    id: string;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Started At
+     */
+    started_at: string | null;
+    /**
+     * Completed At
+     */
+    completed_at: string | null;
+    /**
+     * Discovered
+     */
+    discovered: number;
+    /**
      * Candidates Added
      */
     candidates_added: number;
@@ -1497,75 +1689,47 @@ export type SourceRefreshRunOut = {
      */
     checked: number;
     /**
-     * Completed At
-     */
-    completed_at: string | null;
-    /**
-     * Discovered
-     */
-    discovered: number;
-    /**
-     * Error Summary
-     */
-    error_summary: string;
-    /**
      * Expired
      */
     expired: number;
     /**
-     * Failed
+     * Unavailable
      */
-    failed: number;
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Out Of Area
-     */
-    out_of_area: number;
+    unavailable: number;
     /**
      * Skipped Protected
      */
     skipped_protected: number;
     /**
-     * Started At
+     * Out Of Area
      */
-    started_at: string | null;
+    out_of_area: number;
     /**
-     * Status
+     * Failed
      */
-    status: string;
+    failed: number;
     /**
-     * Trigger
+     * Error Summary
      */
-    trigger: string;
-    /**
-     * Unavailable
-     */
-    unavailable: number;
+    error_summary: string;
 };
 
 /**
  * StatusHistoryOut
  */
 export type StatusHistoryOut = {
+    from_status: ApplicationStatus | null;
+    to_status: ApplicationStatus;
     /**
      * Created At
      */
     created_at: string;
-    from_status: ApplicationStatus | null;
-    to_status: ApplicationStatus;
 };
 
 /**
  * SuburbOut
  */
 export type SuburbOut = {
-    /**
-     * City
-     */
-    city: string;
     /**
      * Id
      */
@@ -1574,6 +1738,10 @@ export type SuburbOut = {
      * Name
      */
     name: string;
+    /**
+     * City
+     */
+    city: string;
 };
 
 /**
@@ -1585,13 +1753,13 @@ export type UploadOut = {
      */
     path: string;
     /**
-     * Public Url
-     */
-    public_url: string;
-    /**
      * Token
      */
     token: string;
+    /**
+     * Public Url
+     */
+    public_url: string;
 };
 
 /**
@@ -1599,13 +1767,13 @@ export type UploadOut = {
  */
 export type UploadRequest = {
     /**
-     * Content Type
-     */
-    content_type: string;
-    /**
      * Filename
      */
     filename: string;
+    /**
+     * Content Type
+     */
+    content_type: string;
     /**
      * Size Bytes
      */
@@ -1616,16 +1784,6 @@ export type UploadRequest = {
  * ValidationError
  */
 export type ValidationError = {
-    /**
-     * Context
-     */
-    ctx?: {
-        [key: string]: unknown;
-    };
-    /**
-     * Input
-     */
-    input?: unknown;
     /**
      * Location
      */
@@ -1638,6 +1796,16 @@ export type ValidationError = {
      * Error Type
      */
     type: string;
+    /**
+     * Input
+     */
+    input?: unknown;
+    /**
+     * Context
+     */
+    ctx?: {
+        [key: string]: unknown;
+    };
 };
 
 /**
@@ -1647,33 +1815,33 @@ export type ValidationError = {
  */
 export type WaiverAcceptanceIn = {
     /**
+     * Waiver Document Id
+     */
+    waiver_document_id: string;
+    /**
      * Agreed
      */
     agreed: boolean;
-    /**
-     * Guardian Email
-     */
-    guardian_email?: string | null;
-    /**
-     * Guardian Name
-     */
-    guardian_name?: string | null;
-    /**
-     * Guardian Relationship
-     */
-    guardian_relationship?: string | null;
-    /**
-     * Is Minor
-     */
-    is_minor?: boolean;
     /**
      * Signed Name
      */
     signed_name: string;
     /**
-     * Waiver Document Id
+     * Is Minor
      */
-    waiver_document_id: string;
+    is_minor?: boolean;
+    /**
+     * Guardian Name
+     */
+    guardian_name?: string | null;
+    /**
+     * Guardian Email
+     */
+    guardian_email?: string | null;
+    /**
+     * Guardian Relationship
+     */
+    guardian_relationship?: string | null;
 };
 
 /**
@@ -1681,47 +1849,43 @@ export type WaiverAcceptanceIn = {
  */
 export type WaiverAcceptanceOut = {
     /**
-     * Accepted At
+     * Signed Name
      */
-    accepted_at: string;
-    /**
-     * Guardian Email
-     */
-    guardian_email: string | null;
-    /**
-     * Guardian Name
-     */
-    guardian_name: string | null;
-    /**
-     * Guardian Relationship
-     */
-    guardian_relationship: string | null;
+    signed_name: string;
     /**
      * Is Minor
      */
     is_minor: boolean;
     /**
-     * Signed Name
+     * Guardian Name
      */
-    signed_name: string;
+    guardian_name: string | null;
     /**
-     * Waiver Title
+     * Guardian Email
      */
-    waiver_title: string;
+    guardian_email: string | null;
+    /**
+     * Guardian Relationship
+     */
+    guardian_relationship: string | null;
+    /**
+     * Accepted At
+     */
+    accepted_at: string;
     /**
      * Waiver Version
      */
     waiver_version: number;
+    /**
+     * Waiver Title
+     */
+    waiver_title: string;
 };
 
 /**
  * WaiverOut
  */
 export type WaiverOut = {
-    /**
-     * Body
-     */
-    body: string;
     /**
      * Id
      */
@@ -1730,6 +1894,10 @@ export type WaiverOut = {
      * Title
      */
     title: string;
+    /**
+     * Body
+     */
+    body: string;
     /**
      * Version
      */
@@ -1741,162 +1909,50 @@ export type WaiverOut = {
  */
 export type WaiverUpdate = {
     /**
-     * Body
-     */
-    body: string;
-    /**
      * Title
      */
     title: string;
+    /**
+     * Body
+     */
+    body: string;
 };
 
-export type HealthHealthGetData = {
+export type ListSuburbsV1ReferenceSuburbsGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/health';
+    url: '/v1/reference/suburbs';
 };
 
-export type HealthHealthGetResponses = {
+export type ListSuburbsV1ReferenceSuburbsGetResponses = {
     /**
-     * Response Health Health Get
+     * Response List Suburbs V1 Reference Suburbs Get
      *
      * Successful Response
      */
-    200: {
-        [key: string]: string;
-    };
+    200: Array<SuburbOut>;
 };
 
-export type HealthHealthGetResponse = HealthHealthGetResponses[keyof HealthHealthGetResponses];
+export type ListSuburbsV1ReferenceSuburbsGetResponse = ListSuburbsV1ReferenceSuburbsGetResponses[keyof ListSuburbsV1ReferenceSuburbsGetResponses];
 
-export type ReadyReadyGetData = {
+export type ListCausesV1ReferenceCausesGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/ready';
+    url: '/v1/reference/causes';
 };
 
-export type ReadyReadyGetResponses = {
+export type ListCausesV1ReferenceCausesGetResponses = {
     /**
-     * Response Ready Ready Get
+     * Response List Causes V1 Reference Causes Get
      *
      * Successful Response
      */
-    200: {
-        [key: string]: string;
-    };
+    200: Array<CauseOut>;
 };
 
-export type ReadyReadyGetResponse = ReadyReadyGetResponses[keyof ReadyReadyGetResponses];
-
-export type MyApplicationsV1ApplicationsMeGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/applications/me';
-};
-
-export type MyApplicationsV1ApplicationsMeGetResponses = {
-    /**
-     * Response My Applications V1 Applications Me Get
-     *
-     * Successful Response
-     */
-    200: Array<ApplicationOut>;
-};
-
-export type MyApplicationsV1ApplicationsMeGetResponse = MyApplicationsV1ApplicationsMeGetResponses[keyof MyApplicationsV1ApplicationsMeGetResponses];
-
-export type GetApplicationV1ApplicationsApplicationIdGetData = {
-    body?: never;
-    path: {
-        /**
-         * Application Id
-         */
-        application_id: string;
-    };
-    query?: never;
-    url: '/v1/applications/{application_id}';
-};
-
-export type GetApplicationV1ApplicationsApplicationIdGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetApplicationV1ApplicationsApplicationIdGetError = GetApplicationV1ApplicationsApplicationIdGetErrors[keyof GetApplicationV1ApplicationsApplicationIdGetErrors];
-
-export type GetApplicationV1ApplicationsApplicationIdGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: ApplicationOut;
-};
-
-export type GetApplicationV1ApplicationsApplicationIdGetResponse = GetApplicationV1ApplicationsApplicationIdGetResponses[keyof GetApplicationV1ApplicationsApplicationIdGetResponses];
-
-export type UpdateApplicationV1ApplicationsApplicationIdPatchData = {
-    body: ApplicationUpdate;
-    path: {
-        /**
-         * Application Id
-         */
-        application_id: string;
-    };
-    query?: never;
-    url: '/v1/applications/{application_id}';
-};
-
-export type UpdateApplicationV1ApplicationsApplicationIdPatchErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateApplicationV1ApplicationsApplicationIdPatchError = UpdateApplicationV1ApplicationsApplicationIdPatchErrors[keyof UpdateApplicationV1ApplicationsApplicationIdPatchErrors];
-
-export type UpdateApplicationV1ApplicationsApplicationIdPatchResponses = {
-    /**
-     * Successful Response
-     */
-    200: ApplicationOut;
-};
-
-export type UpdateApplicationV1ApplicationsApplicationIdPatchResponse = UpdateApplicationV1ApplicationsApplicationIdPatchResponses[keyof UpdateApplicationV1ApplicationsApplicationIdPatchResponses];
-
-export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostData = {
-    body: ApplicationTransition;
-    path: {
-        /**
-         * Application Id
-         */
-        application_id: string;
-    };
-    query?: never;
-    url: '/v1/applications/{application_id}/withdraw';
-};
-
-export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostError = WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors[keyof WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors];
-
-export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses = {
-    /**
-     * Successful Response
-     */
-    200: ApplicationOut;
-};
-
-export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponse = WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses[keyof WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses];
+export type ListCausesV1ReferenceCausesGetResponse = ListCausesV1ReferenceCausesGetResponses[keyof ListCausesV1ReferenceCausesGetResponses];
 
 export type AutocompleteLocationV1LocationsAutocompleteGetData = {
     body?: never;
@@ -1959,6 +2015,97 @@ export type ResolveLocationV1LocationsPlacesPlaceIdGetResponses = {
 };
 
 export type ResolveLocationV1LocationsPlacesPlaceIdGetResponse = ResolveLocationV1LocationsPlacesPlaceIdGetResponses[keyof ResolveLocationV1LocationsPlacesPlaceIdGetResponses];
+
+export type CreateProfileV1ProfilesPostData = {
+    body: ProfileCreate;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles';
+};
+
+export type CreateProfileV1ProfilesPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateProfileV1ProfilesPostError = CreateProfileV1ProfilesPostErrors[keyof CreateProfileV1ProfilesPostErrors];
+
+export type CreateProfileV1ProfilesPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ProfileOut;
+};
+
+export type CreateProfileV1ProfilesPostResponse = CreateProfileV1ProfilesPostResponses[keyof CreateProfileV1ProfilesPostResponses];
+
+export type GetMeV1ProfilesMeGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles/me';
+};
+
+export type GetMeV1ProfilesMeGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProfileOut;
+};
+
+export type GetMeV1ProfilesMeGetResponse = GetMeV1ProfilesMeGetResponses[keyof GetMeV1ProfilesMeGetResponses];
+
+export type UpdateProfileDetailsV1ProfilesMePatchData = {
+    body: ProfileDetailsUpdate;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles/me';
+};
+
+export type UpdateProfileDetailsV1ProfilesMePatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateProfileDetailsV1ProfilesMePatchError = UpdateProfileDetailsV1ProfilesMePatchErrors[keyof UpdateProfileDetailsV1ProfilesMePatchErrors];
+
+export type UpdateProfileDetailsV1ProfilesMePatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProfileOut;
+};
+
+export type UpdateProfileDetailsV1ProfilesMePatchResponse = UpdateProfileDetailsV1ProfilesMePatchResponses[keyof UpdateProfileDetailsV1ProfilesMePatchResponses];
+
+export type UpdatePreferencesV1ProfilesMePreferencesPutData = {
+    body: ProfileUpdate;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles/me/preferences';
+};
+
+export type UpdatePreferencesV1ProfilesMePreferencesPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdatePreferencesV1ProfilesMePreferencesPutError = UpdatePreferencesV1ProfilesMePreferencesPutErrors[keyof UpdatePreferencesV1ProfilesMePreferencesPutErrors];
+
+export type UpdatePreferencesV1ProfilesMePreferencesPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProfileOut;
+};
+
+export type UpdatePreferencesV1ProfilesMePreferencesPutResponse = UpdatePreferencesV1ProfilesMePreferencesPutResponses[keyof UpdatePreferencesV1ProfilesMePreferencesPutResponses];
 
 export type ListOpportunitiesV1OpportunitiesGetData = {
     body?: never;
@@ -2082,8 +2229,8 @@ export type GetOpportunityV1OpportunitiesOpportunityIdGetResponses = {
 
 export type GetOpportunityV1OpportunitiesOpportunityIdGetResponse = GetOpportunityV1OpportunitiesOpportunityIdGetResponses[keyof GetOpportunityV1OpportunitiesOpportunityIdGetResponses];
 
-export type ApplyV1OpportunitiesOpportunityIdApplicationsPostData = {
-    body: ApplicationCreate;
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostData = {
+    body: ListingReportCreate;
     path: {
         /**
          * Opportunity Id
@@ -2091,26 +2238,26 @@ export type ApplyV1OpportunitiesOpportunityIdApplicationsPostData = {
         opportunity_id: string;
     };
     query?: never;
-    url: '/v1/opportunities/{opportunity_id}/applications';
+    url: '/v1/opportunities/{opportunity_id}/reports';
 };
 
-export type ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors = {
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ApplyV1OpportunitiesOpportunityIdApplicationsPostError = ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors[keyof ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors];
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostError = ReportOpportunityV1OpportunitiesOpportunityIdReportsPostErrors[keyof ReportOpportunityV1OpportunitiesOpportunityIdReportsPostErrors];
 
-export type ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses = {
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponses = {
     /**
      * Successful Response
      */
-    201: ApplicationOut;
+    201: ListingReportOut;
 };
 
-export type ApplyV1OpportunitiesOpportunityIdApplicationsPostResponse = ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses[keyof ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses];
+export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponse = ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponses[keyof ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponses];
 
 export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostData = {
     body: OpportunityEventCreate;
@@ -2141,36 +2288,6 @@ export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponse
 };
 
 export type RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponse = RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponses[keyof RecordOpportunityEventV1OpportunitiesOpportunityIdEventsPostResponses];
-
-export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostData = {
-    body: ListingReportCreate;
-    path: {
-        /**
-         * Opportunity Id
-         */
-        opportunity_id: string;
-    };
-    query?: never;
-    url: '/v1/opportunities/{opportunity_id}/reports';
-};
-
-export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostError = ReportOpportunityV1OpportunitiesOpportunityIdReportsPostErrors[keyof ReportOpportunityV1OpportunitiesOpportunityIdReportsPostErrors];
-
-export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponses = {
-    /**
-     * Successful Response
-     */
-    201: ListingReportOut;
-};
-
-export type ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponse = ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponses[keyof ReportOpportunityV1OpportunitiesOpportunityIdReportsPostResponses];
 
 export type UnsaveOpportunityV1OpportunitiesOpportunityIdSavedDeleteData = {
     body?: never;
@@ -2264,6 +2381,187 @@ export type GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponses =
 
 export type GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponse = GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponses[keyof GetOpportunityWaiverV1OpportunitiesOpportunityIdWaiverGetResponses];
 
+export type ApplyV1OpportunitiesOpportunityIdApplicationsPostData = {
+    body: ApplicationCreate;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: never;
+    url: '/v1/opportunities/{opportunity_id}/applications';
+};
+
+export type ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ApplyV1OpportunitiesOpportunityIdApplicationsPostError = ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors[keyof ApplyV1OpportunitiesOpportunityIdApplicationsPostErrors];
+
+export type ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: ApplicationOut;
+};
+
+export type ApplyV1OpportunitiesOpportunityIdApplicationsPostResponse = ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses[keyof ApplyV1OpportunitiesOpportunityIdApplicationsPostResponses];
+
+export type MyApplicationsV1ApplicationsMeGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/applications/me';
+};
+
+export type MyApplicationsV1ApplicationsMeGetResponses = {
+    /**
+     * Response My Applications V1 Applications Me Get
+     *
+     * Successful Response
+     */
+    200: Array<ApplicationOut>;
+};
+
+export type MyApplicationsV1ApplicationsMeGetResponse = MyApplicationsV1ApplicationsMeGetResponses[keyof MyApplicationsV1ApplicationsMeGetResponses];
+
+export type GetApplicationV1ApplicationsApplicationIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Application Id
+         */
+        application_id: string;
+    };
+    query?: never;
+    url: '/v1/applications/{application_id}';
+};
+
+export type GetApplicationV1ApplicationsApplicationIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetApplicationV1ApplicationsApplicationIdGetError = GetApplicationV1ApplicationsApplicationIdGetErrors[keyof GetApplicationV1ApplicationsApplicationIdGetErrors];
+
+export type GetApplicationV1ApplicationsApplicationIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApplicationOut;
+};
+
+export type GetApplicationV1ApplicationsApplicationIdGetResponse = GetApplicationV1ApplicationsApplicationIdGetResponses[keyof GetApplicationV1ApplicationsApplicationIdGetResponses];
+
+export type UpdateApplicationV1ApplicationsApplicationIdPatchData = {
+    body: ApplicationUpdate;
+    path: {
+        /**
+         * Application Id
+         */
+        application_id: string;
+    };
+    query?: never;
+    url: '/v1/applications/{application_id}';
+};
+
+export type UpdateApplicationV1ApplicationsApplicationIdPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateApplicationV1ApplicationsApplicationIdPatchError = UpdateApplicationV1ApplicationsApplicationIdPatchErrors[keyof UpdateApplicationV1ApplicationsApplicationIdPatchErrors];
+
+export type UpdateApplicationV1ApplicationsApplicationIdPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApplicationOut;
+};
+
+export type UpdateApplicationV1ApplicationsApplicationIdPatchResponse = UpdateApplicationV1ApplicationsApplicationIdPatchResponses[keyof UpdateApplicationV1ApplicationsApplicationIdPatchResponses];
+
+export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostData = {
+    body: ApplicationTransition;
+    path: {
+        /**
+         * Application Id
+         */
+        application_id: string;
+    };
+    query?: never;
+    url: '/v1/applications/{application_id}/withdraw';
+};
+
+export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostError = WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors[keyof WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostErrors];
+
+export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApplicationOut;
+};
+
+export type WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponse = WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses[keyof WithdrawApplicationV1ApplicationsApplicationIdWithdrawPostResponses];
+
+export type OrganiserOpportunitiesV1OrganiserOpportunitiesGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/opportunities';
+};
+
+export type OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponses = {
+    /**
+     * Response Organiser Opportunities V1 Organiser Opportunities Get
+     *
+     * Successful Response
+     */
+    200: Array<OpportunityOut>;
+};
+
+export type OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponse = OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponses[keyof OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponses];
+
+export type CreateOpportunityV1OrganiserOpportunitiesPostData = {
+    body: OpportunityCreate;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/opportunities';
+};
+
+export type CreateOpportunityV1OrganiserOpportunitiesPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateOpportunityV1OrganiserOpportunitiesPostError = CreateOpportunityV1OrganiserOpportunitiesPostErrors[keyof CreateOpportunityV1OrganiserOpportunitiesPostErrors];
+
+export type CreateOpportunityV1OrganiserOpportunitiesPostResponses = {
+    /**
+     * Successful Response
+     */
+    201: OpportunityOut;
+};
+
+export type CreateOpportunityV1OrganiserOpportunitiesPostResponse = CreateOpportunityV1OrganiserOpportunitiesPostResponses[keyof CreateOpportunityV1OrganiserOpportunitiesPostResponses];
+
 export type OrganiserAnalyticsV1OrganiserAnalyticsGetData = {
     body?: never;
     path?: never;
@@ -2280,65 +2578,119 @@ export type OrganiserAnalyticsV1OrganiserAnalyticsGetResponses = {
 
 export type OrganiserAnalyticsV1OrganiserAnalyticsGetResponse = OrganiserAnalyticsV1OrganiserAnalyticsGetResponses[keyof OrganiserAnalyticsV1OrganiserAnalyticsGetResponses];
 
-export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchData = {
-    body: ApplicationTransition;
-    path: {
-        /**
-         * Application Id
-         */
-        application_id: string;
-    };
+export type GetNotificationPreferencesV1OrganiserNotificationPreferencesGetData = {
+    body?: never;
+    path?: never;
     query?: never;
-    url: '/v1/organiser/applications/{application_id}';
+    url: '/v1/organiser/notification-preferences';
 };
 
-export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors = {
+export type GetNotificationPreferencesV1OrganiserNotificationPreferencesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: NotificationPreferencesOut;
+};
+
+export type GetNotificationPreferencesV1OrganiserNotificationPreferencesGetResponse = GetNotificationPreferencesV1OrganiserNotificationPreferencesGetResponses[keyof GetNotificationPreferencesV1OrganiserNotificationPreferencesGetResponses];
+
+export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutData = {
+    body: NotificationPreferencesUpdate;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/notification-preferences';
+};
+
+export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchError = TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors[keyof TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors];
+export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutError = UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutErrors[keyof UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutErrors];
 
-export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses = {
+export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutResponses = {
     /**
      * Successful Response
      */
-    200: ApplicationOut;
+    200: NotificationPreferencesOut;
 };
 
-export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponse = TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses[keyof TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses];
+export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutResponse = UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutResponses[keyof UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutResponses];
 
-export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutData = {
-    body: AttendanceUpdate;
-    path: {
-        /**
-         * Application Id
-         */
-        application_id: string;
-    };
+export type GetOrganiserWaiverV1OrganiserWaiverGetData = {
+    body?: never;
+    path?: never;
     query?: never;
-    url: '/v1/organiser/applications/{application_id}/attendance';
+    url: '/v1/organiser/waiver';
 };
 
-export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors = {
+export type GetOrganiserWaiverV1OrganiserWaiverGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: WaiverOut;
+};
+
+export type GetOrganiserWaiverV1OrganiserWaiverGetResponse = GetOrganiserWaiverV1OrganiserWaiverGetResponses[keyof GetOrganiserWaiverV1OrganiserWaiverGetResponses];
+
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutData = {
+    body: WaiverUpdate;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/waiver';
+};
+
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutError = RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors[keyof RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors];
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutError = UpdateOrganiserWaiverV1OrganiserWaiverPutErrors[keyof UpdateOrganiserWaiverV1OrganiserWaiverPutErrors];
 
-export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses = {
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutResponses = {
     /**
      * Successful Response
      */
-    200: AttendanceRowOut;
+    200: WaiverOut;
 };
 
-export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponse = RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses[keyof RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses];
+export type UpdateOrganiserWaiverV1OrganiserWaiverPutResponse = UpdateOrganiserWaiverV1OrganiserWaiverPutResponses[keyof UpdateOrganiserWaiverV1OrganiserWaiverPutResponses];
+
+export type SourceHealthV1OrganiserSourceHealthGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/source-health';
+};
+
+export type SourceHealthV1OrganiserSourceHealthGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: SourceHealthOut;
+};
+
+export type SourceHealthV1OrganiserSourceHealthGetResponse = SourceHealthV1OrganiserSourceHealthGetResponses[keyof SourceHealthV1OrganiserSourceHealthGetResponses];
+
+export type StartSourceRefreshV1OrganiserSourceHealthRefreshPostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/source-health/refresh';
+};
+
+export type StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponses = {
+    /**
+     * Successful Response
+     */
+    202: SourceRefreshRunOut;
+};
+
+export type StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponse = StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponses[keyof StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponses];
 
 export type ListListingReportsV1OrganiserListingReportsGetData = {
     body?: never;
@@ -2401,359 +2753,6 @@ export type ModerateListingReportV1OrganiserListingReportsReportIdModeratePostRe
 };
 
 export type ModerateListingReportV1OrganiserListingReportsReportIdModeratePostResponse = ModerateListingReportV1OrganiserListingReportsReportIdModeratePostResponses[keyof ModerateListingReportV1OrganiserListingReportsReportIdModeratePostResponses];
-
-export type GetNotificationPreferencesV1OrganiserNotificationPreferencesGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/organiser/notification-preferences';
-};
-
-export type GetNotificationPreferencesV1OrganiserNotificationPreferencesGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: NotificationPreferencesOut;
-};
-
-export type GetNotificationPreferencesV1OrganiserNotificationPreferencesGetResponse = GetNotificationPreferencesV1OrganiserNotificationPreferencesGetResponses[keyof GetNotificationPreferencesV1OrganiserNotificationPreferencesGetResponses];
-
-export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutData = {
-    body: NotificationPreferencesUpdate;
-    path?: never;
-    query?: never;
-    url: '/v1/organiser/notification-preferences';
-};
-
-export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutError = UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutErrors[keyof UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutErrors];
-
-export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutResponses = {
-    /**
-     * Successful Response
-     */
-    200: NotificationPreferencesOut;
-};
-
-export type UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutResponse = UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutResponses[keyof UpdateNotificationPreferencesV1OrganiserNotificationPreferencesPutResponses];
-
-export type OrganiserOpportunitiesV1OrganiserOpportunitiesGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/organiser/opportunities';
-};
-
-export type OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponses = {
-    /**
-     * Response Organiser Opportunities V1 Organiser Opportunities Get
-     *
-     * Successful Response
-     */
-    200: Array<OpportunityOut>;
-};
-
-export type OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponse = OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponses[keyof OrganiserOpportunitiesV1OrganiserOpportunitiesGetResponses];
-
-export type CreateOpportunityV1OrganiserOpportunitiesPostData = {
-    body: OpportunityCreate;
-    path?: never;
-    query?: never;
-    url: '/v1/organiser/opportunities';
-};
-
-export type CreateOpportunityV1OrganiserOpportunitiesPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type CreateOpportunityV1OrganiserOpportunitiesPostError = CreateOpportunityV1OrganiserOpportunitiesPostErrors[keyof CreateOpportunityV1OrganiserOpportunitiesPostErrors];
-
-export type CreateOpportunityV1OrganiserOpportunitiesPostResponses = {
-    /**
-     * Successful Response
-     */
-    201: OpportunityOut;
-};
-
-export type CreateOpportunityV1OrganiserOpportunitiesPostResponse = CreateOpportunityV1OrganiserOpportunitiesPostResponses[keyof CreateOpportunityV1OrganiserOpportunitiesPostResponses];
-
-export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchData = {
-    body: OpportunityUpdate;
-    path: {
-        /**
-         * Opportunity Id
-         */
-        opportunity_id: string;
-    };
-    query?: never;
-    url: '/v1/organiser/opportunities/{opportunity_id}';
-};
-
-export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchError = UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchErrors[keyof UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchErrors];
-
-export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses = {
-    /**
-     * Successful Response
-     */
-    200: OpportunityOut;
-};
-
-export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponse = UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses[keyof UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses];
-
-export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetData = {
-    body?: never;
-    path: {
-        /**
-         * Opportunity Id
-         */
-        opportunity_id: string;
-    };
-    query?: never;
-    url: '/v1/organiser/opportunities/{opportunity_id}/analytics';
-};
-
-export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetError = OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors[keyof OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors];
-
-export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: AnalyticsOut;
-};
-
-export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponse = OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses[keyof OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses];
-
-export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetData = {
-    body?: never;
-    path: {
-        /**
-         * Opportunity Id
-         */
-        opportunity_id: string;
-    };
-    query?: {
-        /**
-         * Stage
-         */
-        stage?: ApplicationStatus | null;
-        /**
-         * Q
-         */
-        q?: string | null;
-        /**
-         * Availability
-         */
-        availability?: string | null;
-    };
-    url: '/v1/organiser/opportunities/{opportunity_id}/applications.csv';
-};
-
-export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetError = ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors[keyof ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors];
-
-export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetData = {
-    body?: never;
-    path: {
-        /**
-         * Opportunity Id
-         */
-        opportunity_id: string;
-    };
-    query?: {
-        /**
-         * Session Date
-         */
-        session_date?: string | null;
-    };
-    url: '/v1/organiser/opportunities/{opportunity_id}/attendance';
-};
-
-export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetError = AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors[keyof AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors];
-
-export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: AttendanceSheetOut;
-};
-
-export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponse = AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses[keyof AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses];
-
-export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostData = {
-    body: UploadRequest;
-    path: {
-        /**
-         * Opportunity Id
-         */
-        opportunity_id: string;
-    };
-    query?: never;
-    url: '/v1/organiser/opportunities/{opportunity_id}/image-upload';
-};
-
-export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostError = CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors[keyof CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors];
-
-export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses = {
-    /**
-     * Successful Response
-     */
-    200: UploadOut;
-};
-
-export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponse = CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses[keyof CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses];
-
-export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetData = {
-    body?: never;
-    path: {
-        /**
-         * Opportunity Id
-         */
-        opportunity_id: string;
-    };
-    query?: {
-        /**
-         * Stage
-         */
-        stage?: ApplicationStatus | null;
-        /**
-         * Q
-         */
-        q?: string | null;
-        /**
-         * Availability
-         */
-        availability?: string | null;
-    };
-    url: '/v1/organiser/opportunities/{opportunity_id}/pipeline';
-};
-
-export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetError = ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors[keyof ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors];
-
-export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: PipelineOut;
-};
-
-export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponse = ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses[keyof ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses];
-
-export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostData = {
-    body?: never;
-    path: {
-        /**
-         * Opportunity Id
-         */
-        opportunity_id: string;
-    };
-    query?: never;
-    url: '/v1/organiser/opportunities/{opportunity_id}/publish';
-};
-
-export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostError = PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors[keyof PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors];
-
-export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses = {
-    /**
-     * Successful Response
-     */
-    200: OpportunityOut;
-};
-
-export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponse = PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses[keyof PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses];
-
-export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostData = {
-    body?: never;
-    path: {
-        /**
-         * Opportunity Id
-         */
-        opportunity_id: string;
-    };
-    query?: never;
-    url: '/v1/organiser/opportunities/{opportunity_id}/unpublish';
-};
-
-export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostError = UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostErrors[keyof UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostErrors];
-
-export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses = {
-    /**
-     * Successful Response
-     */
-    200: OpportunityOut;
-};
-
-export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponse = UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses[keyof UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses];
 
 export type ListSourceCandidatesV1OrganiserSourceCandidatesGetData = {
     body?: never;
@@ -2821,36 +2820,6 @@ export type UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchResp
 
 export type UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchResponse = UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchResponses[keyof UpdateSourceCandidateV1OrganiserSourceCandidatesCandidateIdPatchResponses];
 
-export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostData = {
-    body: SourceCandidatePromote;
-    path: {
-        /**
-         * Candidate Id
-         */
-        candidate_id: string;
-    };
-    query?: never;
-    url: '/v1/organiser/source-candidates/{candidate_id}/promote';
-};
-
-export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostError = PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostErrors[keyof PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostErrors];
-
-export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponses = {
-    /**
-     * Successful Response
-     */
-    201: OpportunityOut;
-};
-
-export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponse = PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponses[keyof PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponses];
-
 export type RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostData = {
     body?: never;
     path: {
@@ -2881,319 +2850,380 @@ export type RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPos
 
 export type RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostResponse = RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostResponses[keyof RejectSourceCandidateV1OrganiserSourceCandidatesCandidateIdRejectPostResponses];
 
-export type SourceHealthV1OrganiserSourceHealthGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/organiser/source-health';
-};
-
-export type SourceHealthV1OrganiserSourceHealthGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: SourceHealthOut;
-};
-
-export type SourceHealthV1OrganiserSourceHealthGetResponse = SourceHealthV1OrganiserSourceHealthGetResponses[keyof SourceHealthV1OrganiserSourceHealthGetResponses];
-
-export type StartSourceRefreshV1OrganiserSourceHealthRefreshPostData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/organiser/source-health/refresh';
-};
-
-export type StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponses = {
-    /**
-     * Successful Response
-     */
-    202: SourceRefreshRunOut;
-};
-
-export type StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponse = StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponses[keyof StartSourceRefreshV1OrganiserSourceHealthRefreshPostResponses];
-
-export type GetOrganiserWaiverV1OrganiserWaiverGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/organiser/waiver';
-};
-
-export type GetOrganiserWaiverV1OrganiserWaiverGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: WaiverOut;
-};
-
-export type GetOrganiserWaiverV1OrganiserWaiverGetResponse = GetOrganiserWaiverV1OrganiserWaiverGetResponses[keyof GetOrganiserWaiverV1OrganiserWaiverGetResponses];
-
-export type UpdateOrganiserWaiverV1OrganiserWaiverPutData = {
-    body: WaiverUpdate;
-    path?: never;
-    query?: never;
-    url: '/v1/organiser/waiver';
-};
-
-export type UpdateOrganiserWaiverV1OrganiserWaiverPutErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateOrganiserWaiverV1OrganiserWaiverPutError = UpdateOrganiserWaiverV1OrganiserWaiverPutErrors[keyof UpdateOrganiserWaiverV1OrganiserWaiverPutErrors];
-
-export type UpdateOrganiserWaiverV1OrganiserWaiverPutResponses = {
-    /**
-     * Successful Response
-     */
-    200: WaiverOut;
-};
-
-export type UpdateOrganiserWaiverV1OrganiserWaiverPutResponse = UpdateOrganiserWaiverV1OrganiserWaiverPutResponses[keyof UpdateOrganiserWaiverV1OrganiserWaiverPutResponses];
-
-export type CreateProfileV1ProfilesPostData = {
-    body: ProfileCreate;
-    path?: never;
-    query?: never;
-    url: '/v1/profiles';
-};
-
-export type CreateProfileV1ProfilesPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type CreateProfileV1ProfilesPostError = CreateProfileV1ProfilesPostErrors[keyof CreateProfileV1ProfilesPostErrors];
-
-export type CreateProfileV1ProfilesPostResponses = {
-    /**
-     * Successful Response
-     */
-    201: ProfileOut;
-};
-
-export type CreateProfileV1ProfilesPostResponse = CreateProfileV1ProfilesPostResponses[keyof CreateProfileV1ProfilesPostResponses];
-
-export type GetMeV1ProfilesMeGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/profiles/me';
-};
-
-export type GetMeV1ProfilesMeGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: ProfileOut;
-};
-
-export type GetMeV1ProfilesMeGetResponse = GetMeV1ProfilesMeGetResponses[keyof GetMeV1ProfilesMeGetResponses];
-
-export type UpdateProfileDetailsV1ProfilesMePatchData = {
-    body: ProfileDetailsUpdate;
-    path?: never;
-    query?: never;
-    url: '/v1/profiles/me';
-};
-
-export type UpdateProfileDetailsV1ProfilesMePatchErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateProfileDetailsV1ProfilesMePatchError = UpdateProfileDetailsV1ProfilesMePatchErrors[keyof UpdateProfileDetailsV1ProfilesMePatchErrors];
-
-export type UpdateProfileDetailsV1ProfilesMePatchResponses = {
-    /**
-     * Successful Response
-     */
-    200: ProfileOut;
-};
-
-export type UpdateProfileDetailsV1ProfilesMePatchResponse = UpdateProfileDetailsV1ProfilesMePatchResponses[keyof UpdateProfileDetailsV1ProfilesMePatchResponses];
-
-export type ExportMyDataV1ProfilesMeDataGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/profiles/me/data';
-};
-
-export type ExportMyDataV1ProfilesMeDataGetResponses = {
-    /**
-     * Response Export My Data V1 Profiles Me Data Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostData = {
+    body: SourceCandidatePromote;
+    path: {
+        /**
+         * Candidate Id
+         */
+        candidate_id: string;
     };
-};
-
-export type ExportMyDataV1ProfilesMeDataGetResponse = ExportMyDataV1ProfilesMeDataGetResponses[keyof ExportMyDataV1ProfilesMeDataGetResponses];
-
-export type CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteData = {
-    body?: never;
-    path?: never;
     query?: never;
-    url: '/v1/profiles/me/deletion-request';
+    url: '/v1/organiser/source-candidates/{candidate_id}/promote';
 };
 
-export type CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponses = {
-    /**
-     * Response Cancel Account Deletion V1 Profiles Me Deletion Request Delete
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: string;
-    };
-};
-
-export type CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponse = CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponses[keyof CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponses];
-
-export type RequestAccountDeletionV1ProfilesMeDeletionRequestPostData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/profiles/me/deletion-request';
-};
-
-export type RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponses = {
-    /**
-     * Response Request Account Deletion V1 Profiles Me Deletion Request Post
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: string;
-    };
-};
-
-export type RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponse = RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponses[keyof RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponses];
-
-export type UpdatePreferencesV1ProfilesMePreferencesPutData = {
-    body: ProfileUpdate;
-    path?: never;
-    query?: never;
-    url: '/v1/profiles/me/preferences';
-};
-
-export type UpdatePreferencesV1ProfilesMePreferencesPutErrors = {
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type UpdatePreferencesV1ProfilesMePreferencesPutError = UpdatePreferencesV1ProfilesMePreferencesPutErrors[keyof UpdatePreferencesV1ProfilesMePreferencesPutErrors];
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostError = PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostErrors[keyof PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostErrors];
 
-export type UpdatePreferencesV1ProfilesMePreferencesPutResponses = {
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponses = {
     /**
      * Successful Response
      */
-    200: ProfileOut;
+    201: OpportunityOut;
 };
 
-export type UpdatePreferencesV1ProfilesMePreferencesPutResponse = UpdatePreferencesV1ProfilesMePreferencesPutResponses[keyof UpdatePreferencesV1ProfilesMePreferencesPutResponses];
+export type PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponse = PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponses[keyof PromoteSourceCandidateV1OrganiserSourceCandidatesCandidateIdPromotePostResponses];
 
-export type ListCausesV1ReferenceCausesGetData = {
-    body?: never;
-    path?: never;
+export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchData = {
+    body: OpportunityUpdate;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
     query?: never;
-    url: '/v1/reference/causes';
+    url: '/v1/organiser/opportunities/{opportunity_id}';
 };
 
-export type ListCausesV1ReferenceCausesGetResponses = {
+export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchErrors = {
     /**
-     * Response List Causes V1 Reference Causes Get
-     *
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchError = UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchErrors[keyof UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchErrors];
+
+export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses = {
+    /**
      * Successful Response
      */
-    200: Array<CauseOut>;
+    200: OpportunityOut;
 };
 
-export type ListCausesV1ReferenceCausesGetResponse = ListCausesV1ReferenceCausesGetResponses[keyof ListCausesV1ReferenceCausesGetResponses];
+export type UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponse = UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses[keyof UpdateOpportunityV1OrganiserOpportunitiesOpportunityIdPatchResponses];
 
-export type ListSuburbsV1ReferenceSuburbsGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/reference/suburbs';
-};
-
-export type ListSuburbsV1ReferenceSuburbsGetResponses = {
-    /**
-     * Response List Suburbs V1 Reference Suburbs Get
-     *
-     * Successful Response
-     */
-    200: Array<SuburbOut>;
-};
-
-export type ListSuburbsV1ReferenceSuburbsGetResponse = ListSuburbsV1ReferenceSuburbsGetResponses[keyof ListSuburbsV1ReferenceSuburbsGetResponses];
-
-export type DeletionRequestsV1ReviewDeletionRequestsGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/review/deletion-requests';
-};
-
-export type DeletionRequestsV1ReviewDeletionRequestsGetResponses = {
-    /**
-     * Response Deletion Requests V1 Review Deletion Requests Get
-     *
-     * Successful Response
-     */
-    200: Array<{
-        [key: string]: unknown;
-    }>;
-};
-
-export type DeletionRequestsV1ReviewDeletionRequestsGetResponse = DeletionRequestsV1ReviewDeletionRequestsGetResponses[keyof DeletionRequestsV1ReviewDeletionRequestsGetResponses];
-
-export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostData = {
+export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostData = {
     body?: never;
     path: {
         /**
-         * Profile Id
+         * Opportunity Id
          */
-        profile_id: string;
+        opportunity_id: string;
     };
     query?: never;
-    url: '/v1/review/deletion-requests/{profile_id}/complete';
+    url: '/v1/organiser/opportunities/{opportunity_id}/publish';
 };
 
-export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostErrors = {
+export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostError = CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostErrors[keyof CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostErrors];
+export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostError = PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors[keyof PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostErrors];
 
-export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponses = {
+export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses = {
     /**
-     * Response Complete Account Deletion V1 Review Deletion Requests  Profile Id  Complete Post
-     *
      * Successful Response
      */
-    200: {
-        [key: string]: string;
-    };
+    200: OpportunityOut;
 };
 
-export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponse = CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponses[keyof CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponses];
+export type PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponse = PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses[keyof PublishOpportunityV1OrganiserOpportunitiesOpportunityIdPublishPostResponses];
+
+export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostData = {
+    body?: never;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/opportunities/{opportunity_id}/unpublish';
+};
+
+export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostError = UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostErrors[keyof UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostErrors];
+
+export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: OpportunityOut;
+};
+
+export type UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponse = UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses[keyof UnpublishOpportunityV1OrganiserOpportunitiesOpportunityIdUnpublishPostResponses];
+
+export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetData = {
+    body?: never;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: {
+        /**
+         * Stage
+         */
+        stage?: ApplicationStatus | null;
+        /**
+         * Q
+         */
+        q?: string | null;
+        /**
+         * Availability
+         */
+        availability?: string | null;
+    };
+    url: '/v1/organiser/opportunities/{opportunity_id}/pipeline';
+};
+
+export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetError = ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors[keyof ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetErrors];
+
+export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: PipelineOut;
+};
+
+export type ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponse = ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses[keyof ApplicationPipelineV1OrganiserOpportunitiesOpportunityIdPipelineGetResponses];
+
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetData = {
+    body?: never;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/opportunities/{opportunity_id}/analytics';
+};
+
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetError = OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors[keyof OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetErrors];
+
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalyticsOut;
+};
+
+export type OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponse = OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses[keyof OpportunityAnalyticsV1OrganiserOpportunitiesOpportunityIdAnalyticsGetResponses];
+
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetData = {
+    body?: never;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: {
+        /**
+         * Session Date
+         */
+        session_date?: string | null;
+    };
+    url: '/v1/organiser/opportunities/{opportunity_id}/attendance';
+};
+
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetError = AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors[keyof AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetErrors];
+
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendanceSheetOut;
+};
+
+export type AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponse = AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses[keyof AttendanceSheetV1OrganiserOpportunitiesOpportunityIdAttendanceGetResponses];
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutData = {
+    body: AttendanceUpdate;
+    path: {
+        /**
+         * Application Id
+         */
+        application_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/applications/{application_id}/attendance';
+};
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutError = RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors[keyof RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutErrors];
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendanceRowOut;
+};
+
+export type RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponse = RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses[keyof RecordAttendanceV1OrganiserApplicationsApplicationIdAttendancePutResponses];
+
+export type MyImpactV1VolunteersMeImpactGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/volunteers/me/impact';
+};
+
+export type MyImpactV1VolunteersMeImpactGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ImpactOut;
+};
+
+export type MyImpactV1VolunteersMeImpactGetResponse = MyImpactV1VolunteersMeImpactGetResponses[keyof MyImpactV1VolunteersMeImpactGetResponses];
+
+export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetData = {
+    body?: never;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: {
+        /**
+         * Stage
+         */
+        stage?: ApplicationStatus | null;
+        /**
+         * Q
+         */
+        q?: string | null;
+        /**
+         * Availability
+         */
+        availability?: string | null;
+    };
+    url: '/v1/organiser/opportunities/{opportunity_id}/applications.csv';
+};
+
+export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetError = ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors[keyof ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetErrors];
+
+export type ExportApplicationsV1OrganiserOpportunitiesOpportunityIdApplicationsCsvGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchData = {
+    body: ApplicationTransition;
+    path: {
+        /**
+         * Application Id
+         */
+        application_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/applications/{application_id}';
+};
+
+export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchError = TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors[keyof TransitionApplicationV1OrganiserApplicationsApplicationIdPatchErrors];
+
+export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApplicationOut;
+};
+
+export type TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponse = TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses[keyof TransitionApplicationV1OrganiserApplicationsApplicationIdPatchResponses];
+
+export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostData = {
+    body: UploadRequest;
+    path: {
+        /**
+         * Opportunity Id
+         */
+        opportunity_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/opportunities/{opportunity_id}/image-upload';
+};
+
+export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostError = CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors[keyof CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostErrors];
+
+export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: UploadOut;
+};
+
+export type CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponse = CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses[keyof CreateImageUploadV1OrganiserOpportunitiesOpportunityIdImageUploadPostResponses];
 
 export type OrganisationsForReviewV1ReviewOrganisationsGetData = {
     body?: never;
@@ -3303,18 +3333,744 @@ export type UpdateSourcePolicyV1ReviewSourcePoliciesHostPutResponses = {
 
 export type UpdateSourcePolicyV1ReviewSourcePoliciesHostPutResponse = UpdateSourcePolicyV1ReviewSourcePoliciesHostPutResponses[keyof UpdateSourcePolicyV1ReviewSourcePoliciesHostPutResponses];
 
-export type MyImpactV1VolunteersMeImpactGetData = {
+export type ExportMyDataV1ProfilesMeDataGetData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/v1/volunteers/me/impact';
+    url: '/v1/profiles/me/data';
 };
 
-export type MyImpactV1VolunteersMeImpactGetResponses = {
+export type ExportMyDataV1ProfilesMeDataGetResponses = {
+    /**
+     * Response Export My Data V1 Profiles Me Data Get
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ExportMyDataV1ProfilesMeDataGetResponse = ExportMyDataV1ProfilesMeDataGetResponses[keyof ExportMyDataV1ProfilesMeDataGetResponses];
+
+export type CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles/me/deletion-request';
+};
+
+export type CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponses = {
+    /**
+     * Response Cancel Account Deletion V1 Profiles Me Deletion Request Delete
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponse = CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponses[keyof CancelAccountDeletionV1ProfilesMeDeletionRequestDeleteResponses];
+
+export type RequestAccountDeletionV1ProfilesMeDeletionRequestPostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/profiles/me/deletion-request';
+};
+
+export type RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponses = {
+    /**
+     * Response Request Account Deletion V1 Profiles Me Deletion Request Post
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponse = RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponses[keyof RequestAccountDeletionV1ProfilesMeDeletionRequestPostResponses];
+
+export type DeletionRequestsV1ReviewDeletionRequestsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/review/deletion-requests';
+};
+
+export type DeletionRequestsV1ReviewDeletionRequestsGetResponses = {
+    /**
+     * Response Deletion Requests V1 Review Deletion Requests Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type DeletionRequestsV1ReviewDeletionRequestsGetResponse = DeletionRequestsV1ReviewDeletionRequestsGetResponses[keyof DeletionRequestsV1ReviewDeletionRequestsGetResponses];
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostData = {
+    body?: never;
+    path: {
+        /**
+         * Profile Id
+         */
+        profile_id: string;
+    };
+    query?: never;
+    url: '/v1/review/deletion-requests/{profile_id}/complete';
+};
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostError = CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostErrors[keyof CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostErrors];
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponses = {
+    /**
+     * Response Complete Account Deletion V1 Review Deletion Requests  Profile Id  Complete Post
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponse = CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponses[keyof CompleteAccountDeletionV1ReviewDeletionRequestsProfileIdCompletePostResponses];
+
+export type CommunityEventsV1CommunityEventsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/community/events';
+};
+
+export type CommunityEventsV1CommunityEventsGetResponses = {
+    /**
+     * Response Community Events V1 Community Events Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type CommunityEventsV1CommunityEventsGetResponse = CommunityEventsV1CommunityEventsGetResponses[keyof CommunityEventsV1CommunityEventsGetResponses];
+
+export type MyCommunityRsvpsV1CommunityMyRsvpsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/community/my-rsvps';
+};
+
+export type MyCommunityRsvpsV1CommunityMyRsvpsGetResponses = {
+    /**
+     * Response My Community Rsvps V1 Community My Rsvps Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type MyCommunityRsvpsV1CommunityMyRsvpsGetResponse = MyCommunityRsvpsV1CommunityMyRsvpsGetResponses[keyof MyCommunityRsvpsV1CommunityMyRsvpsGetResponses];
+
+export type HostedEventsV1OrganiserCommunityEventsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/community/events';
+};
+
+export type HostedEventsV1OrganiserCommunityEventsGetResponses = {
+    /**
+     * Response Hosted Events V1 Organiser Community Events Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type HostedEventsV1OrganiserCommunityEventsGetResponse = HostedEventsV1OrganiserCommunityEventsGetResponses[keyof HostedEventsV1OrganiserCommunityEventsGetResponses];
+
+export type CreateEventV1OrganiserCommunityEventsPostData = {
+    body: GatheringInput;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/community/events';
+};
+
+export type CreateEventV1OrganiserCommunityEventsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateEventV1OrganiserCommunityEventsPostError = CreateEventV1OrganiserCommunityEventsPostErrors[keyof CreateEventV1OrganiserCommunityEventsPostErrors];
+
+export type CreateEventV1OrganiserCommunityEventsPostResponses = {
+    /**
+     * Response Create Event V1 Organiser Community Events Post
+     *
+     * Successful Response
+     */
+    201: {
+        [key: string]: unknown;
+    };
+};
+
+export type CreateEventV1OrganiserCommunityEventsPostResponse = CreateEventV1OrganiserCommunityEventsPostResponses[keyof CreateEventV1OrganiserCommunityEventsPostResponses];
+
+export type HostedEventV1OrganiserCommunityEventsEventIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/community/events/{event_id}';
+};
+
+export type HostedEventV1OrganiserCommunityEventsEventIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type HostedEventV1OrganiserCommunityEventsEventIdGetError = HostedEventV1OrganiserCommunityEventsEventIdGetErrors[keyof HostedEventV1OrganiserCommunityEventsEventIdGetErrors];
+
+export type HostedEventV1OrganiserCommunityEventsEventIdGetResponses = {
+    /**
+     * Response Hosted Event V1 Organiser Community Events  Event Id  Get
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type HostedEventV1OrganiserCommunityEventsEventIdGetResponse = HostedEventV1OrganiserCommunityEventsEventIdGetResponses[keyof HostedEventV1OrganiserCommunityEventsEventIdGetResponses];
+
+export type UpdateEventV1OrganiserCommunityEventsEventIdPutData = {
+    body: GatheringInput;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/community/events/{event_id}';
+};
+
+export type UpdateEventV1OrganiserCommunityEventsEventIdPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateEventV1OrganiserCommunityEventsEventIdPutError = UpdateEventV1OrganiserCommunityEventsEventIdPutErrors[keyof UpdateEventV1OrganiserCommunityEventsEventIdPutErrors];
+
+export type UpdateEventV1OrganiserCommunityEventsEventIdPutResponses = {
+    /**
+     * Response Update Event V1 Organiser Community Events  Event Id  Put
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type UpdateEventV1OrganiserCommunityEventsEventIdPutResponse = UpdateEventV1OrganiserCommunityEventsEventIdPutResponses[keyof UpdateEventV1OrganiserCommunityEventsEventIdPutResponses];
+
+export type EventStatusV1OrganiserCommunityEventsEventIdStatusPostData = {
+    body: GatheringState;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/community/events/{event_id}/status';
+};
+
+export type EventStatusV1OrganiserCommunityEventsEventIdStatusPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EventStatusV1OrganiserCommunityEventsEventIdStatusPostError = EventStatusV1OrganiserCommunityEventsEventIdStatusPostErrors[keyof EventStatusV1OrganiserCommunityEventsEventIdStatusPostErrors];
+
+export type EventStatusV1OrganiserCommunityEventsEventIdStatusPostResponses = {
+    /**
+     * Response Event Status V1 Organiser Community Events  Event Id  Status Post
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type EventStatusV1OrganiserCommunityEventsEventIdStatusPostResponse = EventStatusV1OrganiserCommunityEventsEventIdStatusPostResponses[keyof EventStatusV1OrganiserCommunityEventsEventIdStatusPostResponses];
+
+export type InvitationV1CommunityEventsEventIdGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Givehub-Rsvp-Key
+         */
+        'X-GiveHub-RSVP-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/community/events/{event_id}';
+};
+
+export type InvitationV1CommunityEventsEventIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type InvitationV1CommunityEventsEventIdGetError = InvitationV1CommunityEventsEventIdGetErrors[keyof InvitationV1CommunityEventsEventIdGetErrors];
+
+export type InvitationV1CommunityEventsEventIdGetResponses = {
+    /**
+     * Response Invitation V1 Community Events  Event Id  Get
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type InvitationV1CommunityEventsEventIdGetResponse = InvitationV1CommunityEventsEventIdGetResponses[keyof InvitationV1CommunityEventsEventIdGetResponses];
+
+export type RsvpV1CommunityEventsEventIdRsvpPostData = {
+    body: RsvpInput;
+    headers?: {
+        /**
+         * X-Givehub-Rsvp-Key
+         */
+        'X-GiveHub-RSVP-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/community/events/{event_id}/rsvp';
+};
+
+export type RsvpV1CommunityEventsEventIdRsvpPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RsvpV1CommunityEventsEventIdRsvpPostError = RsvpV1CommunityEventsEventIdRsvpPostErrors[keyof RsvpV1CommunityEventsEventIdRsvpPostErrors];
+
+export type RsvpV1CommunityEventsEventIdRsvpPostResponses = {
+    /**
+     * Response Rsvp V1 Community Events  Event Id  Rsvp Post
+     *
+     * Successful Response
+     */
+    201: {
+        [key: string]: unknown;
+    };
+};
+
+export type RsvpV1CommunityEventsEventIdRsvpPostResponse = RsvpV1CommunityEventsEventIdRsvpPostResponses[keyof RsvpV1CommunityEventsEventIdRsvpPostResponses];
+
+export type GuestsV1OrganiserCommunityEventsEventIdGuestsGetData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/community/events/{event_id}/guests';
+};
+
+export type GuestsV1OrganiserCommunityEventsEventIdGuestsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GuestsV1OrganiserCommunityEventsEventIdGuestsGetError = GuestsV1OrganiserCommunityEventsEventIdGuestsGetErrors[keyof GuestsV1OrganiserCommunityEventsEventIdGuestsGetErrors];
+
+export type GuestsV1OrganiserCommunityEventsEventIdGuestsGetResponses = {
+    /**
+     * Response Guests V1 Organiser Community Events  Event Id  Guests Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type GuestsV1OrganiserCommunityEventsEventIdGuestsGetResponse = GuestsV1OrganiserCommunityEventsEventIdGuestsGetResponses[keyof GuestsV1OrganiserCommunityEventsEventIdGuestsGetResponses];
+
+export type DecideGuestV1OrganiserCommunityEventsEventIdGuestsGuestIdPatchData = {
+    body: GuestDecision;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+        /**
+         * Guest Id
+         */
+        guest_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/community/events/{event_id}/guests/{guest_id}';
+};
+
+export type DecideGuestV1OrganiserCommunityEventsEventIdGuestsGuestIdPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DecideGuestV1OrganiserCommunityEventsEventIdGuestsGuestIdPatchError = DecideGuestV1OrganiserCommunityEventsEventIdGuestsGuestIdPatchErrors[keyof DecideGuestV1OrganiserCommunityEventsEventIdGuestsGuestIdPatchErrors];
+
+export type DecideGuestV1OrganiserCommunityEventsEventIdGuestsGuestIdPatchResponses = {
+    /**
+     * Response Decide Guest V1 Organiser Community Events  Event Id  Guests  Guest Id  Patch
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type DecideGuestV1OrganiserCommunityEventsEventIdGuestsGuestIdPatchResponse = DecideGuestV1OrganiserCommunityEventsEventIdGuestsGuestIdPatchResponses[keyof DecideGuestV1OrganiserCommunityEventsEventIdGuestsGuestIdPatchResponses];
+
+export type GuestCsvV1OrganiserCommunityEventsEventIdGuestsCsvGetData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/community/events/{event_id}/guests.csv';
+};
+
+export type GuestCsvV1OrganiserCommunityEventsEventIdGuestsCsvGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GuestCsvV1OrganiserCommunityEventsEventIdGuestsCsvGetError = GuestCsvV1OrganiserCommunityEventsEventIdGuestsCsvGetErrors[keyof GuestCsvV1OrganiserCommunityEventsEventIdGuestsCsvGetErrors];
+
+export type GuestCsvV1OrganiserCommunityEventsEventIdGuestsCsvGetResponses = {
     /**
      * Successful Response
      */
-    200: ImpactOut;
+    200: unknown;
 };
 
-export type MyImpactV1VolunteersMeImpactGetResponse = MyImpactV1VolunteersMeImpactGetResponses[keyof MyImpactV1VolunteersMeImpactGetResponses];
+export type AnnounceV1OrganiserCommunityEventsEventIdAnnouncementsPostData = {
+    body: AnnouncementInput;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/community/events/{event_id}/announcements';
+};
+
+export type AnnounceV1OrganiserCommunityEventsEventIdAnnouncementsPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AnnounceV1OrganiserCommunityEventsEventIdAnnouncementsPostError = AnnounceV1OrganiserCommunityEventsEventIdAnnouncementsPostErrors[keyof AnnounceV1OrganiserCommunityEventsEventIdAnnouncementsPostErrors];
+
+export type AnnounceV1OrganiserCommunityEventsEventIdAnnouncementsPostResponses = {
+    /**
+     * Response Announce V1 Organiser Community Events  Event Id  Announcements Post
+     *
+     * Successful Response
+     */
+    201: {
+        [key: string]: string;
+    };
+};
+
+export type AnnounceV1OrganiserCommunityEventsEventIdAnnouncementsPostResponse = AnnounceV1OrganiserCommunityEventsEventIdAnnouncementsPostResponses[keyof AnnounceV1OrganiserCommunityEventsEventIdAnnouncementsPostResponses];
+
+export type DeliveriesV1OrganiserCommunityEventsEventIdDeliveriesGetData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/community/events/{event_id}/deliveries';
+};
+
+export type DeliveriesV1OrganiserCommunityEventsEventIdDeliveriesGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeliveriesV1OrganiserCommunityEventsEventIdDeliveriesGetError = DeliveriesV1OrganiserCommunityEventsEventIdDeliveriesGetErrors[keyof DeliveriesV1OrganiserCommunityEventsEventIdDeliveriesGetErrors];
+
+export type DeliveriesV1OrganiserCommunityEventsEventIdDeliveriesGetResponses = {
+    /**
+     * Response Deliveries V1 Organiser Community Events  Event Id  Deliveries Get
+     *
+     * Successful Response
+     */
+    200: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+export type DeliveriesV1OrganiserCommunityEventsEventIdDeliveriesGetResponse = DeliveriesV1OrganiserCommunityEventsEventIdDeliveriesGetResponses[keyof DeliveriesV1OrganiserCommunityEventsEventIdDeliveriesGetResponses];
+
+export type DeliverDueV1OrganiserCommunityEventsEventIdDeliveriesProcessPostData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/organiser/community/events/{event_id}/deliveries/process';
+};
+
+export type DeliverDueV1OrganiserCommunityEventsEventIdDeliveriesProcessPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeliverDueV1OrganiserCommunityEventsEventIdDeliveriesProcessPostError = DeliverDueV1OrganiserCommunityEventsEventIdDeliveriesProcessPostErrors[keyof DeliverDueV1OrganiserCommunityEventsEventIdDeliveriesProcessPostErrors];
+
+export type DeliverDueV1OrganiserCommunityEventsEventIdDeliveriesProcessPostResponses = {
+    /**
+     * Response Deliver Due V1 Organiser Community Events  Event Id  Deliveries Process Post
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: number;
+    };
+};
+
+export type DeliverDueV1OrganiserCommunityEventsEventIdDeliveriesProcessPostResponse = DeliverDueV1OrganiserCommunityEventsEventIdDeliveriesProcessPostResponses[keyof DeliverDueV1OrganiserCommunityEventsEventIdDeliveriesProcessPostResponses];
+
+export type UploadCoverV1OrganiserCommunityCoversPostData = {
+    body: CoverInput;
+    path?: never;
+    query?: never;
+    url: '/v1/organiser/community/covers';
+};
+
+export type UploadCoverV1OrganiserCommunityCoversPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UploadCoverV1OrganiserCommunityCoversPostError = UploadCoverV1OrganiserCommunityCoversPostErrors[keyof UploadCoverV1OrganiserCommunityCoversPostErrors];
+
+export type UploadCoverV1OrganiserCommunityCoversPostResponses = {
+    /**
+     * Response Upload Cover V1 Organiser Community Covers Post
+     *
+     * Successful Response
+     */
+    201: {
+        [key: string]: string;
+    };
+};
+
+export type UploadCoverV1OrganiserCommunityCoversPostResponse = UploadCoverV1OrganiserCommunityCoversPostResponses[keyof UploadCoverV1OrganiserCommunityCoversPostResponses];
+
+export type CoverV1CommunityCoversFilenameGetData = {
+    body?: never;
+    path: {
+        /**
+         * Filename
+         */
+        filename: string;
+    };
+    query?: never;
+    url: '/v1/community/covers/{filename}';
+};
+
+export type CoverV1CommunityCoversFilenameGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CoverV1CommunityCoversFilenameGetError = CoverV1CommunityCoversFilenameGetErrors[keyof CoverV1CommunityCoversFilenameGetErrors];
+
+export type CoverV1CommunityCoversFilenameGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type GatheringCalendarV1CommunityEventsEventIdCalendarGetData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/v1/community/events/{event_id}/calendar';
+};
+
+export type GatheringCalendarV1CommunityEventsEventIdCalendarGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GatheringCalendarV1CommunityEventsEventIdCalendarGetError = GatheringCalendarV1CommunityEventsEventIdCalendarGetErrors[keyof GatheringCalendarV1CommunityEventsEventIdCalendarGetErrors];
+
+export type GatheringCalendarV1CommunityEventsEventIdCalendarGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type GatheringShareGEventIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/g/{event_id}';
+};
+
+export type GatheringShareGEventIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GatheringShareGEventIdGetError = GatheringShareGEventIdGetErrors[keyof GatheringShareGEventIdGetErrors];
+
+export type GatheringShareGEventIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: string;
+};
+
+export type GatheringShareGEventIdGetResponse = GatheringShareGEventIdGetResponses[keyof GatheringShareGEventIdGetResponses];
+
+export type HealthHealthGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/health';
+};
+
+export type HealthHealthGetResponses = {
+    /**
+     * Response Health Health Get
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type HealthHealthGetResponse = HealthHealthGetResponses[keyof HealthHealthGetResponses];
+
+export type ReadyReadyGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/ready';
+};
+
+export type ReadyReadyGetResponses = {
+    /**
+     * Response Ready Ready Get
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type ReadyReadyGetResponse = ReadyReadyGetResponses[keyof ReadyReadyGetResponses];

@@ -8,11 +8,13 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from givehub.api import profile_out, require_source_reviewer
 from givehub.auth import Identity, current_identity
+from givehub.community import guest_out
+from givehub.community_models import Gathering, GatheringDelivery, GatheringMessage, GatheringRSVP
 from givehub.config import Settings, get_settings
 from givehub.database import SessionLocal, get_db
 from givehub.models import (
@@ -62,6 +64,8 @@ def export_my_data(
         ),
         "reports": own_rows(db, ListingReport, ListingReport.reporter_id == profile.id),
         "events": own_rows(db, OpportunityEvent, OpportunityEvent.profile_id == profile.id),
+        "community_rsvps": [guest_out(g) for g in db.scalars(select(GatheringRSVP).where(GatheringRSVP.profile_id == profile.id)).all()],
+        "hosted_community_events": own_rows(db, Gathering, Gathering.host_id == profile.id),
     }
     if profile.organisation:
         data["organisation"] = {
@@ -167,6 +171,13 @@ def complete_account_deletion(
     db.execute(delete(SavedOpportunity).where(SavedOpportunity.profile_id == profile.id))
     db.execute(delete(ListingReport).where(ListingReport.reporter_id == profile.id))
     db.execute(delete(OpportunityEvent).where(OpportunityEvent.profile_id == profile.id))
+    guest_ids = select(GatheringRSVP.id).where(GatheringRSVP.profile_id == profile.id)
+    db.execute(delete(GatheringDelivery).where(GatheringDelivery.rsvp_id.in_(guest_ids)))
+    db.execute(delete(GatheringRSVP).where(GatheringRSVP.profile_id == profile.id))
+    hosted_ids = select(Gathering.id).where(Gathering.host_id == profile.id)
+    db.execute(update(Gathering).where(Gathering.host_id == profile.id).values(status="cancelled", data={"title": "Closed community event", "description": "The host closed their account", "location": "", "timezone": "America/Toronto", "starts_local": "", "ends_local": "", "theme": "moss", "cover_url": "", "capacity": None, "max_plus_ones": 0, "approval_required": False, "guest_list_visible": False, "address_after_rsvp": True, "listed": False, "reminder_enabled": False, "questions": []}))
+    db.execute(delete(GatheringDelivery).where(GatheringDelivery.gathering_id.in_(hosted_ids)))
+    db.execute(delete(GatheringMessage).where(GatheringMessage.gathering_id.in_(hosted_ids)))
     if profile.organisation:
         for item in profile.organisation.opportunities:
             item.status = OpportunityStatus.unpublished

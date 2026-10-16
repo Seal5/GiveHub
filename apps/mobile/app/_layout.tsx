@@ -23,7 +23,7 @@ function NavigationGuard() {
     if (loading) return;
     const group = segments[0] as string | undefined;
     // The share route resolves its own destination once auth state settles.
-    if (group === "o") return;
+    if (group === "o" || group === "g") return;
     if (!profile) {
       if (group === "(volunteer)" || group === "(organiser)") router.replace("/welcome");
       return;
@@ -60,10 +60,11 @@ function AppFrame() {
   const { width } = useWindowDimensions();
   const segments = useSegments();
   const organizerDesktop = profile?.role === "organiser" && width >= 900 && !segments.includes("attendance" as never);
+  const communityDesktop = width >= 900 && ((segments[0] as string) === "g" || segments.includes("social" as never));
   return (
     <View
       className="flex-1 overflow-hidden bg-background dark:bg-dark-background"
-      style={Platform.OS === "web" ? { width: "100%", maxWidth: organizerDesktop ? 1280 : 480, alignSelf: "center" } : undefined}
+      style={Platform.OS === "web" ? { width: "100%", maxWidth: organizerDesktop || communityDesktop ? 1280 : 480, alignSelf: "center" } : undefined}
     >
       <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
     </View>

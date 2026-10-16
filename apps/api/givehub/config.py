@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_from: str = "GiveHub <notifications@example.com>"
     public_web_url: str = ""
+    community_upload_dir: str = "./data/community-covers"
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:8081"]
     source_refresh_postal_code: str = "M5V 2T6"
     source_refresh_radius_km: int = 50

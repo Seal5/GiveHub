@@ -53,6 +53,7 @@ export default function OrganiserOverview() {
       <Text className="mt-7 font-strong text-xs uppercase tracking-[1.5px] text-primary dark:text-dark-primary">{organisation}</Text>
       <Text accessibilityRole="header" className="mt-2 font-display text-[30px] leading-8 tracking-[-1px] text-foreground dark:text-dark-foreground">{greeting()}, team.</Text>
       <Body className="mt-2">See what needs attention before volunteers are left waiting.</Body>
+      <Button className="mt-5" label="Host a community event" variant="secondary" onPress={() => router.push("/(organiser)/community" as Parameters<typeof router.push>[0])} />
 
       <View className="mt-6 flex-row flex-wrap justify-between">
         <Metric value={String(analytics.data?.views ?? 0)} label="Opportunity views" />

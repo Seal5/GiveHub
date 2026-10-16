@@ -132,6 +132,7 @@ export function Button({ label, variant = "primary", icon, loading, disabled, cl
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(disabled || loading), busy: Boolean(loading) }}
       disabled={disabled || loading}
       className={`min-h-14 flex-row items-center justify-center gap-2 rounded-card px-5 active:opacity-80 disabled:opacity-50 ${colours} ${className}`}

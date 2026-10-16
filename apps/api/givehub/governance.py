@@ -77,11 +77,17 @@ def review_organisation(
     item.reviewed_by = reviewer.id
     item.reviewed_at = datetime.now(UTC)
     if item.verification_status == VerificationStatus.rejected:
+        from sqlalchemy import update
+
+        from givehub.community_models import Gathering, GatheringDelivery
         from givehub.models import OpportunityStatus
 
         for opportunity in item.opportunities:
             opportunity.status = OpportunityStatus.unpublished
             opportunity.version += 1
+        event_ids = select(Gathering.id).where(Gathering.host_id == item.owner_id)
+        db.execute(update(Gathering).where(Gathering.host_id == item.owner_id, Gathering.status == "published").values(status="draft", version=Gathering.version + 1))
+        db.execute(update(GatheringDelivery).where(GatheringDelivery.gathering_id.in_(event_ids), GatheringDelivery.state == "queued").values(state="cancelled"))
     db.commit()
     return {"status": item.verification_status.value}
 
