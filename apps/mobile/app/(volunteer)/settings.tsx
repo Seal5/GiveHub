@@ -86,6 +86,7 @@ export default function SettingsScreen() {
 
       {validationError || save.error ? <Text accessibilityRole="alert" className="mb-3 font-sans text-sm text-destructive dark:text-dark-destructive">{validationError ?? save.error?.message}</Text> : null}
       <Button label="Save preferences" loading={save.isPending} onPress={() => { if (!location) { setValidationError("Choose a location or use your current location."); return; } save.mutate(); }} />
+      <Button label="Account and privacy" variant="secondary" className="mt-3" onPress={() => router.push("/(volunteer)/privacy")} />
       <Button label="Sign out" variant="secondary" className="mt-3" onPress={async () => { await signOut(); router.replace("/welcome"); }} />
     </Screen>
   );

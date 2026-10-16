@@ -63,7 +63,7 @@ ALLOWED_TRANSITIONS = {
 
 def require_profile(db: Session, user_id: uuid.UUID, role: Role | None = None) -> Profile:
     profile = db.get(Profile, user_id)
-    if profile is None:
+    if profile is None or profile.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Complete your GiveHub profile first")
     if role is not None and profile.role != role:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f"{role.value.title()} access required")
@@ -170,6 +170,7 @@ def to_opportunity_out(
         causes=[CauseOut.model_validate(cause) for cause in item.causes],
         distance_km=distance,
         is_saved=item.id in (saved_ids or set()),
+        unconfirmed_fields=item.unconfirmed_fields or [],
     )
 
 

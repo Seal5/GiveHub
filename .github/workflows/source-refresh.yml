@@ -32,7 +32,7 @@ jobs:
         if: env.DATABASE_URL != ''
         working-directory: apps/api
         run: |
-          uv sync
+          uv sync --locked
           uv run alembic upgrade head
           uv run python -m givehub.source_refresh --pages "$REFRESH_PAGES" | tee source-refresh-report.json
           cat source-refresh-report.json >> "$GITHUB_STEP_SUMMARY"

@@ -1,3 +1,4 @@
+import { rankDemoOpportunities } from "./ranking";
 import { applications, causes, demoLocations, opportunities, profileFor } from "./fixtures";
 import type {
   Analytics,
@@ -67,12 +68,13 @@ const demoAnalytics: Analytics = {
   view_to_application_rate: Math.round((applications.length / 48) * 1000) / 10,
 };
 const demoProfiles: Record<Role, Profile> = { volunteer: profileFor("volunteer"), organiser: profileFor("organiser") };
+const torontoDate = (value: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
 const demoAttendance: Record<string, { status: AttendanceStatus; hours: number; notes: string }> = {};
 /** Derived from demo attendance so the impact screen responds to check-ins. */
 const demoImpact = (): Impact => {
   const attended = Object.entries(demoAttendance).filter(([, record]) => record.status === "attended");
   const events = attended
-    .map(([id, record]) => ({ application: demoApplications.find((item) => item.id === id), record }))
+    .map(([id, record]) => ({ application: demoApplications.find((item) => item.id === id.split("@")[0]), record }))
     .filter((entry): entry is { application: Application; record: { status: AttendanceStatus; hours: number; notes: string } } => Boolean(entry.application));
   const opportunitiesFor = events.map((entry) => demoOpportunities.find((item) => item.id === entry.application.opportunity_id));
   return {
@@ -120,7 +122,7 @@ const distanceKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
   return 6371.0088 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 };
 
-async function request<T>(path: string, options: Options = {}): Promise<T> {
+export async function request<T>(path: string, options: Options = {}): Promise<T> {
   if (apiConfigurationError) throw new Error(apiConfigurationError);
   if (!apiUrl) throw new Error("GiveHub API is not configured.");
   const response = await fetch(`${apiUrl}${path}`, {
@@ -133,13 +135,13 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new Error(body?.error?.message ?? "GiveHub could not complete that request");
+    throw new Error(body?.error?.message ?? (typeof body?.detail === "string" ? body.detail : body?.detail?.[0]?.msg) ?? "GiveHub could not complete that request");
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
-async function requestText(path: string, options: Options = {}): Promise<string> {
+export async function requestText(path: string, options: Options = {}): Promise<string> {
   if (apiConfigurationError) throw new Error(apiConfigurationError);
   if (!apiUrl) throw new Error("GiveHub API is not configured.");
   const response = await fetch(`${apiUrl}${path}`, {
@@ -164,8 +166,26 @@ const queryString = (values: Record<string, string | undefined>) => {
 };
 
 export const api = {
+  updateProfileDetails: async (display_name: string, token?: string | null, role: Role = "volunteer"): Promise<Profile> => {
+    if (demoMode) return demoProfiles[role] = { ...demoProfiles[role], display_name };
+    return request("/v1/profiles/me", { method: "PATCH", body: JSON.stringify({ display_name }), token });
+  },
+  exportMyData: async (token?: string | null, role: Role = "volunteer"): Promise<Record<string, unknown>> => {
+    if (demoMode) return { profile: demoProfiles[role], applications: role === "volunteer" ? demoApplications : [], mode: "Session-only demo" };
+    return request("/v1/profiles/me/data", { token });
+  },
+  requestDeletion: async (cancel: boolean, token?: string | null): Promise<{ status: string }> => {
+    if (demoMode) throw new Error("This demo has no stored account. Reload to discard your session.");
+    return request("/v1/profiles/me/deletion-request", { method: cancel ? "DELETE" : "POST", token });
+  },
+  reviewOrganisations: async (token?: string | null): Promise<Array<{ id: string; name: string; contact_email: string; status: string; note: string }>> => demoMode ? [] : request("/v1/review/organisations", { token }),
+  reviewOrganisation: async (id: string, status: string, note: string, token?: string | null) => request(`/v1/review/organisations/${id}`, { method: "PUT", body: JSON.stringify({ status, note }), token }),
+  sourcePolicies: async (token?: string | null): Promise<Array<{ host: string; enabled: boolean; permission_reference: string }>> => demoMode ? [] : request("/v1/review/source-policies", { token }),
+  updateSourcePolicy: async (host: string, enabled: boolean, permission_reference: string, token?: string | null) => request(`/v1/review/source-policies/${encodeURIComponent(host)}`, { method: "PUT", body: JSON.stringify({ enabled, permission_reference }), token }),
+  deletionRequests: async (token?: string | null): Promise<Array<{ id: string; name: string; email: string; requested_at: string }>> => demoMode ? [] : request("/v1/review/deletion-requests", { token }),
+  completeDeletion: async (id: string, token?: string | null) => request(`/v1/review/deletion-requests/${id}/complete`, { method: "POST", token }),
   profile: async (role: Role, token?: string | null): Promise<Profile> =>
-    demoMode ? demoProfiles[role] : request("/v1/profiles/me", { token }),
+    demoMode ? { ...demoProfiles[role], can_review_sources: role === "organiser", organisation_verification_status: role === "organiser" ? "approved" : null } : request("/v1/profiles/me", { token }),
   createProfile: async (
     input: { role: Role; display_name: string; email: string; organisation_name?: string },
     token?: string | null,
@@ -216,9 +236,7 @@ export const api = {
         (!filters.saved || item.is_saved) &&
         (item.distance_km === null || item.distance_km <= radius)
       );
-      return results.sort((a, b) => filters.personalized
-        ? demoPersonalizationScore(b, profile) - demoPersonalizationScore(a, profile) || (a.distance_km ?? 0) - (b.distance_km ?? 0)
-        : (a.distance_km ?? 0) - (b.distance_km ?? 0));
+      return rankDemoOpportunities(results, profile, Boolean(filters.personalized));
     }
     const query = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => value !== undefined && value !== "" && query.set(key, String(value)));
@@ -350,21 +368,23 @@ export const api = {
   },
   myImpact: async (token?: string | null): Promise<Impact> =>
     demoMode ? demoImpact() : request("/v1/volunteers/me/impact", { token }),
-  attendanceSheet: async (opportunityId: string, token?: string | null): Promise<AttendanceSheet> => {
+  attendanceSheet: async (opportunityId: string, token?: string | null, sessionDate?: string): Promise<AttendanceSheet> => {
     if (demoMode) {
       const event = demoOpportunities.find((item) => item.id === opportunityId)!;
+      const selectedDate = sessionDate ?? torontoDate(event.starts_at);
       const rows = demoApplications
         .filter((item) => item.opportunity_id === opportunityId && item.status === "confirmed")
         .map((item) => ({
           application_id: item.id,
           volunteer_name: item.volunteer_name,
           volunteer_email: item.volunteer_email,
-          status: demoAttendance[item.id]?.status ?? ("expected" as AttendanceStatus),
-          hours: demoAttendance[item.id]?.hours ?? 0,
-          notes: demoAttendance[item.id]?.notes ?? "",
+          status: demoAttendance[`${item.id}@${selectedDate}`]?.status ?? ("expected" as AttendanceStatus),
+          hours: demoAttendance[`${item.id}@${selectedDate}`]?.hours ?? 0,
+          notes: demoAttendance[`${item.id}@${selectedDate}`]?.notes ?? "",
         }));
       return {
         opportunity_id: opportunityId,
+        session_date: selectedDate,
         opportunity_title: event.title,
         default_hours: 3,
         expected: rows.filter((row) => row.status === "expected").length,
@@ -374,15 +394,17 @@ export const api = {
         rows,
       };
     }
-    return request(`/v1/organiser/opportunities/${opportunityId}/attendance`, { token });
+    return request(`/v1/organiser/opportunities/${opportunityId}/attendance${sessionDate ? `?session_date=${encodeURIComponent(sessionDate)}` : ""}`, { token });
   },
   recordAttendance: async (
     applicationId: string,
-    input: { status: AttendanceStatus; hours?: number; notes?: string },
+    input: { status: AttendanceStatus; hours?: number; notes?: string; session_date?: string },
     token?: string | null,
   ): Promise<void> => {
     if (demoMode) {
-      demoAttendance[applicationId] = {
+      const application = demoApplications.find(a => a.id === applicationId)!;
+      const event = demoOpportunities.find(o => o.id === application.opportunity_id)!;
+      demoAttendance[`${applicationId}@${input.session_date ?? torontoDate(event.starts_at)}`] = {
         status: input.status,
         hours: input.status === "attended" ? input.hours ?? 3 : 0,
         notes: input.notes ?? "",
@@ -474,6 +496,7 @@ export const api = {
       listing_source: candidate.source_name,
       listing_source_url: candidate.source_url,
       listing_verification_status: "pending",
+      unconfirmed_fields: ["starts_at", "ends_at", "capacity", "minimum_age", "latitude", "longitude", "meeting_point", "eligibility_notes", "safety_notes", "external_application_url"],
       application_mode: "external",
       external_application_url: candidate.source_url,
     }, token);
@@ -525,6 +548,7 @@ export const api = {
   publishOpportunity: async (id: string, token?: string | null): Promise<Opportunity> => {
     if (demoMode) {
       const found = demoOpportunities.find((item) => item.id === id)!;
+      if (found.unconfirmed_fields?.length) throw new Error("Imported details must be confirmed before publishing");
       const updated = { ...found, status: "published" as const, version: found.version + 1 };
       demoOpportunities = demoOpportunities.map((item) => item.id === id ? updated : item);
       return updated;
@@ -534,7 +558,7 @@ export const api = {
   updateOpportunity: async (id: string, input: Record<string, unknown>, token?: string | null): Promise<Opportunity> => {
     if (demoMode) {
       const found = demoOpportunities.find((item) => item.id === id)!;
-      const updated = { ...found, ...input, version: found.version + 1 } as Opportunity;
+      const updated = { ...found, ...input, ...(input.confirm_import_details ? { unconfirmed_fields: [], listing_verification_status: "verified" } : {}), version: found.version + 1 } as Opportunity;
       demoOpportunities = demoOpportunities.map((item) => item.id === id ? updated : item);
       return updated;
     }
@@ -596,26 +620,4 @@ export const api = {
   },
   updatePreferences: async (input: PersonalizationPreferences & { search_location_label: string | null; search_latitude: number | null; search_longitude: number | null; search_radius_km: number; theme: ThemePreference }, token?: string | null): Promise<Profile> =>
     demoMode ? (demoProfiles.volunteer = { ...demoProfiles.volunteer, ...input }) : request("/v1/profiles/me/preferences", { method: "PUT", body: JSON.stringify(input), token }),
-};
-
-const demoPersonalizationScore = (item: Opportunity, profile: Profile) => {
-  let score = 0;
-  if (profile.preferred_cause_slugs.some((slug) => item.causes.some((cause) => cause.slug === slug))) score += 4;
-  if (profile.preferred_recurrences.includes(item.recurrence)) score += 2;
-  if (profile.max_time_commitment_minutes !== null && item.time_commitment_minutes <= profile.max_time_commitment_minutes) score += 2;
-  if (profile.accessible_only) score += item.is_accessible ? 2 : -4;
-  const ageLimit = profile.age_group === "under_16" ? 15 : profile.age_group === "16_17" ? 17 : null;
-  if (ageLimit !== null) score += item.minimum_age <= ageLimit ? 2 : -4;
-  if (profile.training_preference === "avoid") score += item.training_required ? -2 : 1;
-  if (profile.training_preference === "open" && item.training_required) score += 1;
-  if (profile.screening_preference === "avoid") score += item.screening_required ? -2 : 1;
-  if (profile.screening_preference === "open" && item.screening_required) score += 1;
-  if (profile.preferred_availability.length) {
-    const starts = new Date(item.starts_at);
-    const day = starts.getDay() === 0 || starts.getDay() === 6 ? "weekend" : "weekday";
-    const hour = starts.getHours();
-    const period = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
-    if (profile.preferred_availability.includes(`${day}_${period}`)) score += 3;
-  }
-  return score;
 };

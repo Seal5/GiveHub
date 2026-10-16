@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api, apiConfigurationError, demoMode, localAuthMode } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import type { Profile, Role } from "@/lib/types";
@@ -18,6 +19,7 @@ type AuthValue = {
 const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
+  const queryClient = useQueryClient();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const value = useMemo<AuthValue>(() => ({
     profile, token, loading,
     async signIn(role, email, password) {
+      queryClient.clear();
       if (demoMode || localAuthMode) {
         const nextToken = `dev:${profileForId(role)}`;
         setToken(nextToken);
@@ -129,6 +132,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setProfile(await api.createProfile({ role: input.role, display_name: input.name, email: input.email, organisation_name: input.organisationName }, data.session.access_token));
     },
     async signOut() {
+      queryClient.clear();
       // Clear local state before any network work so navigation responds immediately.
       setProfile(null);
       setToken(null);
@@ -141,7 +145,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     async refreshProfile() {
       if (profile) setProfile(await api.profile(profile.role, token));
     },
-  }), [loading, profile, token]);
+  }), [loading, profile, token, queryClient]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -1,13 +1,21 @@
 # GiveHub
 
-GiveHub is a Greater Toronto Area volunteer discovery and coordination MVP. It helps people find, assess, and sign up for local opportunities while allowing organisations to publish listings and manage applicants. The product follows the hybrid model presented in MSE 401: aggregate public and organiser listings, standardise their details, personalise discovery, and support either GiveHub-hosted applications or verified external forms.
+GiveHub is a Greater Toronto Area volunteer discovery and community coordination app. It helps people find and apply to local opportunities, meet their community through shared invitations, and manage RSVPs. Organizations publish listings, coordinate applicants, and host gatherings. The volunteering product follows the hybrid model presented in MSE 401: aggregate public and organiser listings, standardise their details, personalise discovery, and support either GiveHub-hosted applications or verified external forms.
+
+## Community invitations and RSVPs
+
+GiveHub now includes community event creation, themed shareable invitations, guest RSVPs, approval and waitlists, private questions, a host guest workspace, CSV export, announcements and durable reminders. Organizers use **Events**; volunteers use **Community** and **Activities**. Shared links support guests without accounts. See [community event setup and testing](docs/community-events.md).
+
+## Pilot-readiness refinements
+
+The `fix/pilot-readiness` branch adds browser-compatible authentication storage, public demo sharing, a wider desktop organizer applicant workspace, pending host approval and reviewer decisions, source permission controls, import confirmation gates, recommendation explanations, recurring session attendance, personal data export/removal requests, and configurable retention. See [the implementation and deployment guide](docs/pilot-readiness.md) and [report correction text](docs/report-corrections.md). Production services and external validation still need configuration and team review.
 
 ## Current status
 
 As of 3 August 2026:
 
 - The application through volunteer personalization is merged into the repository's default `initial-skeleton` branch. API and mobile checks run in GitHub Actions for every feature branch and pull request.
-- A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0010_volunteer_personalization`; hosted environments must run the latest Alembic migrations during release.
+- A free Supabase PostgreSQL database is running in Canada Central. The current local schema reaches `0013_community_events`; hosted environments must run the latest Alembic migrations during release.
 - The source-refresh pipeline is installed as a nightly GitHub Actions workflow. New scraped records enter a review queue instead of being published automatically; the first hosted refresh produced 33 pending candidates.
 - A public static demo is available at [alvaropran.github.io/givehub-demo](https://alvaropran.github.io/givehub-demo/). It runs in explicit demo mode, so its accounts and changes remain in that browser and do not use the hosted database.
 - The FastAPI service is not publicly hosted yet. Until it is deployed and the web build is pointed at its URL, the public demo is not a shared production application.
@@ -27,7 +35,7 @@ Manual recording with QuickTime, OBS, Loom, or the operating system's screen rec
 | 1:45-2:45 | Show Home and Discover, then open Search and demonstrate location, date, cause, duration, accessibility, eligibility, training, screening, and application-mode filters. | Volunteers can find opportunities that fit their interests and constraints. |
 | 2:45-4:00 | Open an opportunity and point out schedule, tasks, transport, qualifications, accessibility, source, verification, and freshness. Save it and show native sharing. | Listings expose the practical and trust information needed before applying. |
 | 4:00-5:30 | Apply to an internal opportunity. Show the personal note, experience, availability dropdown, recipient notice, and waiver. Briefly contrast an external-application listing. | GiveHub supports both hosted and organisation-controlled applications without collecting external form responses. |
-| 5:30-6:30 | Open Activities to show status tracking, editing, and withdrawal. Briefly show Saved, Impact, and the social prototype. | Volunteers retain control after applying and can see their participation history. |
+| 5:30-6:30 | Open Activities to show status tracking, editing, and withdrawal. Show Saved, Impact, and Community invitations. | Volunteers retain control after applying and can join community gatherings. |
 | 6:30-7:15 | Sign out and sign in as an organiser. Show the dashboard, posting funnel, opportunities, and action queue. | Organisers get one operational view of listings and applicants. |
 | 7:15-8:15 | Create or edit an opportunity and identify required versus optional fields, address autocomplete, capacity, application mode, screening, training, and draft/publish controls. | Hosts can publish complete, structured opportunities without every field creating friction. |
 | 8:15-9:00 | Open the applicant pipeline, change an application status, show CSV export, attendance, and contributed hours. | The workflow continues from application through confirmation and recorded impact. |
@@ -40,7 +48,7 @@ Manual recording with QuickTime, OBS, Loom, or the operating system's screen rec
 2. Start FastAPI and Expo before recording, then verify `/ready` and load the Home screen once.
 3. Keep one internal and one external opportunity in mind so the application-mode contrast is quick.
 4. Submit the volunteer application before switching roles so it appears in the organiser pipeline.
-5. Treat the social tab as a clearly labelled prototype; shared social networking is not yet implemented.
+5. Open Community for real event invitations and RSVPs. A friends graph is not implemented; RSVPs are independent of volunteer hours.
 6. Keep the public static demo open in a separate tab only as a fallback.
 
 ## MSE 401 MVP promise
@@ -117,7 +125,7 @@ Deterministic fairness-aware host rotation is implemented so comparable results 
 - Supabase Storage integration issues scoped upload tokens for organiser-owned opportunity images.
 - WCAG-oriented labels, visible focus and error states, keyboard-operable web controls, and minimum 44-pixel interactive targets.
 - Optimistic version fields protect opportunity, application, and moderation updates from silently overwriting newer data.
-- The current automated suite includes 57 API tests and 21 mobile tests, plus linting, strict Python typing, TypeScript checking, migration checks, generated-client verification, and container builds in CI.
+- The current automated suite includes 69 API tests and 28 mobile tests, plus linting, strict Python typing, TypeScript checking, migration checks, generated-client verification, and container builds in CI.
 
 ## Repository structure
 
@@ -158,7 +166,7 @@ All domain reads and writes go through FastAPI. The mobile Supabase client is us
 1. Copy `.env.example` to `.env` and `apps/mobile/.env.example` to `apps/mobile/.env`.
 2. Add the same Supabase project URL and publishable key to both files. Keep the Supabase secret key in the API `.env` only.
 3. Run `corepack enable` and `pnpm install` from the repository root.
-4. Run `uv sync --group dev` from `apps/api`.
+4. Run `uv sync --locked --group dev` from `apps/api`.
 5. Start PostgreSQL and FastAPI with `docker compose up db api`.
 6. Start Expo with `pnpm --filter @givehub/mobile start`.
 
@@ -253,7 +261,7 @@ uv run alembic upgrade head
 docker build -f apps/api/Dockerfile -t givehub-api .
 ```
 
-The current suite contains 21 mobile tests and 57 API tests. CI also confirms that the generated OpenAPI client matches the FastAPI schema.
+The current suite contains 28 mobile tests and 69 API tests. CI also confirms that the generated OpenAPI client matches the FastAPI schema.
 
 ## Deferred and remaining work
 
@@ -270,4 +278,6 @@ GiveHub does not provide legal advice. The default waiver is a starting point th
 
 ## Universal links
 
-Shared links use `EXPO_PUBLIC_SHARE_BASE_URL`, falling back to `EXPO_PUBLIC_API_URL`. The example `https://givehub.nz` value is a placeholder and is not the current public deployment domain. For production, point the variable at the selected app/marketing domain, route `/o/*` to FastAPI, match the domain in `app.json`, and serve the required Apple and Android association files from `/.well-known/`.
+`PUBLIC_WEB_URL` on the API provides a browser fallback on public share pages; use the web app origin that serves its `/o/<id>` route. Native links enter through `givehub://o/<id>` so signed-out visitors keep their destination.
+
+Shared links use `EXPO_PUBLIC_SHARE_BASE_URL`, falling back to `EXPO_PUBLIC_API_URL`. The example `https://givehub.nz` value is a placeholder and is not the current public deployment domain. For production, point `EXPO_PUBLIC_SHARE_BASE_URL` at the API share-page domain and `PUBLIC_WEB_URL` at the separately hosted browser app. Match the selected universal-link domain in `app.json` and serve the required Apple and Android association files from `/.well-known/`.

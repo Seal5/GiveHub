@@ -8,7 +8,7 @@ def test_share_page_renders_open_graph_preview(client: TestClient) -> None:
     assert response.headers["content-type"].startswith("text/html")
     body = response.text
     assert f'og:title" content="{item["title"]}"' in body
-    assert f"givehub://opportunity/{item['id']}" in body
+    assert f"givehub://o/{item['id']}" in body
     assert item["organisation_name"] in body
 
 
@@ -28,3 +28,13 @@ def test_share_page_needs_no_authentication(client: TestClient) -> None:
         assert client.get(f"/o/{item['id']}").status_code == 200
     finally:
         app.dependency_overrides.clear()
+
+
+def test_share_page_has_a_web_fallback(client: TestClient) -> None:
+    from givehub.config import Settings, get_settings
+    from givehub.main import app
+    item = client.get("/v1/opportunities").json()[0]
+    app.dependency_overrides[get_settings] = lambda: Settings(public_web_url="https://web.example.com")
+    response = client.get(f"/o/{item['id']}")
+    assert f"https://web.example.com/o/{item['id']}" in response.text
+    assert "Continue in your browser" in response.text

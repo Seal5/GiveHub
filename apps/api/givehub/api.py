@@ -4,7 +4,7 @@ import io
 import json
 import re
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import PurePosixPath
 from typing import Any
 from urllib.parse import quote
@@ -48,6 +48,7 @@ from givehub.models import (
     Recurrence,
     Role,
     SavedOpportunity,
+    SessionAttendance,
     SourceCandidate,
     SourceRefreshRun,
     Suburb,
@@ -63,6 +64,7 @@ from givehub.notifications import (
     guardian_consent_copy,
 )
 from givehub.ranking import fair_organisation_rotation
+from givehub.recurrence import session_date_for
 from givehub.schemas import (
     AnalyticsOut,
     ApplicationCreate,
@@ -226,6 +228,11 @@ def profile_out(profile: Profile) -> ProfileOut:
         screening_preference=profile.screening_preference,
         transportation_preference=profile.transportation_preference,
         organisation_name=profile.organisation.name if profile.organisation else None,
+        organisation_verification_status=profile.organisation.verification_status.value if profile.organisation else None,
+        can_review_sources=profile.role == Role.organiser and (
+            not get_settings().is_production or profile.email.casefold() in get_settings().source_reviewer_emails
+        ),
+        deletion_requested_at=profile.deletion_requested_at,
     )
 
 
@@ -538,7 +545,7 @@ def create_profile(
             Organisation(
                 owner=profile,
                 name=payload.organisation_name or payload.display_name,
-                verification_status=VerificationStatus.approved,
+                verification_status=VerificationStatus.pending,
             )
         )
     try:
@@ -582,6 +589,29 @@ def update_preferences(
     db.commit()
     db.refresh(profile)
     return profile_out(profile)
+
+
+def match_reasons(item: OpportunityOut, profile: Profile) -> list[str]:
+    reasons = []
+    if set(profile.preferred_cause_slugs or []).intersection(c.slug for c in item.causes):
+        reasons.append("Matches your causes")
+    if item.recurrence.value in (profile.preferred_recurrences or []):
+        reasons.append("Matches your preferred frequency")
+    if profile.max_time_commitment_minutes and item.time_commitment_minutes <= profile.max_time_commitment_minutes:
+        reasons.append("Fits your preferred duration")
+    if profile.accessible_only and item.is_accessible:
+        reasons.append("Accessible listing")
+    if profile.preferred_availability:
+        start = _as_utc(item.starts_at).astimezone(ZoneInfo("America/Toronto"))
+        day = "weekend" if start.weekday() >= 5 else "weekday"
+        period = "morning" if start.hour < 12 else "afternoon" if start.hour < 17 else "evening"
+        if f"{day}_{period}" in profile.preferred_availability:
+            reasons.append("Fits your usual availability")
+    if profile.training_preference == "avoid" and not item.training_required:
+        reasons.append("No required training")
+    if profile.screening_preference == "avoid" and not item.screening_required:
+        reasons.append("No required screening")
+    return reasons
 
 
 def personalization_score(item: OpportunityOut, profile: Profile) -> int:
@@ -718,6 +748,8 @@ def list_opportunities(
         outputs.sort(key=lambda item: (item.distance_km or 0, item.starts_at))
     scores = {item.id: personalization_score(item, viewer) for item in outputs} if personalized else {}
     if personalized:
+        for item in outputs:
+            item.match_reasons = match_reasons(item, viewer)
         outputs.sort(
             key=lambda item: (
                 -scores[item.id],
@@ -1525,6 +1557,7 @@ def promote_source_candidate(
         application_mode="external",
         external_application_url=candidate.source_url,
         status=OpportunityStatus.draft,
+        unconfirmed_fields=["starts_at", "ends_at", "capacity", "minimum_age", "latitude", "longitude", "meeting_point", "eligibility_notes", "safety_notes", "external_application_url"],
         causes=[cause],
     )
     db.add(item)
@@ -1550,6 +1583,8 @@ def create_opportunity(
     organiser = require_profile(db, identity.user_id, Role.organiser)
     assert organiser.organisation
     causes = require_causes(db, payload.cause_ids)
+    if payload.listing_source_url:
+        payload.listing_verification_status = "pending"
     item = Opportunity(
         organisation_id=organiser.organisation.id,
         causes=causes,
@@ -1567,18 +1602,30 @@ def update_opportunity(
     opportunity_id: uuid.UUID,
     payload: OpportunityUpdate,
     identity: Identity = Depends(current_identity),
+    settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
 ) -> OpportunityOut:
     organiser = require_profile(db, identity.user_id, Role.organiser)
     item = require_owned_opportunity(db, opportunity_id, organiser.id)
     if item.version != payload.version:
         raise HTTPException(status.HTTP_409_CONFLICT, "Opportunity changed; refresh and try again")
-    updates = payload.model_dump(exclude_unset=True, exclude={"version", "cause_ids"})
+    updates = payload.model_dump(exclude_unset=True, exclude={"version", "cause_ids", "confirm_import_details"})
+    if item.unconfirmed_fields and payload.confirm_import_details:
+        require_source_reviewer(db, identity, settings)
+        missing = [field for field in item.unconfirmed_fields if field not in updates or updates[field] is None]
+        placeholders = [field for field in ("meeting_point", "eligibility_notes", "safety_notes")
+                        if not str(updates.get(field, "")).strip() or "confirm " in str(updates.get(field, "")).casefold()]
+        if missing or placeholders:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Confirm the imported schedule, location, capacity, eligibility, safety and application destination")
+        item.unconfirmed_fields = []
+        updates["listing_verification_status"] = "verified"
+    elif updates.get("listing_verification_status") == "verified" and item.listing_source_url:
+        require_source_reviewer(db, identity, settings)
     for key, value in updates.items():
         setattr(item, key, value)
     if payload.cause_ids is not None:
         item.causes = require_causes(db, payload.cause_ids)
-    if item.ends_at <= item.starts_at:
+    if _as_utc(item.ends_at) <= _as_utc(item.starts_at):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "End time must follow start time")
     if item.application_mode == "external" and not item.external_application_url:
         raise HTTPException(
@@ -1611,6 +1658,8 @@ def publish_opportunity(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             "Add the organisation's application URL before publishing",
         )
+    if item.unconfirmed_fields:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Imported details must be confirmed before publishing")
     item.status = OpportunityStatus.published
     item.version += 1
     db.commit()
@@ -1681,11 +1730,17 @@ def event_hours(item: Opportunity) -> float:
 )
 def attendance_sheet(
     opportunity_id: uuid.UUID,
+    session_date: date | None = None,
     identity: Identity = Depends(current_identity),
     db: Session = Depends(get_db),
 ) -> AttendanceSheetOut:
     organiser = require_profile(db, identity.user_id, Role.organiser)
     item = require_owned_opportunity(db, opportunity_id, organiser.id)
+    selected_date = session_date_for(item, session_date)
+    first_date = session_date_for(item, None)
+    extra_records = {record.application_id: record for record in db.scalars(
+        select(SessionAttendance).join(SessionAttendance.application).where(Application.opportunity_id == item.id, SessionAttendance.session_date == selected_date)
+    ).all()}
     confirmed = db.scalars(
         select(Application)
         .options(*application_options())
@@ -1696,21 +1751,25 @@ def attendance_sheet(
         )
         .order_by(Profile.display_name)
     ).all()
+    records = {a.id: a.attendance if selected_date == first_date else extra_records.get(a.id) for a in confirmed}
     rows = [
         AttendanceRowOut(
             application_id=application.id,
+            session_date=selected_date,
             volunteer_name=application.volunteer.display_name,
             volunteer_email=application.volunteer.email,
-            status=application.attendance.status
-            if application.attendance
+            status=record.status
+            if record
             else AttendanceStatus.expected,
-            hours=application.attendance.hours if application.attendance else 0.0,
-            notes=application.attendance.notes if application.attendance else "",
+            hours=record.hours if record else 0.0,
+            notes=record.notes if record else "",
         )
         for application in confirmed
+        for record in [records.get(application.id)]
     ]
     return AttendanceSheetOut(
         opportunity_id=item.id,
+        session_date=selected_date,
         opportunity_title=item.title,
         default_hours=event_hours(item),
         expected=sum(1 for row in rows if row.status == AttendanceStatus.expected),
@@ -1746,10 +1805,17 @@ def record_attendance(
     if payload.status != AttendanceStatus.attended:
         # Hours only mean something for someone who actually turned up.
         hours = 0.0
-    record = application.attendance
-    if record is None:
-        record = Attendance(application_id=application.id)
-        db.add(record)
+    selected_date = session_date_for(application.opportunity, payload.session_date)
+    if selected_date == session_date_for(application.opportunity, None):
+        record: Attendance | SessionAttendance | None = application.attendance
+        if record is None:
+            record = Attendance(application_id=application.id)
+            db.add(record)
+    else:
+        record = db.scalar(select(SessionAttendance).where(SessionAttendance.application_id == application.id, SessionAttendance.session_date == selected_date))
+        if record is None:
+            record = SessionAttendance(application_id=application.id, session_date=selected_date)
+            db.add(record)
     record.status = payload.status
     record.hours = hours
     record.notes = payload.notes
@@ -1758,6 +1824,7 @@ def record_attendance(
     db.commit()
     return AttendanceRowOut(
         application_id=application.id,
+        session_date=selected_date,
         volunteer_name=application.volunteer.display_name,
         volunteer_email=application.volunteer.email,
         status=record.status,
@@ -1788,55 +1855,35 @@ def my_impact(
             .order_by(Opportunity.starts_at.desc())
         ).all()
     )
+
+    extra = db.scalars(select(SessionAttendance).join(SessionAttendance.application).where(
+        Application.volunteer_id == volunteer.id, SessionAttendance.status == AttendanceStatus.attended
+    ).options(selectinload(SessionAttendance.application).options(*application_options(), selectinload(Application.opportunity).selectinload(Opportunity.causes)))).all()
+    contributions = [(a, a.attendance.hours, _as_utc(a.opportunity.starts_at)) for a in attended if a.attendance]
+    for record in extra:
+        contributions.append((record.application, record.hours, datetime.combine(record.session_date, datetime.min.time(), tzinfo=ZoneInfo("America/Toronto"))))
+    contributions.sort(key=lambda row: row[2], reverse=True)
     now = datetime.now(UTC)
-    upcoming = (
-        db.scalar(
-            select(func.count(Application.id))
-            .join(Application.opportunity)
-            .where(
-                Application.volunteer_id == volunteer.id,
-                Application.status == ApplicationStatus.confirmed,
-                Opportunity.starts_at >= now,
-            )
-        )
-        or 0
-    )
+    upcoming = db.scalar(select(func.count(Application.id)).join(Application.opportunity).where(
+        Application.volunteer_id == volunteer.id, Application.status == ApplicationStatus.confirmed,
+        Opportunity.status == OpportunityStatus.published,
+        or_(Opportunity.starts_at >= now, Opportunity.recurrence != Recurrence.one_off),
+    )) or 0
     cause_events: dict[str, tuple[str, int]] = {}
-    for application in attended:
+    for application, _, _ in contributions:
         for cause in application.opportunity.causes:
             name, count = cause_events.get(cause.slug, (cause.name, 0))
             cause_events[cause.slug] = (name, count + 1)
-    total_hours = round(sum(a.attendance.hours for a in attended if a.attendance), 2)
-    hours_this_year = round(
-        sum(
-            a.attendance.hours
-            for a in attended
-            if a.attendance and _as_utc(a.opportunity.starts_at).year == now.year
-        ),
-        2,
-    )
     return ImpactOut(
-        total_hours=total_hours,
-        events_attended=len(attended),
-        organisations_supported=len({a.opportunity.organisation_id for a in attended}),
+        total_hours=round(sum(hours for _, hours, _ in contributions), 2),
+        events_attended=len(contributions),
+        organisations_supported=len({a.opportunity.organisation_id for a, _, _ in contributions}),
         upcoming_confirmed=int(upcoming),
-        hours_this_year=hours_this_year,
-        causes=[
-            ImpactCauseOut(slug=slug, name=name, events=count)
-            for slug, (name, count) in sorted(
-                cause_events.items(), key=lambda entry: entry[1][1], reverse=True
-            )
-        ],
-        recent=[
-            ImpactEventOut(
-                opportunity_id=a.opportunity_id,
-                title=a.opportunity.title,
-                organisation_name=a.opportunity.organisation.name,
-                starts_at=a.opportunity.starts_at,
-                hours=a.attendance.hours if a.attendance else 0.0,
-            )
-            for a in attended[:10]
-        ],
+        hours_this_year=round(sum(hours for _, hours, when in contributions if when.year == now.year), 2),
+        causes=[ImpactCauseOut(slug=slug, name=name, events=count) for slug, (name, count) in sorted(cause_events.items(), key=lambda entry: entry[1][1], reverse=True)],
+        recent=[ImpactEventOut(opportunity_id=a.opportunity_id, title=a.opportunity.title,
+            organisation_name=a.opportunity.host_organisation_name or a.opportunity.organisation.name,
+            starts_at=when, hours=hours) for a, hours, when in contributions[:10]],
     )
 
 

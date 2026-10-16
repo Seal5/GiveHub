@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from givehub import models  # noqa: F401
+from givehub import community_models, models  # noqa: F401
 from givehub.config import get_settings
 from givehub.database import Base
 

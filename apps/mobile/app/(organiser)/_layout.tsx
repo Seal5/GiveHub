@@ -7,8 +7,14 @@ export default function OrganiserLayout() {
     <Tabs screenOptions={screenOptions}>
       <Tabs.Screen name="index" options={{ title: "Overview", tabBarIcon: tabIcon("home-outline") }} />
       <Tabs.Screen name="pipeline" options={{ title: "Pipeline", tabBarIcon: tabIcon("people-outline") }} />
+      <Tabs.Screen name="community" options={{ title: "Events", tabBarIcon: tabIcon("calendar-outline") }} />
       <Tabs.Screen name="create" options={{ title: "Post", tabBarIcon: tabIcon("add-circle-outline") }} />
       <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: tabIcon("menu-outline") }} />
+      <Tabs.Screen name="governance" options={{ href: null }} />
+      <Tabs.Screen name="community-create" options={{ href: null }} />
+      <Tabs.Screen name="community-edit/[id]" options={{ href: null }} />
+      <Tabs.Screen name="community-event/[id]" options={{ href: null }} />
+      <Tabs.Screen name="privacy" options={{ href: null }} />
       <Tabs.Screen name="waiver" options={{ href: null }} />
       <Tabs.Screen name="application/[id]" options={{ href: null }} />
       <Tabs.Screen name="attendance/[id]" options={{ href: null }} />

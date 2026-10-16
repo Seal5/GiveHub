@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
+from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from givehub.models import (
     ApplicationStatus,
@@ -106,6 +107,9 @@ class ProfileOut(ORMModel):
     screening_preference: str
     transportation_preference: str
     organisation_name: str | None = None
+    organisation_verification_status: str | None = None
+    can_review_sources: bool = False
+    deletion_requested_at: datetime | None = None
 
 
 class OpportunityBase(BaseModel):
@@ -154,6 +158,15 @@ class OpportunityBase(BaseModel):
     external_application_url: str | None = Field(default=None, max_length=1000)
     cause_ids: list[uuid.UUID] = Field(min_length=1)
     image_url: str | None = None
+
+    @field_validator("listing_source_url", "external_application_url")
+    @classmethod
+    def valid_public_url(cls, value: str | None) -> str | None:
+        if value is not None:
+            parts = urlsplit(value)
+            if parts.scheme not in {"https", "http"} or not parts.hostname or parts.username or parts.password:
+                raise ValueError("Use a public HTTP or HTTPS URL without embedded credentials")
+        return value
 
     @model_validator(mode="after")
     def validate_schedule(self) -> OpportunityBase:
@@ -216,7 +229,13 @@ class OpportunityUpdate(BaseModel):
     external_application_url: str | None = Field(default=None, max_length=1000)
     cause_ids: list[uuid.UUID] | None = None
     image_url: str | None = None
+    confirm_import_details: bool = False
     version: int = Field(ge=1)
+
+    @field_validator("listing_source_url", "external_application_url")
+    @classmethod
+    def valid_public_url(cls, value: str | None) -> str | None:
+        return OpportunityBase.valid_public_url(value)
 
 
 class OpportunityOut(ORMModel):
@@ -269,6 +288,8 @@ class OpportunityOut(ORMModel):
     causes: list[CauseOut]
     distance_km: float | None = None
     is_saved: bool = False
+    unconfirmed_fields: list[str] = Field(default_factory=list)
+    match_reasons: list[str] = Field(default_factory=list)
 
 
 class SourceCandidateDuplicateOut(BaseModel):
@@ -478,12 +499,14 @@ class AnalyticsOut(BaseModel):
 
 
 class AttendanceUpdate(BaseModel):
+    session_date: date | None = None
     status: AttendanceStatus
     hours: float | None = Field(default=None, ge=0, le=24)
     notes: str = Field(default="", max_length=500)
 
 
 class AttendanceRowOut(BaseModel):
+    session_date: date | None = None
     application_id: uuid.UUID
     volunteer_name: str
     volunteer_email: EmailStr
@@ -493,6 +516,7 @@ class AttendanceRowOut(BaseModel):
 
 
 class AttendanceSheetOut(BaseModel):
+    session_date: date | None = None
     opportunity_id: uuid.UUID
     opportunity_title: str
     default_hours: float
@@ -565,3 +589,17 @@ class ErrorDetail(BaseModel):
 
 class ErrorEnvelope(BaseModel):
     error: ErrorDetail
+
+
+class OrganisationReview(BaseModel):
+    status: str = Field(pattern="^(approved|rejected)$")
+    note: str = Field(min_length=10, max_length=2000)
+
+
+class SourcePolicyUpdate(BaseModel):
+    enabled: bool
+    permission_reference: str = Field(min_length=10, max_length=2000)
+
+
+class ProfileDetailsUpdate(BaseModel):
+    display_name: str = Field(min_length=2, max_length=120)

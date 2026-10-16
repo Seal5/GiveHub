@@ -1,6 +1,6 @@
 import "../global.css";
 import { useEffect } from "react";
-import { Platform, View } from "react-native";
+import { Platform, View, useWindowDimensions } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -23,7 +23,7 @@ function NavigationGuard() {
     if (loading) return;
     const group = segments[0] as string | undefined;
     // The share route resolves its own destination once auth state settles.
-    if (group === "o") return;
+    if (group === "o" || group === "g") return;
     if (!profile) {
       if (group === "(volunteer)" || group === "(organiser)") router.replace("/welcome");
       return;
@@ -56,10 +56,15 @@ function ThemedStatusBar() {
 }
 
 function AppFrame() {
+  const { profile } = useAuth();
+  const { width } = useWindowDimensions();
+  const segments = useSegments();
+  const communityScreen = segments.some(segment => ["g", "social", "community", "community-create", "community-edit", "community-event"].includes(segment as string));
+  const organizerDesktop = profile?.role === "organiser" && width >= 900 && !segments.includes("attendance" as never) && !communityScreen;
   return (
     <View
       className="flex-1 overflow-hidden bg-background dark:bg-dark-background"
-      style={Platform.OS === "web" ? { width: "100%", maxWidth: 480, alignSelf: "center" } : undefined}
+      style={Platform.OS === "web" ? { width: "100%", maxWidth: organizerDesktop ? 1280 : 480, alignSelf: "center" } : undefined}
     >
       <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
     </View>

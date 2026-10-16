@@ -13,6 +13,9 @@ __pycache__/
 *.pyc
 *.egg-info/
 *.db
+apps/api/data/
+test-results/
+playwright-report/
 .DS_Store
 
 # Expo prebuild output is generated from app.json for local native builds.

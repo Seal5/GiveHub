@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.resetModules();
 });
 
@@ -14,6 +15,23 @@ const event = {
 };
 
 describe("opportunity share links", () => {
+  it("shares the current public demo origin and subpath instead of localhost", async () => {
+    vi.stubEnv("EXPO_PUBLIC_DEMO_MODE", "true");
+    vi.stubEnv("EXPO_PUBLIC_SHARE_BASE_URL", "");
+    vi.stubEnv("EXPO_PUBLIC_API_URL", "http://127.0.0.1:8000");
+    vi.stubEnv("EXPO_PUBLIC_WEB_BASE_URL", "/givehub-demo");
+    vi.stubGlobal("window", { location: { origin: "https://alvaropran.github.io" } });
+    const { opportunityShareUrl } = await import("./shareLink");
+    expect(opportunityShareUrl("beach-clean")).toBe("https://alvaropran.github.io/givehub-demo/o/beach-clean");
+  });
+
+  it("does not generate localhost demo links outside a browser", async () => {
+    vi.stubEnv("EXPO_PUBLIC_DEMO_MODE", "true");
+    vi.stubEnv("EXPO_PUBLIC_SHARE_BASE_URL", "");
+    vi.stubEnv("EXPO_PUBLIC_API_URL", "http://127.0.0.1:8000");
+    const { opportunityShareUrl } = await import("./shareLink");
+    expect(opportunityShareUrl("beach-clean")).toBeNull();
+  });
   it("builds a link against the dedicated share domain", async () => {
     vi.stubEnv("EXPO_PUBLIC_SHARE_BASE_URL", "https://givehub.nz");
     vi.stubEnv("EXPO_PUBLIC_API_URL", "http://127.0.0.1:8000");

@@ -2,7 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, demoMode } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import { Body, BrandMark, Button, Card, ErrorState, LoadingState, Screen, useThemeColours } from "@/components/ui";
 import { formatEventDate } from "@/lib/format";
@@ -53,6 +53,7 @@ export default function OrganiserOverview() {
       <Text className="mt-7 font-strong text-xs uppercase tracking-[1.5px] text-primary dark:text-dark-primary">{organisation}</Text>
       <Text accessibilityRole="header" className="mt-2 font-display text-[30px] leading-8 tracking-[-1px] text-foreground dark:text-dark-foreground">{greeting()}, team.</Text>
       <Body className="mt-2">See what needs attention before volunteers are left waiting.</Body>
+      <Button className="mt-5" label="Host a community event" variant="secondary" onPress={() => router.push("/(organiser)/community" as Parameters<typeof router.push>[0])} />
 
       <View className="mt-6 flex-row flex-wrap justify-between">
         <Metric value={String(analytics.data?.views ?? 0)} label="Opportunity views" />
@@ -78,6 +79,7 @@ export default function OrganiserOverview() {
           </View>
         </Card>
       </Pressable>
+      {profile?.can_review_sources || demoMode ? <><Button className="mt-4" label="Reviewer workspace" variant="secondary" onPress={() => router.push("/(organiser)/governance")} />
       <Pressable onPress={() => router.push("/(organiser)/source-review")} accessibilityRole="button" accessibilityLabel="Review imported opportunities">
         <Card className="mt-3 p-4">
           <View className="flex-row items-center gap-3">
@@ -102,6 +104,7 @@ export default function OrganiserOverview() {
           </View>
         </Card>
       </Pressable>
+      </> : null}
       <Pressable onPress={() => router.push("/(organiser)/listing-reports")} accessibilityRole="button" accessibilityLabel="Review reported listings">
         <Card className="mt-3 p-4">
           <View className="flex-row items-center gap-3">

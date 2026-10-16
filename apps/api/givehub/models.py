@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import enum
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import (
     JSON,
     Boolean,
     Column,
+    Date,
     DateTime,
     Enum,
     Float,
@@ -122,6 +123,9 @@ class Profile(TimestampMixin, Base):
     transportation_preference: Mapped[str] = mapped_column(String(24), default="any")
 
     suburb: Mapped[Suburb | None] = relationship()
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deletion_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     organisation: Mapped[Organisation | None] = relationship(back_populates="owner", uselist=False)
 
 
@@ -132,8 +136,11 @@ class Organisation(TimestampMixin, Base):
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("profiles.id"), unique=True)
     name: Mapped[str] = mapped_column(String(180))
     verification_status: Mapped[VerificationStatus] = mapped_column(
-        Enum(VerificationStatus, native_enum=False), default=VerificationStatus.approved
+        Enum(VerificationStatus, native_enum=False), default=VerificationStatus.pending
     )
+    verification_note: Mapped[str] = mapped_column(Text, default="")
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     notify_new_applications: Mapped[bool] = mapped_column(Boolean, default=True)
 
     owner: Mapped[Profile] = relationship(back_populates="organisation")
@@ -219,6 +226,7 @@ class Opportunity(TimestampMixin, Base):
         Enum(OpportunityStatus, native_enum=False), default=OpportunityStatus.draft, index=True
     )
     version: Mapped[int] = mapped_column(Integer, default=1)
+    unconfirmed_fields: Mapped[list[str]] = mapped_column(JSON, default=list)
 
     organisation: Mapped[Organisation] = relationship(back_populates="opportunities")
     suburb: Mapped[Suburb | None] = relationship()
@@ -453,3 +461,28 @@ class ListingReport(TimestampMixin, Base):
     opportunity: Mapped[Opportunity] = relationship(back_populates="reports")
     reporter: Mapped[Profile] = relationship(foreign_keys=[reporter_id])
     reviewer: Mapped[Profile | None] = relationship(foreign_keys=[reviewed_by])
+
+
+class SourcePolicy(TimestampMixin, Base):
+    """A reviewer-maintained permission record; disabled until authorization is recorded."""
+    __tablename__ = "source_policies"
+    host: Mapped[str] = mapped_column(String(240), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    permission_reference: Mapped[str] = mapped_column(Text, default="")
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class SessionAttendance(TimestampMixin, Base):
+    """Additional dates of a recurring opportunity; the original attendance row is preserved."""
+    __tablename__ = "session_attendance"
+    __table_args__ = (UniqueConstraint("application_id", "session_date"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), index=True)
+    session_date: Mapped[date] = mapped_column(Date)
+    status: Mapped[AttendanceStatus] = mapped_column(Enum(AttendanceStatus, native_enum=False), default=AttendanceStatus.expected)
+    hours: Mapped[float] = mapped_column(Float, default=0.0)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    recorded_by: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    recorded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    application: Mapped[Application] = relationship()
